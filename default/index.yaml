@@ -33,6 +33,7 @@ main:
       /components: Built-in Components
       /scripts: Server-Side Scripts
       /error-handling: Error Handling
+      /server-features: Server Features
       /advanced: Advanced Features
   - h2: "Test Error Page"
   - p: "Visit a non-existent page to see the YAML-driven error page in action:"

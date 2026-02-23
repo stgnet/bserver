@@ -155,8 +155,25 @@ bserver can be configured with environment variables:
 | `PHP_CGI` | (auto-detected) | Path to php-cgi executable |
 | `INDEX` | `index.yaml,index.md,...` | Index file search order |
 
+## Command-Line Flags
+
+All environment variables above have corresponding flags. Additional flags:
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-version` | | Print version and exit |
+| `-no-scripts` | `false` | Disable server-side script execution in YAML |
+| `-cache-size` | `1024` | Render cache max size in MB (0 to disable) |
+| `-cache-age` | `900` | Render cache max entry age in seconds |
+| `-static-age` | `86400` | Max Cache-Control age for static files in seconds |
+| `-parent-levels` | `1` | Max directory levels above docroot for YAML search |
+
+See [Server Features](/server-features) for details on caching, security
+headers, and other production features.
+
 ## Next Steps
 
 - [Content Definitions](/definitions) - Learn how YAML keys become HTML
 - [Format Definitions](/formats) - Create reusable HTML components
 - [Built-in Components](/components) - Explore what's included
+- [Server Features](/server-features) - Caching, security headers, and more
