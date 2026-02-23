@@ -8,14 +8,10 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
-	//"encoding/pem"
-	//"crypto/x509/pem"
 	"crypto/x509/pkix"
-	//"encoding/base64"
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/big"
 	"mime"
@@ -316,8 +312,8 @@ func getOrCreateSelfSignedCert(host, cacheDir string) (*tls.Certificate, error) 
 	}
 
 	// try disk cache
-	if certPEM, err1 := ioutil.ReadFile(certFile); err1 == nil {
-		if keyPEM, err2 := ioutil.ReadFile(keyFile); err2 == nil {
+	if certPEM, err1 := os.ReadFile(certFile); err1 == nil {
+		if keyPEM, err2 := os.ReadFile(keyFile); err2 == nil {
 			cert, err := tls.X509KeyPair(certPEM, keyPEM)
 			if err == nil {
 				selfSignedCache.Store(host, &cert)
@@ -356,8 +352,8 @@ func getOrCreateSelfSignedCert(host, cacheDir string) (*tls.Certificate, error) 
 
 	// write to disk
 	if err := os.MkdirAll(cacheDir, 0700); err == nil {
-		_ = ioutil.WriteFile(certFile, certPEM, 0600)
-		_ = ioutil.WriteFile(keyFile, keyPEM, 0600)
+		_ = os.WriteFile(certFile, certPEM, 0600)
+		_ = os.WriteFile(keyFile, keyPEM, 0600)
 	}
 
 	cert, err := tls.X509KeyPair(certPEM, keyPEM)

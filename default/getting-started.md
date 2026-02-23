@@ -148,10 +148,12 @@ bserver can be configured with environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HTTP` | `:80` | HTTP listen address |
-| `HTTPS` | `:443` | HTTPS listen address |
+| `LE_EMAIL` | (empty) | Let's Encrypt contact email |
+| `HTTP_ADDR` | `:80` | HTTP listen address |
+| `HTTPS_ADDR` | `:443` | HTTPS listen address |
+| `CERT_CACHE` | `./cert-cache` | Certificate cache directory |
+| `PHP_CGI` | (auto-detected) | Path to php-cgi executable |
 | `INDEX` | `index.yaml,index.md,...` | Index file search order |
-| `DEBUG` | (unset) | Enable debug HTML comments |
 
 ## Next Steps
 

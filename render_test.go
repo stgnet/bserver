@@ -37,12 +37,6 @@ func TestHomepageContent(t *testing.T) {
 	if !strings.Contains(output, `href="/formats"`) {
 		t.Error("Homepage missing link to Formats")
 	}
-	if !strings.Contains(output, "Undefined name") {
-		// This is intentionally inverted - we want NO undefined names
-	} else {
-		// But if there are, that's a real error
-	}
-	// Verify no undefined name errors
 	if strings.Contains(output, "Undefined name") {
 		t.Errorf("Homepage has undefined name errors.\nOutput:\n%s", output)
 	}
