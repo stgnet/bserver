@@ -7,11 +7,35 @@ import (
 	"testing"
 )
 
+// defaultDocRoot returns the default/ directory path for integration tests.
+func defaultDocRoot(t *testing.T) string {
+	t.Helper()
+	base, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return filepath.Join(base, "default")
+}
+
+// setupMinimalSite creates a minimal site in a temp dir with html.yaml and body.yaml,
+// plus any additional files provided as filename->content pairs.
+func setupMinimalSite(t *testing.T, files map[string]string) string {
+	t.Helper()
+	dir := t.TempDir()
+	// Always create the minimal structure
+	os.WriteFile(filepath.Join(dir, "html.yaml"), []byte("html:\n - body\n"), 0644)
+	os.WriteFile(filepath.Join(dir, "body.yaml"), []byte("body:\n - main\n"), 0644)
+	for name, content := range files {
+		os.WriteFile(filepath.Join(dir, name), []byte(content), 0644)
+	}
+	return dir
+}
+
 func TestHomepageContent(t *testing.T) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
-	output := renderYAMLPage(docRoot, indexPath, false, 1, nil)
+	output := renderYAMLPage(docRoot, indexPath, false, 1, false, nil)
 
 	if !strings.Contains(output, "bserver Documentation") {
 		t.Errorf("Homepage missing 'bserver Documentation' heading.\nFirst 2000 chars:\n%s", output[:min(len(output), 2000)])
@@ -46,7 +70,7 @@ func TestFooterContent(t *testing.T) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
-	output := renderYAMLPage(docRoot, indexPath, false, 1, nil)
+	output := renderYAMLPage(docRoot, indexPath, false, 1, false, nil)
 
 	if !strings.Contains(output, "<footer>") {
 		t.Error("Page missing <footer> tag")
@@ -63,7 +87,7 @@ func TestNavbarPresent(t *testing.T) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
-	output := renderYAMLPage(docRoot, indexPath, false, 1, nil)
+	output := renderYAMLPage(docRoot, indexPath, false, 1, false, nil)
 
 	if !strings.Contains(output, "navbar") {
 		t.Error("Homepage missing navbar")
@@ -104,7 +128,7 @@ func TestMarkdownGettingStarted(t *testing.T) {
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("getting-started.md not found")
 	}
-	output := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
+	output := renderMarkdownPage(docRoot, mdPath, false, 1, false, nil)
 
 	if !strings.Contains(output, "<!DOCTYPE html>") {
 		t.Error("Markdown page missing DOCTYPE")
@@ -136,7 +160,7 @@ func TestMarkdownDefinitions(t *testing.T) {
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("definitions.md not found")
 	}
-	output := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
+	output := renderMarkdownPage(docRoot, mdPath, false, 1, false, nil)
 
 	if !strings.Contains(output, "Content Definitions") {
 		t.Error("Definitions page missing heading")
@@ -156,7 +180,7 @@ func TestMarkdownFormats(t *testing.T) {
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("formats.md not found")
 	}
-	output := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
+	output := renderMarkdownPage(docRoot, mdPath, false, 1, false, nil)
 
 	if !strings.Contains(output, "Format Definitions") {
 		t.Error("Formats page missing heading")
@@ -179,7 +203,7 @@ func TestMarkdownComponents(t *testing.T) {
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("components.md not found")
 	}
-	output := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
+	output := renderMarkdownPage(docRoot, mdPath, false, 1, false, nil)
 
 	if !strings.Contains(output, "Built-in Components") {
 		t.Error("Components page missing heading")
@@ -199,7 +223,7 @@ func TestMarkdownScripts(t *testing.T) {
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("scripts.md not found")
 	}
-	output := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
+	output := renderMarkdownPage(docRoot, mdPath, false, 1, false, nil)
 
 	if !strings.Contains(output, "Server-Side Scripts") {
 		t.Error("Scripts page missing heading")
@@ -225,7 +249,7 @@ func TestMarkdownAdvanced(t *testing.T) {
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("advanced.md not found")
 	}
-	output := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
+	output := renderMarkdownPage(docRoot, mdPath, false, 1, false, nil)
 
 	if !strings.Contains(output, "Advanced Features") {
 		t.Error("Advanced page missing heading")
@@ -245,7 +269,7 @@ func TestNoUndefinedNames(t *testing.T) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
-	output := renderYAMLPage(docRoot, indexPath, false, 1, nil)
+	output := renderYAMLPage(docRoot, indexPath, false, 1, false, nil)
 
 	if strings.Contains(output, "Undefined name") {
 		t.Errorf("Homepage has undefined name errors.\nOutput:\n%s", output)
@@ -277,7 +301,7 @@ func TestInlineLinksIteration(t *testing.T) {
 	os.WriteFile(filepath.Join(tmpDir, "links.yaml"), []byte("^links:\n  tag: a\n  params:\n    href: '$key'\n  contents: '$value'\n"), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  links:\n    About: about\n    Contact: contact\n"), 0644)
 
-	output := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, false, nil)
 
 	if !strings.Contains(output, `href="About"`) {
 		t.Errorf("Missing <a> tag with href=\"About\" from links iteration.\nOutput:\n%s", output)
@@ -303,7 +327,7 @@ func TestUlistWrappingLinks(t *testing.T) {
 	os.WriteFile(filepath.Join(tmpDir, "links.yaml"), []byte("^links:\n  tag: a\n  params:\n    href: '$key'\n  contents: '$value'\n"), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  ulist:\n    links:\n      About: about\n      Contact: contact\n"), 0644)
 
-	output := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, false, nil)
 
 	if strings.Contains(output, "Undefined name") {
 		t.Errorf("Unexpected 'Undefined name' error in output.\nOutput:\n%s", output)
@@ -325,7 +349,7 @@ func TestContentWrapPlural(t *testing.T) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
-	output := renderYAMLPage(docRoot, indexPath, false, 1, nil)
+	output := renderYAMLPage(docRoot, indexPath, false, 1, false, nil)
 
 	// The index.yaml uses ulist which has contents: (plural) with li: '$*'
 	if !strings.Contains(output, "<ul>") {
@@ -349,7 +373,7 @@ func TestContentWrapSingular(t *testing.T) {
 	os.WriteFile(filepath.Join(tmpDir, "wrapper.yaml"), []byte("^wrapper:\n  tag: div\n  content:\n    span: '$*'\n"), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  wrapper:\n    - item one\n    - item two\n    - item three\n"), 0644)
 
-	output := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, false, nil)
 
 	if !strings.Contains(output, "<div>") {
 		t.Errorf("Missing <div> tag from wrapper format.\nOutput:\n%s", output)
@@ -372,7 +396,7 @@ func TestPreTagNoIndent(t *testing.T) {
 	os.WriteFile(filepath.Join(tmpDir, "body.yaml"), []byte("body:\n - main\n"), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  pre: \"line one\\n  indented line\"\n"), 0644)
 
-	output := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, false, nil)
 
 	idx := strings.Index(output, "<pre>")
 	if idx < 0 {
@@ -417,7 +441,7 @@ func TestContentsWrapPluralList(t *testing.T) {
 	os.WriteFile(filepath.Join(tmpDir, "items.yaml"), []byte("^items:\n  tag: div\n  contents:\n    span: '$*'\n"), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  items:\n    - first\n    - second\n    - third\n"), 0644)
 
-	output := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, false, nil)
 
 	if !strings.Contains(output, "<div>") {
 		t.Errorf("Missing <div> tag from items format.\nOutput:\n%s", output)
@@ -434,5 +458,142 @@ func TestContentsWrapPluralList(t *testing.T) {
 	}
 	if !strings.Contains(output, ">third</span>") {
 		t.Errorf("Missing 'third' wrapped in span.\nOutput:\n%s", output)
+	}
+}
+
+// --- Error path tests ---
+
+func TestMissingHTMLYAMLProducesOutput(t *testing.T) {
+	// A site without html.yaml should still produce some output (the
+	// undefined name error box), not panic or produce empty output.
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "index.yaml"), []byte("main:\n  p: hello\n"), 0644)
+
+	output := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, false, nil)
+	if output == "" {
+		t.Error("expected non-empty output even without html.yaml")
+	}
+	if !strings.Contains(output, "<!DOCTYPE html>") {
+		t.Error("expected DOCTYPE even when html.yaml is missing")
+	}
+}
+
+func TestMalformedYAMLDoesNotPanic(t *testing.T) {
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n  p: hello\n",
+		"bad.yaml":   ":\n  invalid:\n\t\tbad",
+	})
+
+	// Should not panic when encountering malformed YAML
+	output := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, false, nil)
+	if !strings.Contains(output, "hello") {
+		t.Error("valid content should still render despite bad sibling YAML file")
+	}
+}
+
+func TestCircularReferenceHandled(t *testing.T) {
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n - alpha\n",
+		"alpha.yaml": "alpha:\n - beta\n",
+		"beta.yaml":  "beta:\n - alpha\n",
+	})
+
+	output := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, false, nil)
+	// Should produce output without hanging
+	if output == "" {
+		t.Error("expected non-empty output for circular reference")
+	}
+	if strings.Contains(output, "render depth exceeded") {
+		// This is acceptable behavior
+		return
+	}
+	// Circular reference comment is also acceptable
+	if strings.Contains(output, "circular reference") {
+		return
+	}
+	// If neither marker is present, the rendering still completed which is fine
+}
+
+func TestScriptsDisabledFlag(t *testing.T) {
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n - greet\n",
+		"greet.yaml": "^greet:\n  tag: div\n  script: python\n  code: \"print('hello')\"",
+	})
+
+	output := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, true, nil)
+	if strings.Contains(output, "hello") {
+		t.Error("script output should not appear when scripts are disabled")
+	}
+	if !strings.Contains(output, "script execution disabled") {
+		t.Error("should contain 'script execution disabled' comment when scripts are disabled")
+	}
+}
+
+func TestDebugModeProducesComments(t *testing.T) {
+	docRoot := defaultDocRoot(t)
+	indexPath := filepath.Join(docRoot, "index.yaml")
+	output := renderYAMLPage(docRoot, indexPath, true, 1, false, nil)
+
+	if !strings.Contains(output, "<!-- resolve") {
+		t.Error("debug mode should produce resolve comments")
+	}
+}
+
+func TestComputeRequestURI(t *testing.T) {
+	tests := []struct {
+		docRoot  string
+		reqPath  string
+		expected string
+	}{
+		{"/srv/default", "/srv/default/index.yaml", "/"},
+		{"/srv/default", "/srv/default/about.yaml", "/about"},
+		{"/srv/default", "/srv/default/sub/index.yaml", "/sub"},
+		{"/srv/default", "/srv/default/sub/sub.yaml", "/sub"},
+		{"/srv/default", "/srv/default/getting-started.md", "/getting-started"},
+	}
+	for _, tc := range tests {
+		got := computeRequestURI(tc.docRoot, tc.reqPath)
+		if got != tc.expected {
+			t.Errorf("computeRequestURI(%q, %q) = %q, want %q", tc.docRoot, tc.reqPath, got, tc.expected)
+		}
+	}
+}
+
+func TestRenderStyleYAML(t *testing.T) {
+	om := NewOrderedMap()
+	inner := NewOrderedMap()
+	inner.Set("color", "red")
+	om.Set("body", inner)
+
+	css := renderStyleYAML(om, 0)
+	if !strings.Contains(css, "body") {
+		t.Error("CSS missing selector 'body'")
+	}
+	if !strings.Contains(css, "color: red") {
+		t.Error("CSS missing 'color: red' property")
+	}
+}
+
+// --- Benchmarks ---
+
+func BenchmarkRenderYAMLPage(b *testing.B) {
+	base, _ := os.Getwd()
+	docRoot := filepath.Join(base, "default")
+	indexPath := filepath.Join(docRoot, "index.yaml")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		renderYAMLPage(docRoot, indexPath, false, 1, false, nil)
+	}
+}
+
+func BenchmarkRenderMarkdownPage(b *testing.B) {
+	base, _ := os.Getwd()
+	docRoot := filepath.Join(base, "default")
+	mdPath := filepath.Join(docRoot, "getting-started.md")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		renderMarkdownPage(docRoot, mdPath, false, 1, false, nil)
 	}
 }

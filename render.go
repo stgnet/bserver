@@ -2,16 +2,12 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"html"
-	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -65,18 +61,9 @@ var knownHTMLTags = map[string]bool{
 	"details": true, "summary": true,
 }
 
-// formatDef describes how a name should be rendered as HTML (from ^name keys).
-type formatDef struct {
-	Tag               string      // HTML tag to use
-	Params            *OrderedMap // HTML attributes (may contain $key, $value, $varname); values are strings
-	ParamsWildcard    bool        // if true, params: '$*' means use content entries as attributes
-	Contents          string      // how to render inner content ("$*" = as-is, "" = iterate)
-	ContentWrap       interface{} // structured content wrapper (e.g., {card-body: '$*'})
-	ContentWrapPlural bool        // true when "contents:" (plural) was used: wrap each iterable individually
-	Script            string      // script language: "python", "javascript", "php"
-	Code              string      // inline script code (per-record body)
-	File              string      // script file to load code from (relative to docRoot)
-}
+// maxRenderDepth is the maximum recursion depth for rendering and resolution.
+// This prevents infinite loops from circular references or deeply nested content.
+const maxRenderDepth = 50
 
 // DefaultMaxParentLevels is how many directory levels above docRoot the
 // upward YAML search is allowed to traverse. This prevents the renderer
@@ -98,11 +85,12 @@ type renderContext struct {
 	filesLoaded     map[string]bool        // yaml files already loaded (prevent re-loading)
 	resolving       map[string]bool        // cycle detection
 	debug           bool                   // emit HTML comments tracing resolution
+	scriptsDisabled bool                   // when true, scripts are not executed
 }
 
 // renderYAMLPage is the entry point: given a request for a path within docRoot,
 // produce a complete HTML page.
-func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, r *http.Request) string {
+func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, scriptsDisabled bool, r *http.Request) string {
 	ctx := &renderContext{
 		docRoot:         docRoot,
 		requestDir:      reqPath,
@@ -116,6 +104,7 @@ func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, r 
 		filesLoaded:     make(map[string]bool),
 		resolving:       make(map[string]bool),
 		debug:           debug,
+		scriptsDisabled: scriptsDisabled,
 	}
 
 	for t := range knownHTMLTags {
@@ -162,7 +151,7 @@ func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, r 
 // renderMarkdownPage renders a markdown file within the full YAML page structure.
 // The markdown content becomes the "main" definition, so it gets the same
 // header, navbar, styles, footer, etc. as YAML pages.
-func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int, r *http.Request) string {
+func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int, scriptsDisabled bool, r *http.Request) string {
 	ctx := &renderContext{
 		docRoot:         docRoot,
 		requestDir:      filepath.Dir(mdPath),
@@ -176,6 +165,7 @@ func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int,
 		filesLoaded:     make(map[string]bool),
 		resolving:       make(map[string]bool),
 		debug:           debug,
+		scriptsDisabled: scriptsDisabled,
 	}
 
 	for t := range knownHTMLTags {
@@ -317,66 +307,6 @@ func (ctx *renderContext) mergeDef(name string, value interface{}) {
 	ctx.defs[name] = value
 }
 
-// parseFormatDef parses a ^name value into a formatDef struct.
-func parseFormatDef(v interface{}) *formatDef {
-	m, ok := v.(*OrderedMap)
-	if !ok {
-		return &formatDef{}
-	}
-	fd := &formatDef{}
-	if tagVal, ok := m.Get("tag"); ok {
-		if tag, ok := tagVal.(string); ok {
-			fd.Tag = tag
-		}
-	}
-	// Accept both "contents" (plural) and "content" (singular).
-	// For string values, they behave identically (set fd.Contents).
-	// For non-string values (structural wrappers like {li: '$*'}):
-	//   "contents:" (plural) = wrap each iterable item individually
-	//   "content:"  (singular) = wrap all items as a single block
-	contentVal, hasContent := m.Get("contents")
-	isPlural := hasContent
-	if !hasContent {
-		contentVal, hasContent = m.Get("content")
-	}
-	if hasContent {
-		if s, ok := contentVal.(string); ok {
-			fd.Contents = s
-		} else if contentVal != nil {
-			// Non-string content (e.g., {card-body: '$*'}) is a structural wrapper
-			fd.ContentWrap = contentVal
-			fd.ContentWrapPlural = isPlural
-		}
-	}
-	if paramsVal, ok := m.Get("params"); ok {
-		if paramsStr, ok := paramsVal.(string); ok && paramsStr == "$*" {
-			fd.ParamsWildcard = true
-		} else if params, ok := paramsVal.(*OrderedMap); ok {
-			fd.Params = NewOrderedMap()
-			params.Range(func(pk string, pv interface{}) bool {
-				fd.Params.Set(pk, fmt.Sprintf("%v", pv))
-				return true
-			})
-		}
-	}
-	if scriptVal, ok := m.Get("script"); ok {
-		if script, ok := scriptVal.(string); ok {
-			fd.Script = script
-		}
-	}
-	if codeVal, ok := m.Get("code"); ok {
-		if code, ok := codeVal.(string); ok {
-			fd.Code = code
-		}
-	}
-	if fileVal, ok := m.Get("file"); ok {
-		if file, ok := fileVal.(string); ok {
-			fd.File = file
-		}
-	}
-	return fd
-}
-
 // loadTagsForDir loads _tags.yaml from the given directory if not already loaded.
 func (ctx *renderContext) loadTagsForDir(dir string) {
 	if ctx.tagsLoaded[dir] {
@@ -511,7 +441,7 @@ func isNameRef(s string) bool {
 // and +merges without producing any output. This ensures all definitions
 // are fully assembled before the render pass.
 func (ctx *renderContext) resolveAll(name string, depth int) {
-	if depth > 50 {
+	if depth > maxRenderDepth {
 		return
 	}
 	if ctx.resolving[name] {
@@ -537,7 +467,7 @@ func (ctx *renderContext) resolveAll(name string, depth int) {
 
 // resolveContent walks a yaml value tree, resolving all name references.
 func (ctx *renderContext) resolveContent(val interface{}, depth int) {
-	if depth > 50 {
+	if depth > maxRenderDepth {
 		return
 	}
 	switch v := val.(type) {
@@ -577,7 +507,7 @@ func (ctx *renderContext) resolveContent(val interface{}, depth int) {
 
 // resolveInlineContent resolves names within inline tag content.
 func (ctx *renderContext) resolveInlineContent(val interface{}, depth int) {
-	if depth > 50 {
+	if depth > maxRenderDepth {
 		return
 	}
 	switch v := val.(type) {
@@ -634,7 +564,7 @@ func (ctx *renderContext) tagForName(name string) (string, *formatDef) {
 
 // renderName resolves a name and renders it.
 func (ctx *renderContext) renderName(sb *strings.Builder, name string, depth int) {
-	if depth > 50 {
+	if depth > maxRenderDepth {
 		fmt.Fprintf(sb, "<!-- render depth exceeded for %q -->\n", name)
 		return
 	}
@@ -1299,129 +1229,6 @@ func (ctx *renderContext) renderEntryChildren(entry *OrderedMap, depth int) stri
 	return sb.String()
 }
 
-// hasVarSubstitution checks if a format def uses $key/$value in params or ParamsWildcard.
-func hasVarSubstitution(fd *formatDef) bool {
-	if fd.ParamsWildcard {
-		return true
-	}
-	if fd.Params == nil {
-		return false
-	}
-	found := false
-	fd.Params.Range(func(_ string, v interface{}) bool {
-		if strings.Contains(fmt.Sprintf("%v", v), "$") {
-			found = true
-			return false
-		}
-		return true
-	})
-	return found
-}
-
-// usesKeyValueVars returns true if the format def references $key or $value
-// in its params or contents. This indicates an iteration pattern where each
-// map entry produces its own tag, rather than a single-entry pattern where
-// the map's keys are named variable substitutions.
-func usesKeyValueVars(fd *formatDef) bool {
-	if fd.Params != nil {
-		found := false
-		fd.Params.Range(func(_ string, v interface{}) bool {
-			s := fmt.Sprintf("%v", v)
-			if strings.Contains(s, "$key") || strings.Contains(s, "$value") {
-				found = true
-				return false
-			}
-			return true
-		})
-		if found {
-			return true
-		}
-	}
-	if strings.Contains(fd.Contents, "$key") || strings.Contains(fd.Contents, "$value") {
-		return true
-	}
-	return false
-}
-
-// formatParamsWithVars renders format def params as an HTML attribute string,
-// substituting $varname from the vars map. Unreplaced $vars are omitted.
-func formatParamsWithVars(params *OrderedMap, vars map[string]string) string {
-	if params == nil || params.Len() == 0 {
-		return ""
-	}
-	var sb strings.Builder
-	params.Range(func(k string, v interface{}) bool {
-		rendered := substituteVars(fmt.Sprintf("%v", v), vars)
-		// Skip attributes that still contain unreplaced $vars
-		if strings.Contains(rendered, "$") {
-			return true
-		}
-		fmt.Fprintf(&sb, " %s=\"%s\"", k, html.EscapeString(rendered))
-		return true
-	})
-	return sb.String()
-}
-
-// formatMapAsAttrs renders a map's entries directly as HTML attributes.
-func formatMapAsAttrs(m *OrderedMap) string {
-	var sb strings.Builder
-	m.Range(func(k string, v interface{}) bool {
-		fmt.Fprintf(&sb, " %s=\"%s\"", k, html.EscapeString(fmt.Sprintf("%v", v)))
-		return true
-	})
-	return sb.String()
-}
-
-// hasUnreplacedVars returns true if s still contains $varname tokens.
-func hasUnreplacedVars(s string) bool {
-	return strings.Contains(s, "$")
-}
-
-// extractVarNames returns all $varname references in a string.
-func extractVarNames(s string) []string {
-	var names []string
-	for i := 0; i < len(s); i++ {
-		if s[i] == '$' && i+1 < len(s) {
-			j := i + 1
-			for j < len(s) && (s[j] >= 'a' && s[j] <= 'z' || s[j] >= 'A' && s[j] <= 'Z' || s[j] >= '0' && s[j] <= '9' || s[j] == '_' || s[j] == '*') {
-				j++
-			}
-			if j > i+1 {
-				names = append(names, s[i+1:j])
-			}
-		}
-	}
-	return names
-}
-
-// substituteContentWrap replaces "$*" strings in a content wrapper structure
-// with the actual content. This allows format definitions to specify structural
-// wrappers, e.g., content: {card-body: '$*'} wraps children in card-body.
-func substituteContentWrap(wrap interface{}, content interface{}) interface{} {
-	switch w := wrap.(type) {
-	case string:
-		if w == "$*" {
-			return content
-		}
-		return w
-	case *OrderedMap:
-		result := NewOrderedMap()
-		w.Range(func(k string, v interface{}) bool {
-			result.Set(k, substituteContentWrap(v, content))
-			return true
-		})
-		return result
-	case []interface{}:
-		result := make([]interface{}, len(w))
-		for i, v := range w {
-			result[i] = substituteContentWrap(v, content)
-		}
-		return result
-	default:
-		return w
-	}
-}
-
 // renderContentWrapPluralMap handles ContentWrapPlural when the content is a map.
 // If a map key has a format that iterates $key/$value (like ^links), the inner
 // map entries are expanded individually — each entry gets wrapped separately.
@@ -1452,17 +1259,6 @@ func (ctx *renderContext) renderContentWrapPluralMap(sb *strings.Builder, conten
 		ctx.renderContent(sb, wrapped, depth)
 		return true
 	})
-}
-
-// substituteVars replaces $varname tokens in s using the vars map.
-func substituteVars(s string, vars map[string]string) string {
-	if !strings.Contains(s, "$") || vars == nil {
-		return s
-	}
-	for k, v := range vars {
-		s = strings.ReplaceAll(s, "$"+k, v)
-	}
-	return s
 }
 
 // indent returns the indentation string for the given depth.
@@ -1537,282 +1333,3 @@ func computeRequestURI(docRoot, reqPath string) string {
 	return "/" + rel
 }
 
-// buildScriptEnv builds the environment variables for script execution.
-// When an HTTP request is available, it populates standard CGI/server variables
-// (REMOTE_ADDR, SERVER_NAME, HTTP_HOST, SCRIPT_FILENAME, etc.) so scripts
-// behave like under Apache. scriptFile is the filesystem path to the script
-// being executed (empty if inline code).
-func (ctx *renderContext) buildScriptEnv(scriptFile string) []string {
-	env := os.Environ()
-	env = append(env, "REQUEST_URI="+ctx.requestURI)
-	env = append(env, "DOCUMENT_ROOT="+ctx.docRoot)
-	env = append(env, "REDIRECT_STATUS=200")
-
-	if scriptFile != "" {
-		env = append(env, "SCRIPT_FILENAME="+scriptFile)
-	}
-	env = append(env, "SCRIPT_NAME="+ctx.requestURI)
-	env = append(env, "PHP_SELF="+ctx.requestURI)
-
-	r := ctx.httpRequest
-	if r == nil {
-		return env
-	}
-
-	host := r.Host
-	if h, _, err := net.SplitHostPort(host); err == nil {
-		host = h
-	}
-	port := "80"
-	if r.TLS != nil {
-		port = "443"
-	}
-	remoteAddr := r.RemoteAddr
-	if h, _, err := net.SplitHostPort(remoteAddr); err == nil {
-		remoteAddr = h
-	}
-
-	// Try to get server's own address from the connection
-	serverAddr := host
-	if addr, ok := r.Context().Value(http.LocalAddrContextKey).(net.Addr); ok {
-		if h, _, err := net.SplitHostPort(addr.String()); err == nil {
-			serverAddr = h
-		} else {
-			serverAddr = addr.String()
-		}
-	}
-
-	env = append(env,
-		"GATEWAY_INTERFACE=CGI/1.1",
-		"SERVER_SOFTWARE=bserver",
-		"SERVER_PROTOCOL="+r.Proto,
-		"SERVER_NAME="+host,
-		"SERVER_ADDR="+serverAddr,
-		"SERVER_PORT="+port,
-		"REQUEST_METHOD="+r.Method,
-		"QUERY_STRING="+r.URL.RawQuery,
-		"REMOTE_ADDR="+remoteAddr,
-		"HTTP_HOST="+r.Host,
-	)
-
-	// Forward HTTP headers as HTTP_* variables
-	for key, vals := range r.Header {
-		envKey := "HTTP_" + strings.ReplaceAll(strings.ToUpper(key), "-", "_")
-		env = append(env, envKey+"="+strings.Join(vals, ", "))
-	}
-	if ct := r.Header.Get("Content-Type"); ct != "" {
-		env = append(env, "CONTENT_TYPE="+ct)
-	}
-	if r.ContentLength >= 0 {
-		env = append(env, fmt.Sprintf("CONTENT_LENGTH=%d", r.ContentLength))
-	}
-
-	return env
-}
-
-// renderScript executes a script (python, javascript, php) to render data records.
-// The script's `code` is wrapped in a per-language boilerplate that:
-//   - Reads all records as JSON from stdin
-//   - Iterates with `record` variable set to each record
-//   - Collects stdout as the rendered HTML
-func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
-	// Convert OrderedMap to a list of {key, value} records for script iteration,
-	// matching the $key/$value convention used by renderIterated.
-	scriptData := data
-	if om, ok := data.(*OrderedMap); ok {
-		var records []map[string]string
-		om.Range(func(k string, v interface{}) bool {
-			records = append(records, map[string]string{
-				"key":   k,
-				"value": fmt.Sprintf("%v", v),
-			})
-			return true
-		})
-		scriptData = records
-	}
-
-	// Serialize data as JSON for the script
-	jsonData, err := json.Marshal(scriptData)
-	if err != nil {
-		return fmt.Sprintf("<!-- script: json error: %v -->\n", err)
-	}
-
-	code := fd.Code
-	if code == "" && fd.File != "" {
-		// Load code from file (relative to docRoot)
-		filePath := filepath.Join(ctx.docRoot, fd.File)
-		fileData, err := os.ReadFile(filePath)
-		if err != nil {
-			return fmt.Sprintf("<!-- script: error reading %s: %v -->\n", fd.File, err)
-		}
-		code = string(fileData)
-		// Strip PHP open/close tags since the wrapper already provides context
-		code = strings.TrimSpace(code)
-		if strings.HasPrefix(code, "<?php") {
-			code = strings.TrimPrefix(code, "<?php")
-		}
-		if strings.HasSuffix(code, "?>") {
-			code = strings.TrimSuffix(code, "?>")
-		}
-	}
-	if code == "" {
-		return "<!-- script: no code or file provided -->\n"
-	}
-
-	// Determine interpreter and wrap user code
-	var interpreter, flag, wrappedCode string
-	lang := strings.ToLower(fd.Script)
-	switch lang {
-	case "python", "python3":
-		interpreter = findScriptInterpreter("python")
-		flag = "-c"
-		wrappedCode = pythonScriptWrapper(code)
-	case "javascript", "js", "node":
-		interpreter = findScriptInterpreter("node")
-		flag = "-e"
-		wrappedCode = jsScriptWrapper(code)
-	case "php":
-		interpreter = findScriptInterpreter("php")
-		flag = "-r"
-		wrappedCode = phpScriptWrapper(code)
-	default:
-		return fmt.Sprintf("<!-- unknown script language: %s -->\n", fd.Script)
-	}
-
-	if interpreter == "" {
-		return fmt.Sprintf("<!-- %s interpreter not found -->\n", fd.Script)
-	}
-
-	// Execute with timeout, CWD set to docRoot for file resolution
-	cmd := exec.Command(interpreter, flag, wrappedCode)
-	cmd.Dir = ctx.docRoot
-	scriptFile := ""
-	if fd.File != "" {
-		scriptFile = filepath.Join(ctx.docRoot, fd.File)
-	}
-	cmd.Env = ctx.buildScriptEnv(scriptFile)
-	cmd.Stdin = bytes.NewReader(jsonData)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	done := make(chan error, 1)
-	go func() { done <- cmd.Run() }()
-	select {
-	case err := <-done:
-		if err != nil {
-			return fmt.Sprintf("<!-- script error: %v: %s -->\n", err, stderr.String())
-		}
-	case <-time.After(30 * time.Second):
-		cmd.Process.Kill()
-		return "<!-- script timeout (30s) -->\n"
-	}
-
-	return stdout.String()
-}
-
-// findScriptInterpreter locates a script language interpreter.
-func findScriptInterpreter(lang string) string {
-	switch lang {
-	case "python":
-		if p, err := exec.LookPath("python3"); err == nil {
-			return p
-		}
-		if p, err := exec.LookPath("python"); err == nil {
-			return p
-		}
-	case "node":
-		if p, err := exec.LookPath("node"); err == nil {
-			return p
-		}
-	case "php":
-		if p, err := exec.LookPath("php"); err == nil {
-			return p
-		}
-	}
-	return ""
-}
-
-// pythonScriptWrapper wraps user code in a Python loop over JSON records.
-// The user code has `record` (a dict) available for each iteration.
-func pythonScriptWrapper(userCode string) string {
-	var sb strings.Builder
-	sb.WriteString("import json, sys\n")
-	sb.WriteString("_data = json.loads(sys.stdin.read())\n")
-	sb.WriteString("if not isinstance(_data, list): _data = [_data]\n")
-	sb.WriteString("for record in _data:\n")
-	// Indent user code by 4 spaces to be inside the for loop
-	for _, line := range strings.Split(userCode, "\n") {
-		if strings.TrimSpace(line) == "" {
-			sb.WriteString("\n")
-		} else {
-			sb.WriteString("    " + line + "\n")
-		}
-	}
-	return sb.String()
-}
-
-// jsScriptWrapper wraps user code in a JavaScript loop over JSON records.
-// The user code has `record` (an object) available for each iteration.
-func jsScriptWrapper(userCode string) string {
-	var sb strings.Builder
-	sb.WriteString("const _data = JSON.parse(require('fs').readFileSync(0, 'utf8'));\n")
-	sb.WriteString("const _records = Array.isArray(_data) ? _data : [_data];\n")
-	sb.WriteString("for (const record of _records) {\n")
-	sb.WriteString(userCode)
-	sb.WriteString("\n}\n")
-	return sb.String()
-}
-
-// phpScriptWrapper wraps user code in a PHP loop over JSON records.
-// The user code has $record (an associative array) available for each iteration.
-func phpScriptWrapper(userCode string) string {
-	var sb strings.Builder
-	sb.WriteString("$_data = json_decode(file_get_contents('php://stdin'), true);\n")
-	sb.WriteString("if (!is_array($_data)) $_data = [$_data];\n")
-	sb.WriteString("foreach ($_data as $record) {\n")
-	sb.WriteString(userCode)
-	sb.WriteString("\n}\n")
-	return sb.String()
-}
-
-// renderStyleYAML converts a style definition (map of selectors to properties)
-// into CSS. Each rule is indented to depth, and single-property rules are
-// collapsed onto one line when they fit within maxInlineTagLength.
-func renderStyleYAML(val interface{}, depth int) string {
-	m, ok := val.(*OrderedMap)
-	if !ok {
-		return ""
-	}
-	var sb strings.Builder
-	m.Range(func(selector string, props interface{}) bool {
-		propMap, ok := props.(*OrderedMap)
-		if !ok {
-			return true
-		}
-		// Try collapsing single-property rules onto one line
-		if propMap.Len() == 1 {
-			var prop string
-			var pval interface{}
-			propMap.Range(func(k string, v interface{}) bool {
-				prop = k
-				pval = v
-				return false
-			})
-			line := fmt.Sprintf("%s%s { %s: %v; }", indent(depth), selector, prop, pval)
-			if len(line) <= maxInlineTagLength {
-				sb.WriteString(line)
-				sb.WriteByte('\n')
-				return true
-			}
-		}
-		fmt.Fprintf(&sb, "%s%s {\n", indent(depth), selector)
-		propMap.Range(func(prop string, pval interface{}) bool {
-			fmt.Fprintf(&sb, "%s%s: %v;\n", indent(depth+1), prop, pval)
-			return true
-		})
-		fmt.Fprintf(&sb, "%s}\n", indent(depth))
-		return true
-	})
-	return sb.String()
-}

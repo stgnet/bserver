@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"os/user"
 	"path"
 	"path/filepath"
@@ -31,6 +32,11 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
+// Version is the build version of bserver. Override at build time with:
+//
+//	go build -ldflags "-X main.Version=1.2.3"
+var Version = "dev"
+
 // config holds runtime configuration.
 type config struct {
 	Base            string // cwd
@@ -41,6 +47,7 @@ type config struct {
 	PHPCGI          string // path to php-cgi
 	IndexPriority   []string
 	MaxParentLevels int    // how many dirs above docRoot the YAML search may traverse
+	ScriptsDisabled bool   // when true, YAML script execution is disabled
 }
 
 // virtualHostMux dynamically serves based on cwd directories.
@@ -58,12 +65,12 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	root := filepath.Join(m.cfg.Base, host)
 	if st, err := os.Stat(root); err != nil || !st.IsDir() {
-		hostReason := pathErrReason(root, err, st)
 		// Fall back to "default" directory if the virtual host isn't found
 		defaultRoot := filepath.Join(m.cfg.Base, "default")
 		if st, err := os.Stat(defaultRoot); err != nil || !st.IsDir() {
-			defaultReason := pathErrReason(defaultRoot, err, st)
-			http.Error(w, fmt.Sprintf("host %q: %s; default: %s", host, hostReason, defaultReason), http.StatusNotFound)
+			// Log detailed path info server-side; return generic 404 to client
+			log.Printf("404: host %q not found, default also unavailable (base=%s)", host, m.cfg.Base)
+			http.Error(w, "Not Found", http.StatusNotFound)
 			return
 		}
 		root = defaultRoot
@@ -284,7 +291,7 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 
 func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docRoot, yamlPath string) {
 	_, debug := r.URL.Query()["debug"]
-	output := renderYAMLPage(docRoot, yamlPath, debug, m.cfg.MaxParentLevels, r)
+	output := renderYAMLPage(docRoot, yamlPath, debug, m.cfg.MaxParentLevels, m.cfg.ScriptsDisabled, r)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(output))
@@ -292,7 +299,7 @@ func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docR
 
 func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, docRoot, mdPath string) {
 	_, debug := r.URL.Query()["debug"]
-	output := renderMarkdownPage(docRoot, mdPath, debug, m.cfg.MaxParentLevels, r)
+	output := renderMarkdownPage(docRoot, mdPath, debug, m.cfg.MaxParentLevels, m.cfg.ScriptsDisabled, r)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(output))
@@ -366,13 +373,15 @@ func getOrCreateSelfSignedCert(host, cacheDir string) (*tls.Certificate, error) 
 
 func main() {
 	var (
-		leEmail        = getenv("LE_EMAIL", "")                            // Let's Encrypt contact email
-		httpAddr       = getenv("HTTP_ADDR", ":80")                        // public HTTP
-		httpsAddr      = getenv("HTTPS_ADDR", ":443")                      // public HTTPS
-		cacheDir       = getenv("CERT_CACHE", "./cert-cache")              // cert cache
-		phpcgi         = getenv("PHP_CGI", findPHPCGI())                    // php-cgi binary
-		indexStr       = getenv("INDEX", "index.yaml,index.md,index.php,index.html,index.htm") // comma-separated
-		maxParentLvls  = DefaultMaxParentLevels
+		leEmail         = getenv("LE_EMAIL", "")                            // Let's Encrypt contact email
+		httpAddr        = getenv("HTTP_ADDR", ":80")                        // public HTTP
+		httpsAddr       = getenv("HTTPS_ADDR", ":443")                      // public HTTPS
+		cacheDir        = getenv("CERT_CACHE", "./cert-cache")              // cert cache
+		phpcgi          = getenv("PHP_CGI", findPHPCGI())                    // php-cgi binary
+		indexStr        = getenv("INDEX", "index.yaml,index.md,index.php,index.html,index.htm") // comma-separated
+		maxParentLvls   = DefaultMaxParentLevels
+		showVersion     bool
+		scriptsDisabled bool
 	)
 
 	flag.StringVar(&leEmail, "email", leEmail, "Let's Encrypt contact email")
@@ -382,7 +391,14 @@ func main() {
 	flag.StringVar(&phpcgi, "php", phpcgi, "path to php-cgi executable")
 	flag.StringVar(&indexStr, "index", indexStr, "comma-separated index file priority")
 	flag.IntVar(&maxParentLvls, "parent-levels", maxParentLvls, "max directory levels above docroot for YAML search (-1=unlimited)")
+	flag.BoolVar(&showVersion, "version", false, "print version and exit")
+	flag.BoolVar(&scriptsDisabled, "no-scripts", false, "disable server-side script execution in YAML")
 	flag.Parse()
+
+	if showVersion {
+		fmt.Printf("bserver %s\n", Version)
+		os.Exit(0)
+	}
 
 	// Warn if php-cgi was not found
 	if phpcgi == "" {
@@ -413,6 +429,7 @@ func main() {
 		LEEmail:         leEmail,
 		PHPCGI:          phpcgi,
 		MaxParentLevels: maxParentLvls,
+		ScriptsDisabled: scriptsDisabled,
 		IndexPriority: func() []string {
 			parts := strings.Split(indexStr, ",")
 			var out []string
@@ -428,6 +445,11 @@ func main() {
 
 	mux := &virtualHostMux{cfg: cfg}
 
+	// Wrap mux with logging and security headers
+	var handler http.Handler = mux
+	handler = securityHeadersMiddleware(handler)
+	handler = loggingMiddleware(handler)
+
 	m := &autocert.Manager{
 		Cache:  autocert.DirCache(cfg.CacheDir),
 		Prompt: autocert.AcceptTOS,
@@ -438,7 +460,7 @@ func main() {
 	httpsOK := false
 	httpsSrv := &http.Server{
 		Addr:    cfg.HTTPSAddr,
-		Handler: mux,
+		Handler: handler,
 		TLSConfig: &tls.Config{
 			GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 				if !isPublicDomain(hello.ServerName) {
@@ -476,7 +498,7 @@ func main() {
 			http.Redirect(w, r, u.String(), http.StatusPermanentRedirect)
 		}))
 	} else {
-		httpHandler = mux
+		httpHandler = handler
 	}
 
 	httpSrv := &http.Server{
@@ -507,31 +529,13 @@ func main() {
 	}
 
 	// Drop privileges AFTER opening privileged ports but BEFORE serving
-	nobody, err := user.Lookup("nobody")
-	if err != nil {
-		log.Printf("Warning: cannot find user 'nobody': %v (continuing as current user)", err)
-	} else {
-		uid, err := strconv.Atoi(nobody.Uid)
-		if err != nil {
-			log.Printf("Warning: cannot convert UID: %v (continuing as current user)", err)
-		} else {
-			gid, err := strconv.Atoi(nobody.Gid)
-			if err != nil {
-				log.Printf("Warning: cannot convert GID: %v (continuing as current user)", err)
-			} else {
-				if err := syscall.Setgroups([]int{gid}); err != nil {
-					log.Printf("Warning: cannot set supplementary groups: %v (continuing as current user)", err)
-				} else if err := syscall.Setgid(gid); err != nil {
-					log.Printf("Warning: cannot set GID %d: %v (continuing as current user)", gid, err)
-				} else if err := syscall.Setuid(uid); err != nil {
-					log.Printf("Warning: cannot set UID %d: %v (continuing as current user)", uid, err)
-				} else {
-					log.Printf("Changed to nobody user, UID: %d GID: %d", uid, gid)
-				}
-			}
-		}
+	dropPrivileges()
+
+	if scriptsDisabled {
+		log.Printf("Script execution is disabled (-no-scripts)")
 	}
 
+	// Start servers
 	errCh := make(chan error, 2)
 	go func() {
 		log.Printf("HTTP  -> %s", cfg.HTTPAddr)
@@ -545,14 +549,28 @@ func main() {
 		}()
 	}
 
-	srvErr := <-errCh
-	log.Printf("server error: %v", srvErr)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	_ = httpSrv.Shutdown(ctx)
-	if httpsOK {
-		_ = httpsSrv.Shutdown(ctx)
+	// Wait for a signal (SIGINT, SIGTERM) or a server error
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case sig := <-sigCh:
+		log.Printf("Received signal %v, shutting down gracefully...", sig)
+	case err := <-errCh:
+		log.Printf("Server error: %v, shutting down...", err)
 	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := httpSrv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("HTTP shutdown error: %v", err)
+	}
+	if httpsOK {
+		if err := httpsSrv.Shutdown(shutdownCtx); err != nil {
+			log.Printf("HTTPS shutdown error: %v", err)
+		}
+	}
+	log.Printf("Server stopped")
 }
 
 const acmeALPNProto = "acme-tls/1"
@@ -622,18 +640,67 @@ func isPublicDomain(host string) bool {
 	return true
 }
 
-func pathErrReason(path string, err error, info os.FileInfo) string {
+// dropPrivileges attempts to drop to the 'nobody' user after binding
+// privileged ports. Failures are logged as warnings; the server continues
+// as the current user.
+func dropPrivileges() {
+	nobody, err := user.Lookup("nobody")
 	if err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Sprintf("%s does not exist", path)
-		}
-		if os.IsPermission(err) {
-			return fmt.Sprintf("%s permission denied", path)
-		}
-		return fmt.Sprintf("%s error: %v", path, err)
+		log.Printf("Warning: cannot find user 'nobody': %v (continuing as current user)", err)
+		return
 	}
-	if info != nil && !info.IsDir() {
-		return fmt.Sprintf("%s is not a directory", path)
+	uid, err := strconv.Atoi(nobody.Uid)
+	if err != nil {
+		log.Printf("Warning: cannot convert UID: %v (continuing as current user)", err)
+		return
 	}
-	return fmt.Sprintf("%s unknown error", path)
+	gid, err := strconv.Atoi(nobody.Gid)
+	if err != nil {
+		log.Printf("Warning: cannot convert GID: %v (continuing as current user)", err)
+		return
+	}
+	if err := syscall.Setgroups([]int{gid}); err != nil {
+		log.Printf("Warning: cannot set supplementary groups: %v (continuing as current user)", err)
+		return
+	}
+	if err := syscall.Setgid(gid); err != nil {
+		log.Printf("Warning: cannot set GID %d: %v (continuing as current user)", gid, err)
+		return
+	}
+	if err := syscall.Setuid(uid); err != nil {
+		log.Printf("Warning: cannot set UID %d: %v (continuing as current user)", uid, err)
+		return
+	}
+	log.Printf("Dropped privileges to nobody (UID=%d GID=%d)", uid, gid)
+}
+
+// loggingResponseWriter wraps http.ResponseWriter to capture the status code.
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
+
+// loggingMiddleware logs each request with method, path, status, and duration.
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		lrw := &loggingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		next.ServeHTTP(lrw, r)
+		log.Printf("%s %s %d %s", r.Method, r.URL.Path, lrw.statusCode, time.Since(start).Round(time.Millisecond))
+	})
+}
+
+// securityHeadersMiddleware adds standard security headers to all responses.
+func securityHeadersMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		next.ServeHTTP(w, r)
+	})
 }
