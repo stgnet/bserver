@@ -165,7 +165,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.NotFound(w, r)
+	m.serveErrorPage(w, r, root, http.StatusNotFound, "")
 }
 
 func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host, docroot, scriptFilename string) {
@@ -302,6 +302,20 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 	output := renderMarkdownPage(docRoot, mdPath, debug, m.cfg.MaxParentLevels, m.cfg.ScriptsDisabled, r)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(output))
+}
+
+// serveErrorPage renders an error page through the YAML system.
+// If no error template is found, it falls back to a plain-text response.
+func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, docRoot string, statusCode int, message string) {
+	_, debug := r.URL.Query()["debug"]
+	output := renderErrorPage(docRoot, statusCode, message, debug, m.cfg.MaxParentLevels, m.cfg.ScriptsDisabled, r)
+	if output == "" {
+		http.Error(w, fmt.Sprintf("%d %s", statusCode, http.StatusText(statusCode)), statusCode)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(statusCode)
 	w.Write([]byte(output))
 }
 

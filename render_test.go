@@ -574,6 +574,107 @@ func TestRenderStyleYAML(t *testing.T) {
 	}
 }
 
+// --- Error page tests ---
+
+func TestRenderErrorPageDefault(t *testing.T) {
+	docRoot := defaultDocRoot(t)
+	output := renderErrorPage(docRoot, 404, "", false, 1, false, nil)
+
+	if output == "" {
+		t.Fatal("renderErrorPage returned empty string — error.yaml not found")
+	}
+	if !strings.Contains(output, "<!DOCTYPE html>") {
+		t.Error("error page missing DOCTYPE")
+	}
+	if !strings.Contains(output, "404") {
+		t.Error("error page missing status code 404")
+	}
+	if !strings.Contains(output, "Not Found") {
+		t.Error("error page missing 'Not Found' description")
+	}
+	if !strings.Contains(output, "<h1>") {
+		t.Error("error page missing <h1> tag from errortitle")
+	}
+	if !strings.Contains(output, "<p>") {
+		t.Error("error page missing <p> tag from errormessage")
+	}
+}
+
+func TestRenderErrorPageWithMessage(t *testing.T) {
+	docRoot := defaultDocRoot(t)
+	output := renderErrorPage(docRoot, 500, "database connection failed", false, 1, false, nil)
+
+	if output == "" {
+		t.Fatal("renderErrorPage returned empty string")
+	}
+	if !strings.Contains(output, "500") {
+		t.Error("error page missing status code 500")
+	}
+	if !strings.Contains(output, "Internal Server Error") {
+		t.Error("error page missing status description")
+	}
+	if !strings.Contains(output, "database connection failed") {
+		t.Error("error page missing custom message")
+	}
+}
+
+func TestRenderErrorPageSpecificOverride(t *testing.T) {
+	// error404.yaml uses errortitle (contains h1 tag with "404 — Not Found")
+	// error.yaml uses errormessage (contains p tag)
+	// This lets us distinguish which template was used.
+	dir := setupMinimalSite(t, map[string]string{
+		"error.yaml":    "error:\n  - errortitle\n",
+		"error404.yaml": "error404:\n  - errormessage\n  - errornumber\n",
+	})
+
+	// 404 should use error404.yaml (specific): has errornumber but not errortitle's h1
+	output := renderErrorPage(dir, 404, "", false, 1, false, nil)
+	if !strings.Contains(output, "<p>") {
+		t.Errorf("expected error404.yaml's errormessage <p>, got:\n%s", output)
+	}
+
+	// 500 should fall back to generic error.yaml: has errortitle's h1
+	output500 := renderErrorPage(dir, 500, "", false, 1, false, nil)
+	if !strings.Contains(output500, "<h1>") {
+		t.Errorf("expected error.yaml's errortitle <h1> for 500, got:\n%s", output500)
+	}
+}
+
+func TestRenderErrorPageNoTemplate(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "html.yaml"), []byte("html:\n - body\n"), 0644)
+	os.WriteFile(filepath.Join(dir, "body.yaml"), []byte("body:\n - main\n"), 0644)
+	// No error.yaml
+
+	output := renderErrorPage(dir, 404, "", false, 1, false, nil)
+	if output != "" {
+		t.Errorf("expected empty string when no error template exists, got:\n%s", output)
+	}
+}
+
+func TestRenderErrorPageTitleOverridden(t *testing.T) {
+	docRoot := defaultDocRoot(t)
+	output := renderErrorPage(docRoot, 404, "", false, 1, false, nil)
+
+	// The page title should show the error, not "bserver" from title.yaml
+	if !strings.Contains(output, "<title>") {
+		t.Error("error page missing <title> tag")
+	}
+	if strings.Contains(output, "<title>bserver</title>") {
+		t.Error("error page title should be overridden, not 'bserver'")
+	}
+}
+
+func TestRenderErrorPageHasNavbar(t *testing.T) {
+	docRoot := defaultDocRoot(t)
+	output := renderErrorPage(docRoot, 404, "", false, 1, false, nil)
+
+	// Error page should still have the site chrome (navbar, footer)
+	if !strings.Contains(output, "navbar") {
+		t.Error("error page missing navbar from site structure")
+	}
+}
+
 // --- Benchmarks ---
 
 func BenchmarkRenderYAMLPage(b *testing.B) {

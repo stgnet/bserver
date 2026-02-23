@@ -94,6 +94,36 @@ func TestNotFoundReturns404(t *testing.T) {
 	}
 }
 
+func TestNotFoundRendersErrorPage(t *testing.T) {
+	base, _ := os.Getwd()
+	mux := newTestMux(t, base)
+
+	req := httptest.NewRequest("GET", "/this-page-does-not-exist-at-all", nil)
+	req.Host = "default"
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusNotFound)
+	}
+	body := w.Body.String()
+	// Should be a full HTML page from error.yaml, not plain text
+	if !strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("404 response should be a full HTML page from error.yaml")
+	}
+	if !strings.Contains(body, "404") {
+		t.Error("404 response missing status code")
+	}
+	if !strings.Contains(body, "Not Found") {
+		t.Error("404 response missing status text")
+	}
+	ct := resp.Header.Get("Content-Type")
+	if !strings.Contains(ct, "text/html") {
+		t.Errorf("404 Content-Type = %q, want text/html", ct)
+	}
+}
+
 func TestNotFoundDoesNotLeakPaths(t *testing.T) {
 	tmpDir := t.TempDir()
 	// No default/ directory, so all requests should 404

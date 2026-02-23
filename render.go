@@ -148,6 +148,96 @@ func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, sc
 	return sb.String()
 }
 
+// renderErrorPage renders an error page through the YAML rendering pipeline.
+// It pre-seeds error-related definitions and looks for a specific error
+// template (e.g., error404) first, then a generic "error" template.
+// Returns empty string if no error template is found, allowing the caller
+// to fall back to a plain-text response.
+//
+// Pre-seeded definitions available to error templates:
+//
+//	errornumber      — the HTTP status code as text (e.g., "404")
+//	errordescription — the standard status text (e.g., "Not Found")
+//	errortitle       — an <h1> element with "404 — Not Found"
+//	errormessage     — a <p> element with the detail message
+func renderErrorPage(docRoot string, statusCode int, message string, debug bool, maxParentLevels int, scriptsDisabled bool, r *http.Request) string {
+	requestURI := "/"
+	if r != nil && r.URL != nil {
+		requestURI = r.URL.Path
+	}
+	ctx := &renderContext{
+		docRoot:         docRoot,
+		requestDir:      docRoot,
+		requestURI:      requestURI,
+		httpRequest:     r,
+		maxParentLevels: maxParentLevels,
+		defs:            make(map[string]interface{}),
+		formats:         make(map[string]*formatDef),
+		tags:            make(map[string]bool),
+		tagsLoaded:      make(map[string]bool),
+		filesLoaded:     make(map[string]bool),
+		resolving:       make(map[string]bool),
+		debug:           debug,
+		scriptsDisabled: scriptsDisabled,
+	}
+
+	for t := range knownHTMLTags {
+		ctx.tags[t] = true
+	}
+
+	// Pre-seed error information as named definitions.
+	description := http.StatusText(statusCode)
+	if description == "" {
+		description = "Error"
+	}
+	msgText := description
+	if message != "" {
+		msgText = message
+	}
+
+	// Plain text values (render as bare text when used as list-item name refs)
+	ctx.defs["errornumber"] = rawHTML(fmt.Sprintf("%d", statusCode))
+	ctx.defs["errordescription"] = rawHTML(html.EscapeString(description))
+
+	// Pre-formatted with HTML tags (for the default error template)
+	titleMap := NewOrderedMap()
+	titleMap.Set("h1", fmt.Sprintf("%d — %s", statusCode, description))
+	ctx.defs["errortitle"] = titleMap
+
+	msgMap := NewOrderedMap()
+	msgMap.Set("p", html.EscapeString(msgText))
+	ctx.defs["errormessage"] = msgMap
+
+	// Try specific error page first (e.g., error404), then generic error.
+	// We must load the error template BEFORE resolveAll so the definitions
+	// and formats are available during resolution.
+	specificName := fmt.Sprintf("error%d", statusCode)
+	ctx.findDefinition(specificName)
+	if _, ok := ctx.defs[specificName]; ok {
+		// Wrap in a list so the name is resolved as a reference, not literal text
+		ctx.defs["main"] = []interface{}{specificName}
+	} else {
+		ctx.findDefinition("error")
+		if _, ok := ctx.defs["error"]; ok {
+			ctx.defs["main"] = []interface{}{"error"}
+		} else {
+			return "" // no error template found
+		}
+	}
+
+	// Resolve the full page tree through html.yaml.
+	ctx.resolveAll("html", 0)
+
+	// Re-apply title override (title.yaml may have overwritten it during resolution).
+	ctx.defs["title"] = rawHTML(fmt.Sprintf("%d %s", statusCode, description))
+
+	// Render the page.
+	var sb strings.Builder
+	sb.WriteString("<!DOCTYPE html>\n")
+	ctx.renderName(&sb, "html", 0)
+	return sb.String()
+}
+
 // renderMarkdownPage renders a markdown file within the full YAML page structure.
 // The markdown content becomes the "main" definition, so it gets the same
 // header, navbar, styles, footer, etc. as YAML pages.
