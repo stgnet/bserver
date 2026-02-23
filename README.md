@@ -21,7 +21,11 @@ A YAML-driven web server written in Go that generates complete HTML pages from s
 
 ## Quick Start
 
+Requires [Go](https://go.dev/dl/) 1.24 or later.
+
 ```sh
+git clone https://github.com/stgnet/bserver.git
+cd bserver
 go build -o bserver
 ./bserver
 ```
@@ -71,15 +75,26 @@ This produces a complete HTML page with doctype, head, body, navbar, and footer.
 ## Installing as a Service
 
 ```sh
+git clone https://github.com/stgnet/bserver.git
+cd bserver
 go build -o bserver
 sudo ./install-service.sh
 ```
 
-Installs and starts bserver as a system service using systemd (Linux) or launchd (macOS).
+Installs and starts bserver as a system service using systemd (Linux) or launchd (macOS). The service starts automatically and is enabled on boot.
+
+To update and restart after pulling new changes:
 
 ```sh
-sudo ./install-service.sh restart   # restart after rebuilding
-sudo ./install-service.sh remove    # uninstall the service
+git pull
+go build -o bserver
+sudo ./install-service.sh restart
+```
+
+To uninstall:
+
+```sh
+sudo ./install-service.sh remove
 ```
 
 ## License
