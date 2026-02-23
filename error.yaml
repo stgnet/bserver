@@ -2,28 +2,28 @@
 #
 # The rendering system pre-seeds these definitions for error pages:
 #
-#   errornumber       — bare text of the HTTP status code (e.g., "404")
-#   errordescription  — bare text of the status (e.g., "Not Found")
-#   errortitle        — an <h1> with "404 — Not Found"
-#   errormessage      — a <p> with the detail message
+#   $errornumber      — the HTTP status code (e.g., "404")
+#   $errordescription — the standard status text (e.g., "Not Found")
+#   $errortitle       — "404 — Not Found" (for use in headings)
+#   $errormessage     — detail message (e.g., the path that was not found)
 #
-# To use these, reference them as list items (name references):
+# Use $varname in format definition content to reference these values:
 #
-#   error:
-#     errorwrap:
-#       - errortitle
-#       - errormessage
+#   ^error:
+#     content:
+#       - h1: $errortitle
+#       - p: $errormessage
 #
 # Sites can override this file, or create specific error pages:
 #   error404.yaml  — custom 404 page (takes precedence over error.yaml)
 #   error500.yaml  — custom 500 page
 
-^errorwrap:
+^error:
   tag: div
   params:
     class: text-center py-5
+  content:
+    - h1: $errortitle
+    - p: $errormessage
 
 error:
-  errorwrap:
-    - errortitle
-    - errormessage

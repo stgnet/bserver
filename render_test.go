@@ -593,10 +593,14 @@ func TestRenderErrorPageDefault(t *testing.T) {
 		t.Error("error page missing 'Not Found' description")
 	}
 	if !strings.Contains(output, "<h1>") {
-		t.Error("error page missing <h1> tag from errortitle")
+		t.Error("error page missing <h1> tag from $errortitle")
 	}
 	if !strings.Contains(output, "<p>") {
-		t.Error("error page missing <p> tag from errormessage")
+		t.Error("error page missing <p> tag from $errormessage")
+	}
+	// Default message should include the request path
+	if !strings.Contains(output, "requested page") {
+		t.Error("default error message should describe the requested page")
 	}
 }
 
@@ -619,24 +623,24 @@ func TestRenderErrorPageWithMessage(t *testing.T) {
 }
 
 func TestRenderErrorPageSpecificOverride(t *testing.T) {
-	// error404.yaml uses errortitle (contains h1 tag with "404 — Not Found")
-	// error.yaml uses errormessage (contains p tag)
+	// error404.yaml uses a ^error404 format with a marker class "specific-404"
+	// error.yaml uses a ^error format with a marker class "generic-error"
 	// This lets us distinguish which template was used.
 	dir := setupMinimalSite(t, map[string]string{
-		"error.yaml":    "error:\n  - errortitle\n",
-		"error404.yaml": "error404:\n  - errormessage\n  - errornumber\n",
+		"error.yaml":    "^error:\n  tag: div\n  params:\n    class: generic-error\n  content:\n    - h1: $errortitle\n\nerror:\n",
+		"error404.yaml": "^error404:\n  tag: div\n  params:\n    class: specific-404\n  content:\n    - p: $errormessage\n\nerror404:\n",
 	})
 
-	// 404 should use error404.yaml (specific): has errornumber but not errortitle's h1
+	// 404 should use error404.yaml (specific): has class="specific-404"
 	output := renderErrorPage(dir, 404, "", false, 1, false, nil)
-	if !strings.Contains(output, "<p>") {
-		t.Errorf("expected error404.yaml's errormessage <p>, got:\n%s", output)
+	if !strings.Contains(output, "specific-404") {
+		t.Errorf("expected error404.yaml template for 404, got:\n%s", output)
 	}
 
-	// 500 should fall back to generic error.yaml: has errortitle's h1
+	// 500 should fall back to generic error.yaml: has class="generic-error"
 	output500 := renderErrorPage(dir, 500, "", false, 1, false, nil)
-	if !strings.Contains(output500, "<h1>") {
-		t.Errorf("expected error.yaml's errortitle <h1> for 500, got:\n%s", output500)
+	if !strings.Contains(output500, "generic-error") {
+		t.Errorf("expected error.yaml template for 500, got:\n%s", output500)
 	}
 }
 

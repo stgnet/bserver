@@ -154,12 +154,12 @@ func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, sc
 // Returns empty string if no error template is found, allowing the caller
 // to fall back to a plain-text response.
 //
-// Pre-seeded definitions available to error templates:
+// Pre-seeded definitions available to error templates via $varname:
 //
 //	errornumber      — the HTTP status code as text (e.g., "404")
 //	errordescription — the standard status text (e.g., "Not Found")
-//	errortitle       — an <h1> element with "404 — Not Found"
-//	errormessage     — a <p> element with the detail message
+//	errortitle       — "404 — Not Found" (plain text for use in tags like h1: $errortitle)
+//	errormessage     — detail message (plain text for use in tags like p: $errormessage)
 func renderErrorPage(docRoot string, statusCode int, message string, debug bool, maxParentLevels int, scriptsDisabled bool, r *http.Request) string {
 	requestURI := "/"
 	if r != nil && r.URL != nil {
@@ -186,27 +186,21 @@ func renderErrorPage(docRoot string, statusCode int, message string, debug bool,
 	}
 
 	// Pre-seed error information as named definitions.
+	// These are available in format definitions via $varname substitution,
+	// e.g., h1: $errortitle in a ^error content list.
 	description := http.StatusText(statusCode)
 	if description == "" {
 		description = "Error"
 	}
-	msgText := description
-	if message != "" {
-		msgText = message
+	msgText := message
+	if msgText == "" {
+		msgText = fmt.Sprintf("The requested page %q was not found.", requestURI)
 	}
 
-	// Plain text values (render as bare text when used as list-item name refs)
 	ctx.defs["errornumber"] = rawHTML(fmt.Sprintf("%d", statusCode))
 	ctx.defs["errordescription"] = rawHTML(html.EscapeString(description))
-
-	// Pre-formatted with HTML tags (for the default error template)
-	titleMap := NewOrderedMap()
-	titleMap.Set("h1", fmt.Sprintf("%d — %s", statusCode, description))
-	ctx.defs["errortitle"] = titleMap
-
-	msgMap := NewOrderedMap()
-	msgMap.Set("p", html.EscapeString(msgText))
-	ctx.defs["errormessage"] = msgMap
+	ctx.defs["errortitle"] = fmt.Sprintf("%d — %s", statusCode, description)
+	ctx.defs["errormessage"] = msgText
 
 	// Try specific error page first (e.g., error404), then generic error.
 	// We must load the error template BEFORE resolveAll so the definitions
@@ -842,6 +836,13 @@ func (ctx *renderContext) renderContent(sb *strings.Builder, val interface{}, de
 	case string:
 		if isNameRef(v) {
 			ctx.renderName(sb, v, depth+1)
+		} else if len(v) > 1 && v[0] == '$' && isNameRef(v[1:]) {
+			// $varname substitution: render the named definition's value
+			if def, ok := ctx.defs[v[1:]]; ok {
+				ctx.renderContent(sb, def, depth)
+			} else {
+				fmt.Fprintf(sb, "%s%s\n", indent(depth), html.EscapeString(v))
+			}
 		} else {
 			// Literal text (contains spaces, etc.)
 			fmt.Fprintf(sb, "%s%s\n", indent(depth), html.EscapeString(v))
@@ -957,6 +958,19 @@ func (ctx *renderContext) renderInlineTag(sb *strings.Builder, name, tag string,
 				fmt.Fprintf(sb, "%s<%s%s></%s>\n", indent(depth), tag, attrs, tag)
 			}
 			return
+		}
+	}
+
+	// $varname substitution: if the inline content is "$name", replace with
+	// the named definition's value. This allows format definitions to reference
+	// other definitions, e.g., content: [{h1: $errortitle}] in ^error.
+	if str, ok := content.(string); ok && len(str) > 1 && str[0] == '$' && isNameRef(str[1:]) {
+		if def, ok := ctx.defs[str[1:]]; ok {
+			content = def
+			// Convert rawHTML to string so it renders as inline tag content
+			if raw, ok := content.(rawHTML); ok {
+				content = string(raw)
+			}
 		}
 	}
 
