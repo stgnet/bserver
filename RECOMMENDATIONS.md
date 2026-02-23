@@ -40,40 +40,14 @@ The following recommendations have been implemented:
 - ~~Add Makefile~~
 - ~~Add .editorconfig~~
 - ~~Error pages via YAML (error/error404 definitions with $error, $description, $message)~~
+- ~~In-memory render cache with fsnotify file watching, LRU eviction, RAM detection~~
+- ~~Cache-Control headers for rendered pages and static files~~
 
 ---
 
 ## Remaining
 
-### 1. Caching System with YAML Configuration
-
-Rendered YAML and Markdown pages are regenerated on every request, and static
-files lack `Cache-Control` headers. A caching system with two layers would
-improve performance:
-
-1. **HTTP Cache-Control headers** — Set browser cache TTLs for static assets
-   (CSS, JS, images) and rendered pages.
-2. **In-memory output cache** — Cache rendered HTML keyed by file path + mtime,
-   avoiding re-rendering unchanged pages. This also provides the foundation
-   for caching generated assets like favicons (see below).
-
-Cache settings should be defined in a YAML file (e.g., `_cache.yaml`) at the
-project root, providing sensible defaults that sites can override at any
-directory level. This follows bserver's cascading resolution pattern — a
-site-level `_cache.yaml` overrides the root defaults. Example:
-
-```yaml
-# _cache.yaml — cache configuration defaults
-static:
-  css: 86400       # 1 day (seconds)
-  js: 86400
-  images: 604800   # 1 week
-rendered:
-  ttl: 0           # 0 = no in-memory caching (preserves hot-reload by default)
-  max-entries: 1000
-```
-
-### 2. Auto-Generated Favicon
+### 1. Auto-Generated Favicon
 
 Browsers request `/favicon.ico` on every page load. Without special handling,
 this generates a 404 for every page view, cluttering access logs. Rather than
@@ -84,6 +58,13 @@ zero-boilerplate philosophy: a site gets a reasonable favicon without the user
 having to create one. If a site provides its own `favicon.ico` file, it takes
 precedence. Depends on the caching system (#1) to avoid regenerating the
 icon on every request.
+
+### 2. Document or Remove _tags.yaml Support
+
+The `_tags.yaml` feature (registering custom HTML tag names per directory) is
+undocumented. Either add documentation for it in the default site docs, or
+remove support if it's not needed — custom tags could be handled by format
+definitions instead.
 
 ### 3. Embed YAML Definitions with go:embed
 
@@ -124,8 +105,8 @@ Most open-source projects include a code of conduct. Consider adding
 
 ## Priority Ranking (remaining items)
 
-1. **Caching system with YAML config** (performance, enables #2)
-2. **Auto-generated favicon** (zero-boilerplate philosophy, depends on #1)
+1. **Auto-generated favicon** (zero-boilerplate philosophy)
+2. **Document or remove _tags.yaml** (documentation debt)
 3. **Embed YAML definitions** (architecture)
 4. **Release workflow** (distribution)
 5. **Rate limiting** (production hardening)

@@ -48,6 +48,11 @@ type config struct {
 	IndexPriority   []string
 	MaxParentLevels int    // how many dirs above docRoot the YAML search may traverse
 	ScriptsDisabled bool   // when true, YAML script execution is disabled
+
+	// Render cache
+	Cache          *renderCache
+	CacheMaxAge    time.Duration // max age for cached rendered pages
+	MaxStaticAge   time.Duration // max Cache-Control age for static files
 }
 
 // virtualHostMux dynamically serves based on cwd directories.
@@ -129,6 +134,10 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if st, err := os.Stat(fsPath); err == nil && !st.IsDir() {
 		if ctype := mime.TypeByExtension(filepath.Ext(fsPath)); ctype != "" {
 			w.Header().Set("Content-Type", ctype)
+		}
+		// Set Cache-Control for static files based on file age
+		if cc := staticFileCacheControl(st.ModTime(), m.cfg.MaxStaticAge); cc != "" {
+			w.Header().Set("Cache-Control", cc)
 		}
 		http.ServeFile(w, r, fsPath)
 		return
@@ -291,16 +300,58 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 
 func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docRoot, yamlPath string) {
 	_, debug := r.URL.Query()["debug"]
-	output := renderYAMLPage(docRoot, yamlPath, debug, m.cfg.MaxParentLevels, m.cfg.ScriptsDisabled, r)
+	key := cacheKey(docRoot, yamlPath)
+
+	// Try cache (skip for debug mode)
+	if !debug && m.cfg.Cache != nil {
+		if cached, ok := m.cfg.Cache.Get(key); ok {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(m.cfg.CacheMaxAge.Seconds())))
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(cached))
+			return
+		}
+	}
+
+	output, sourceFiles := renderYAMLPage(docRoot, yamlPath, debug, m.cfg.MaxParentLevels, m.cfg.ScriptsDisabled, r)
+
+	if !debug && m.cfg.Cache != nil {
+		m.cfg.Cache.Put(key, output, sourceFiles)
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if !debug {
+		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(m.cfg.CacheMaxAge.Seconds())))
+	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(output))
 }
 
 func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, docRoot, mdPath string) {
 	_, debug := r.URL.Query()["debug"]
-	output := renderMarkdownPage(docRoot, mdPath, debug, m.cfg.MaxParentLevels, m.cfg.ScriptsDisabled, r)
+	key := cacheKey(docRoot, mdPath)
+
+	// Try cache (skip for debug mode)
+	if !debug && m.cfg.Cache != nil {
+		if cached, ok := m.cfg.Cache.Get(key); ok {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(m.cfg.CacheMaxAge.Seconds())))
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(cached))
+			return
+		}
+	}
+
+	output, sourceFiles := renderMarkdownPage(docRoot, mdPath, debug, m.cfg.MaxParentLevels, m.cfg.ScriptsDisabled, r)
+
+	if !debug && m.cfg.Cache != nil {
+		m.cfg.Cache.Put(key, output, sourceFiles)
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if !debug {
+		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(m.cfg.CacheMaxAge.Seconds())))
+	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(output))
 }
@@ -309,7 +360,7 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 // If no error template is found, it falls back to a plain-text response.
 func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, docRoot string, statusCode int, message string) {
 	_, debug := r.URL.Query()["debug"]
-	output := renderErrorPage(docRoot, statusCode, message, debug, m.cfg.MaxParentLevels, m.cfg.ScriptsDisabled, r)
+	output, _ := renderErrorPage(docRoot, statusCode, message, debug, m.cfg.MaxParentLevels, m.cfg.ScriptsDisabled, r)
 	if output == "" {
 		http.Error(w, fmt.Sprintf("%d %s", statusCode, http.StatusText(statusCode)), statusCode)
 		return
@@ -396,6 +447,9 @@ func main() {
 		maxParentLvls   = DefaultMaxParentLevels
 		showVersion     bool
 		scriptsDisabled bool
+		cacheMaxSizeMB  int
+		cacheMaxAgeSec  int
+		maxStaticAgeSec int
 	)
 
 	flag.StringVar(&leEmail, "email", leEmail, "Let's Encrypt contact email")
@@ -407,6 +461,9 @@ func main() {
 	flag.IntVar(&maxParentLvls, "parent-levels", maxParentLvls, "max directory levels above docroot for YAML search (-1=unlimited)")
 	flag.BoolVar(&showVersion, "version", false, "print version and exit")
 	flag.BoolVar(&scriptsDisabled, "no-scripts", false, "disable server-side script execution in YAML")
+	flag.IntVar(&cacheMaxSizeMB, "cache-size", 1024, "render cache max size in MB (0 to disable)")
+	flag.IntVar(&cacheMaxAgeSec, "cache-age", int(defaultCacheMaxAge.Seconds()), "render cache max entry age in seconds")
+	flag.IntVar(&maxStaticAgeSec, "static-age", 86400, "max Cache-Control age for static files in seconds")
 	flag.Parse()
 
 	if showVersion {
@@ -435,6 +492,21 @@ func main() {
 		base = resolved
 	}
 
+	cacheMaxAge := time.Duration(cacheMaxAgeSec) * time.Second
+	maxStaticAge := time.Duration(maxStaticAgeSec) * time.Second
+
+	// Initialize render cache (unless disabled with -cache-size=0)
+	var cache *renderCache
+	if cacheMaxSizeMB > 0 {
+		configuredMax := int64(cacheMaxSizeMB) * (1 << 20) // MB to bytes
+		effectiveMax := detectAvailableRAM(configuredMax)
+		cache = newRenderCache(effectiveMax, cacheMaxAge)
+		log.Printf("Render cache: %s max, %s max age, fsnotify file watching",
+			formatBytes(effectiveMax), cacheMaxAge)
+	} else {
+		log.Printf("Render cache disabled (-cache-size=0)")
+	}
+
 	cfg := &config{
 		Base:            base,
 		HTTPAddr:        httpAddr,
@@ -444,6 +516,9 @@ func main() {
 		PHPCGI:          phpcgi,
 		MaxParentLevels: maxParentLvls,
 		ScriptsDisabled: scriptsDisabled,
+		Cache:           cache,
+		CacheMaxAge:     cacheMaxAge,
+		MaxStaticAge:    maxStaticAge,
 		IndexPriority: func() []string {
 			parts := strings.Split(indexStr, ",")
 			var out []string
@@ -583,6 +658,9 @@ func main() {
 		if err := httpsSrv.Shutdown(shutdownCtx); err != nil {
 			log.Printf("HTTPS shutdown error: %v", err)
 		}
+	}
+	if cache != nil {
+		cache.Close()
 	}
 	log.Printf("Server stopped")
 }

@@ -89,8 +89,9 @@ type renderContext struct {
 }
 
 // renderYAMLPage is the entry point: given a request for a path within docRoot,
-// produce a complete HTML page.
-func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, scriptsDisabled bool, r *http.Request) string {
+// produce a complete HTML page. Returns the HTML and the list of source files
+// loaded during rendering (for cache dependency tracking).
+func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, scriptsDisabled bool, r *http.Request) (string, []string) {
 	ctx := &renderContext{
 		docRoot:         docRoot,
 		requestDir:      reqPath,
@@ -145,7 +146,7 @@ func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, sc
 	var sb strings.Builder
 	sb.WriteString("<!DOCTYPE html>\n")
 	ctx.renderName(&sb, "html", 0)
-	return sb.String()
+	return sb.String(), ctx.sourceFilesList()
 }
 
 // renderErrorPage renders an error page through the YAML rendering pipeline.
@@ -160,7 +161,7 @@ func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, sc
 //	errordescription — the standard status text (e.g., "Not Found")
 //	errortitle       — "404 — Not Found" (plain text for use in tags like h1: $errortitle)
 //	errormessage     — detail message (plain text for use in tags like p: $errormessage)
-func renderErrorPage(docRoot string, statusCode int, message string, debug bool, maxParentLevels int, scriptsDisabled bool, r *http.Request) string {
+func renderErrorPage(docRoot string, statusCode int, message string, debug bool, maxParentLevels int, scriptsDisabled bool, r *http.Request) (string, []string) {
 	requestURI := "/"
 	if r != nil && r.URL != nil {
 		requestURI = r.URL.Path
@@ -215,7 +216,7 @@ func renderErrorPage(docRoot string, statusCode int, message string, debug bool,
 		if _, ok := ctx.defs["error"]; ok {
 			ctx.defs["main"] = []interface{}{"error"}
 		} else {
-			return "" // no error template found
+			return "", nil // no error template found
 		}
 	}
 
@@ -229,13 +230,13 @@ func renderErrorPage(docRoot string, statusCode int, message string, debug bool,
 	var sb strings.Builder
 	sb.WriteString("<!DOCTYPE html>\n")
 	ctx.renderName(&sb, "html", 0)
-	return sb.String()
+	return sb.String(), ctx.sourceFilesList()
 }
 
 // renderMarkdownPage renders a markdown file within the full YAML page structure.
 // The markdown content becomes the "main" definition, so it gets the same
 // header, navbar, styles, footer, etc. as YAML pages.
-func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int, scriptsDisabled bool, r *http.Request) string {
+func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int, scriptsDisabled bool, r *http.Request) (string, []string) {
 	ctx := &renderContext{
 		docRoot:         docRoot,
 		requestDir:      filepath.Dir(mdPath),
@@ -256,14 +257,16 @@ func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int,
 		ctx.tags[t] = true
 	}
 
-	// Read and convert markdown to HTML
+	// Read and convert markdown to HTML.
+	// Track the .md file itself as a source dependency.
+	ctx.filesLoaded[mdPath] = true
 	mdData, err := os.ReadFile(mdPath)
 	if err != nil {
-		return fmt.Sprintf("<!-- error reading %s: %v -->\n", mdPath, err)
+		return fmt.Sprintf("<!-- error reading %s: %v -->\n", mdPath, err), nil
 	}
 	var buf bytes.Buffer
 	if err := mdRenderer.Convert(mdData, &buf); err != nil {
-		return fmt.Sprintf("<!-- error converting markdown %s: %v -->\n", mdPath, err)
+		return fmt.Sprintf("<!-- error converting markdown %s: %v -->\n", mdPath, err), nil
 	}
 
 	// Inject the rendered markdown as the "main" content.
@@ -277,7 +280,16 @@ func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int,
 	var sb strings.Builder
 	sb.WriteString("<!DOCTYPE html>\n")
 	ctx.renderName(&sb, "html", 0)
-	return sb.String()
+	return sb.String(), ctx.sourceFilesList()
+}
+
+// sourceFilesList returns the list of files loaded during rendering.
+func (ctx *renderContext) sourceFilesList() []string {
+	files := make([]string, 0, len(ctx.filesLoaded))
+	for f := range ctx.filesLoaded {
+		files = append(files, f)
+	}
+	return files
 }
 
 // loadYAMLFile reads a yaml file and processes its keys:
