@@ -1,0 +1,4 @@
+^col:
+  tag: div
+  params:
+    class: col

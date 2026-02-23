@@ -1,0 +1,4 @@
+^ulist:
+  tag: ul
+  contents:
+    li: '$*'

@@ -1,0 +1,50 @@
+navbar:
+  bootstrap5:
+  navbar-cf:
+    navbar-toggler:
+        - navbar-toggler-icon
+        - brand
+    navbar-collapse:
+      navbar-nav:
+        - navlinks
+^navbar:
+  tag: nav
+  params:
+    class: navbar navbar-expand-lg navbar-dark bg-primary rounded-bottom
+^navbar-cf:
+  tag: div
+  params:
+    class: container-fluid
+^navbar-toggler:
+  tag: button
+  params:
+    class: navbar-toggler
+    type: button
+    data-bs-toggle: collapse
+    data-bs-target: "#navbarNav"
+    aria-controls: navbarNav
+    aria-expanded: "false"
+    aria-label: Toggle navigation
+^navbar-toggler-icon:
+  tag: span
+  params:
+    class: navbar-toggler-icon
+^navbar-collapse:
+  tag: div
+  params:
+    class: collapse navbar-collapse
+    id: navbarNav
+^navbar-nav:
+  tag: ul
+  params:
+    class: navbar-nav
+^navlinks:
+  script: python
+  code: |
+    import os, html as _html
+    page = os.environ.get('REQUEST_URI', '/')
+    link = record.get('key', '')
+    text = record.get('value', '')
+    active = ' active bg-primary bg-opacity-10' if link == page else ''
+    print(f'<li class="nav-item"><a class="nav-link{active}" href="{_html.escape(link)}">{text}</a></li>')
+

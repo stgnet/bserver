@@ -1,0 +1,4 @@
+^card:
+  tag: div
+  params:
+    class: card

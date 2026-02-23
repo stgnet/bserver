@@ -1,0 +1,22 @@
+# contents of head section
+head:
+ - title # should be supplied by domain.com/title.yaml
+ - meta
+ - headlink
+ - style
+meta:
+    viewport: width=device-width, initial-scale=1
+    description: This should be replaced
+# this defines how to generate the meta html output
+# each meta definition is "output" using the key/value pairs using the formula
+^meta:
+    tag: meta
+    params:
+        name: '$key'
+        content: '$value'
+# this is named headlink to differentiate from link definitions (see link.yaml)
+# the formula for generating a link tag is to include all of the values as params
+^headlink:
+    tag: link
+    params: '$*'
+

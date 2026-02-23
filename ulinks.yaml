@@ -1,0 +1,5 @@
+^ulinks:
+  tag: ul
+  contents: 
+    li:
+      link: '$*'

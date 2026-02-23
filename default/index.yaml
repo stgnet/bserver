@@ -1,0 +1,35 @@
+main:
+  - h1: "bserver Documentation"
+  - p: "bserver is a YAML-driven web server that generates HTML pages from structured definitions. Write YAML, get HTML."
+  - h2: "Key Features"
+  - ulist:
+      - YAML-driven page generation with automatic HTML rendering
+      - Reusable format definitions with the ^ prefix
+      - Bootstrap 5 integration out of the box
+      - Markdown page support with full site chrome
+      - Server-side scripting in Python, JavaScript, and PHP
+      - Virtual hosting with automatic Let's Encrypt
+      - Cascading name resolution across directories
+  - h2: "How It Works"
+  - p: "Every page starts from html.yaml, which references head and body. The body references header, main, and footer. Your page defines main to set its content. Names are resolved by searching for matching YAML files, starting in the current directory and walking upward."
+  - h2: "Quick Example"
+  - p: "A minimal page needs just an index.yaml file:"
+  - pre: "main:\n  - h1: \"Hello World\"\n  - p: \"Welcome to my site.\""
+  - p: "This produces a complete HTML page with doctype, head, body, navbar, and footer - all from a few lines of YAML."
+  - h2: "Installation"
+  - p: "Build the binary and install it as a system service:"
+  - pre: "go build -o bserver\nsudo ./install-service.sh"
+  - p: "This compiles bserver and installs it as a service using systemd (Linux) or launchd (macOS). The service starts automatically and is enabled on boot."
+  - p: "To restart the service after rebuilding:"
+  - pre: "go build -o bserver\nsudo ./install-service.sh restart"
+  - p: "To uninstall the service:"
+  - pre: "sudo ./install-service.sh remove"
+  - h2: "Documentation"
+  - p: "Use the navigation above to explore, or choose a topic:"
+  - links:
+      /getting-started: Getting Started
+      /definitions: Content Definitions
+      /formats: Format Definitions
+      /components: Built-in Components
+      /scripts: Server-Side Scripts
+      /advanced: Advanced Features

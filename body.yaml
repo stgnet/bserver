@@ -1,0 +1,8 @@
+# most commonly the body just arbitrarily calls main
+# which is most commonly overridden by the domain.com/target loading target.yaml
+body:
+ - header
+ - main
+ - footer
+^header:
+  tag: div

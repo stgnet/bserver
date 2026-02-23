@@ -1,0 +1,4 @@
+^main:
+  tag: div
+  params:
+    class: container mt-4

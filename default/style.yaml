@@ -1,0 +1,8 @@
+style:
+  body:
+    max-width: 1000px
+    margin: 0px auto
+  pre:
+    background-color: lightgray
+    border-radius: 5px
+    padding: 5px

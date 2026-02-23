@@ -1,0 +1,4 @@
+^image:
+  tag: img
+  params:
+    src: '$*'

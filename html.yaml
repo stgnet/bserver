@@ -1,0 +1,10 @@
+# all html generation starts with the html definition
+html:
+# which includes the head and body definitions (which match their tags)
+ - head
+ - body
+# and we need to sneak some extra values into the html tag when it's output
+^html:
+    tag: html
+    params:
+        lang: en

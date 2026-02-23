@@ -1,0 +1,5 @@
+^muted:
+  tag: div
+  params:
+    class: text-muted small
+  content: '$*'

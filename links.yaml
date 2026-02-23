@@ -1,0 +1,5 @@
+^links:
+  tag: a
+  params:
+    href: '$key'
+  contents: '$value'
