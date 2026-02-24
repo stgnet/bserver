@@ -51,19 +51,22 @@ The following recommendations have been implemented:
 
 ## Remaining
 
-### 1. Rate Limiting
+### ~~Rate Limiting~~ (skipped)
 
-No rate limiting or request size limits beyond Go's defaults. For a
-production-facing web server, adding basic rate limiting would improve
-resilience against abuse.
+Considered but not worth the complexity for bserver's use case. The render
+cache already makes repeated requests cheap, Go's HTTP server has built-in
+timeouts, and a single page load triggers many sub-requests (HTML, CSS, JS,
+favicon, fonts) so any safe limit must be generous. In production, bserver
+typically sits behind nginx/caddy/CDN which handle rate limiting better at
+the network layer.
 
-### 2. Per-Virtual-Host Script Permissions
+### 1. Per-Virtual-Host Script Permissions
 
 Currently, `-no-scripts` is a global toggle. In a shared hosting context,
 per-virtual-host script permission controls (e.g., a `_config.yaml` file in
 each site directory) would provide finer-grained security.
 
-### 3. Code of Conduct
+### 2. Code of Conduct
 
 Most open-source projects include a code of conduct. Consider adding
 `CODE_OF_CONDUCT.md`.
@@ -72,6 +75,5 @@ Most open-source projects include a code of conduct. Consider adding
 
 ## Priority Ranking (remaining items)
 
-1. **Rate limiting** (production hardening)
-2. **Per-virtual-host script permissions** (security, future)
-3. **Code of conduct** (community)
+1. **Per-virtual-host script permissions** (security)
+2. **Code of conduct** (community)
