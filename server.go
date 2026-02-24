@@ -82,6 +82,22 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	upath := path.Clean("/" + r.URL.Path)
+
+	// Favicon: generate from _favicon.yaml (or defaults) when no real file exists
+	if upath == "/favicon.ico" {
+		icoPath := filepath.Join(root, "favicon.ico")
+		if st, err := os.Stat(icoPath); err == nil && !st.IsDir() {
+			w.Header().Set("Content-Type", "image/x-icon")
+			if cc := staticFileCacheControl(st.ModTime(), m.cfg.MaxStaticAge); cc != "" {
+				w.Header().Set("Cache-Control", cc)
+			}
+			http.ServeFile(w, r, icoPath)
+			return
+		}
+		m.serveFavicon(w, r, root)
+		return
+	}
+
 	fsPath := filepath.Join(root, filepath.FromSlash(upath))
 
 	info, err := os.Stat(fsPath)
@@ -368,6 +384,19 @@ func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(statusCode)
 	w.Write([]byte(output))
+}
+
+// serveFavicon generates and serves a favicon from _favicon.yaml or defaults.
+func (m *virtualHostMux) serveFavicon(w http.ResponseWriter, r *http.Request, docRoot string) {
+	data, err := getCachedFavicon(docRoot)
+	if err != nil {
+		log.Printf("favicon error for %s: %v", docRoot, err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "image/x-icon")
+	w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(m.cfg.MaxStaticAge.Seconds())))
+	w.Write(data)
 }
 
 // self-signed certificate cache
