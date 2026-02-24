@@ -1,8 +1,8 @@
 # Built-in Components
 
 bserver includes a set of pre-defined YAML files that provide common HTML
-patterns. These live in the bserver root directory and are inherited by all
-sites through the name resolution system.
+patterns. These live in the content root directory (`www/`) and are inherited
+by all sites through the name resolution system.
 
 ## Page Structure
 
@@ -369,7 +369,7 @@ Used in the default footer to display subtle text.
 ## Creating Your Own Components
 
 To create a custom component, add a `.yaml` file in your site directory or the
-bserver root:
+content root:
 
 ```yaml
 # alert.yaml

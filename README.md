@@ -96,6 +96,7 @@ This produces:
 | `-php` | auto-detected | Path to php-cgi |
 | `-index` | `index.yaml,index.md,index.php,index.html,index.htm` | Index file priority |
 | `-parent-levels` | `1` | Max directory levels above docroot for YAML search |
+| `-base` | `www` | Web content root directory |
 | `-no-scripts` | `false` | Disable server-side script execution |
 | `-version` | | Print version and exit |
 
@@ -110,27 +111,35 @@ All flags can also be set via environment variables:
 | `HTTPS_ADDR` | `-https` |
 | `CERT_CACHE` | `-cache` |
 | `PHP_CGI` | `-php` |
+| `BASE_DIR` | `-base` |
 | `INDEX` | `-index` |
 
 CLI flags take precedence over environment variables.
 
 ## Directory Structure
 
+Go source files live in the project root. Web content lives in `www/`, mirroring the `/var/www` convention:
+
 ```
-/var/www/                    # Working directory
-├── default/                 # Fallback for unmapped hosts
-│   ├── index.yaml           # Home page
-│   ├── header.yaml          # Site header
-│   ├── footer.yaml          # Site footer
-│   └── style.yaml           # Site styles
-├── example.com/             # Virtual host
-│   ├── index.yaml
-│   └── about.md
-├── html.yaml                # Base document structure (inherited)
-├── bootstrap5.yaml          # Bootstrap 5 CDN (inherited)
-├── navbar.yaml              # Navigation component (inherited)
-└── cert-cache/              # TLS certificates (auto-created)
+bserver/
+├── *.go                     # Go source code
+├── www/                     # Web content root (-base flag)
+│   ├── default/             # Fallback for unmapped hosts
+│   │   ├── index.yaml       # Home page
+│   │   ├── header.yaml      # Site header
+│   │   ├── footer.yaml      # Site footer
+│   │   └── style.yaml       # Site styles
+│   ├── example.com/         # Virtual host
+│   │   ├── index.yaml
+│   │   └── about.md
+│   ├── html.yaml            # Base document structure (inherited)
+│   ├── bootstrap5.yaml      # Bootstrap 5 CDN (inherited)
+│   ├── navbar.yaml          # Navigation component (inherited)
+│   └── cert-cache/          # TLS certificates (auto-created)
+└── ...
 ```
+
+The shared YAML definitions in `www/` are readable and can be copied into any virtual host directory to customize behavior.
 
 ## Installing as a Service
 

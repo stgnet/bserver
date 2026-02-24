@@ -200,7 +200,7 @@ Search order:
 ```
 
 This cascading search is why shared definitions (like `html.yaml`,
-`navbar.yaml`) in the bserver root directory work for all sites — they're
+`navbar.yaml`) in the content root directory work for all sites — they're
 found when the search walks up from the site directory.
 
 ### Markdown Name Resolution

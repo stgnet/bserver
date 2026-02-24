@@ -23,7 +23,7 @@ func newTestMux(t *testing.T, base string) *virtualHostMux {
 
 func TestHandleYAMLRendersHTML(t *testing.T) {
 	base, _ := os.Getwd()
-	mux := newTestMux(t, base)
+	mux := newTestMux(t, filepath.Join(base, "www"))
 
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Host = "default"
@@ -46,7 +46,7 @@ func TestHandleYAMLRendersHTML(t *testing.T) {
 
 func TestHandleMarkdownRendersHTML(t *testing.T) {
 	base, _ := os.Getwd()
-	mux := newTestMux(t, base)
+	mux := newTestMux(t, filepath.Join(base, "www"))
 
 	req := httptest.NewRequest("GET", "/getting-started", nil)
 	req.Host = "default"
@@ -65,7 +65,7 @@ func TestHandleMarkdownRendersHTML(t *testing.T) {
 
 func TestVirtualHostFallsBackToDefault(t *testing.T) {
 	base, _ := os.Getwd()
-	mux := newTestMux(t, base)
+	mux := newTestMux(t, filepath.Join(base, "www"))
 
 	// Request with a host that doesn't have a directory
 	req := httptest.NewRequest("GET", "/", nil)
@@ -81,7 +81,7 @@ func TestVirtualHostFallsBackToDefault(t *testing.T) {
 
 func TestNotFoundReturns404(t *testing.T) {
 	base, _ := os.Getwd()
-	mux := newTestMux(t, base)
+	mux := newTestMux(t, filepath.Join(base, "www"))
 
 	req := httptest.NewRequest("GET", "/this-page-does-not-exist-at-all", nil)
 	req.Host = "default"
@@ -96,7 +96,7 @@ func TestNotFoundReturns404(t *testing.T) {
 
 func TestNotFoundRendersErrorPage(t *testing.T) {
 	base, _ := os.Getwd()
-	mux := newTestMux(t, base)
+	mux := newTestMux(t, filepath.Join(base, "www"))
 
 	req := httptest.NewRequest("GET", "/this-page-does-not-exist-at-all", nil)
 	req.Host = "default"
@@ -142,7 +142,7 @@ func TestNotFoundDoesNotLeakPaths(t *testing.T) {
 
 func TestDebugQueryParameter(t *testing.T) {
 	base, _ := os.Getwd()
-	mux := newTestMux(t, base)
+	mux := newTestMux(t, filepath.Join(base, "www"))
 
 	req := httptest.NewRequest("GET", "/?debug", nil)
 	req.Host = "default"

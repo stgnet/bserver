@@ -7,14 +7,14 @@ import (
 	"testing"
 )
 
-// defaultDocRoot returns the default/ directory path for integration tests.
+// defaultDocRoot returns the www/default/ directory path for integration tests.
 func defaultDocRoot(t *testing.T) string {
 	t.Helper()
 	base, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
-	return filepath.Join(base, "default")
+	return filepath.Join(base, "www", "default")
 }
 
 // setupMinimalSite creates a minimal site in a temp dir with html.yaml and body.yaml,
@@ -33,7 +33,7 @@ func setupMinimalSite(t *testing.T, files map[string]string) string {
 
 func TestHomepageContent(t *testing.T) {
 	base, _ := os.Getwd()
-	docRoot := filepath.Join(base, "default")
+	docRoot := filepath.Join(base, "www", "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
 	output, _ := renderYAMLPage(docRoot, indexPath, false, 1, false, nil)
 
@@ -68,7 +68,7 @@ func TestHomepageContent(t *testing.T) {
 
 func TestFooterContent(t *testing.T) {
 	base, _ := os.Getwd()
-	docRoot := filepath.Join(base, "default")
+	docRoot := filepath.Join(base, "www", "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
 	output, _ := renderYAMLPage(docRoot, indexPath, false, 1, false, nil)
 
@@ -85,7 +85,7 @@ func TestFooterContent(t *testing.T) {
 
 func TestNavbarPresent(t *testing.T) {
 	base, _ := os.Getwd()
-	docRoot := filepath.Join(base, "default")
+	docRoot := filepath.Join(base, "www", "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
 	output, _ := renderYAMLPage(docRoot, indexPath, false, 1, false, nil)
 
@@ -123,7 +123,7 @@ func TestNavbarPresent(t *testing.T) {
 
 func TestMarkdownGettingStarted(t *testing.T) {
 	base, _ := os.Getwd()
-	docRoot := filepath.Join(base, "default")
+	docRoot := filepath.Join(base, "www", "default")
 	mdPath := filepath.Join(docRoot, "getting-started.md")
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("getting-started.md not found")
@@ -155,7 +155,7 @@ func TestMarkdownGettingStarted(t *testing.T) {
 
 func TestMarkdownDefinitions(t *testing.T) {
 	base, _ := os.Getwd()
-	docRoot := filepath.Join(base, "default")
+	docRoot := filepath.Join(base, "www", "default")
 	mdPath := filepath.Join(docRoot, "definitions.md")
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("definitions.md not found")
@@ -175,7 +175,7 @@ func TestMarkdownDefinitions(t *testing.T) {
 
 func TestMarkdownFormats(t *testing.T) {
 	base, _ := os.Getwd()
-	docRoot := filepath.Join(base, "default")
+	docRoot := filepath.Join(base, "www", "default")
 	mdPath := filepath.Join(docRoot, "formats.md")
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("formats.md not found")
@@ -198,7 +198,7 @@ func TestMarkdownFormats(t *testing.T) {
 
 func TestMarkdownComponents(t *testing.T) {
 	base, _ := os.Getwd()
-	docRoot := filepath.Join(base, "default")
+	docRoot := filepath.Join(base, "www", "default")
 	mdPath := filepath.Join(docRoot, "components.md")
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("components.md not found")
@@ -218,7 +218,7 @@ func TestMarkdownComponents(t *testing.T) {
 
 func TestMarkdownScripts(t *testing.T) {
 	base, _ := os.Getwd()
-	docRoot := filepath.Join(base, "default")
+	docRoot := filepath.Join(base, "www", "default")
 	mdPath := filepath.Join(docRoot, "scripts.md")
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("scripts.md not found")
@@ -244,7 +244,7 @@ func TestMarkdownScripts(t *testing.T) {
 
 func TestMarkdownAdvanced(t *testing.T) {
 	base, _ := os.Getwd()
-	docRoot := filepath.Join(base, "default")
+	docRoot := filepath.Join(base, "www", "default")
 	mdPath := filepath.Join(docRoot, "advanced.md")
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("advanced.md not found")
@@ -267,7 +267,7 @@ func TestMarkdownAdvanced(t *testing.T) {
 
 func TestNoUndefinedNames(t *testing.T) {
 	base, _ := os.Getwd()
-	docRoot := filepath.Join(base, "default")
+	docRoot := filepath.Join(base, "www", "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
 	output, _ := renderYAMLPage(docRoot, indexPath, false, 1, false, nil)
 
@@ -347,7 +347,7 @@ func TestContentWrapPlural(t *testing.T) {
 	// Test that "contents:" (plural) in a format definition wraps each
 	// list item individually.
 	base, _ := os.Getwd()
-	docRoot := filepath.Join(base, "default")
+	docRoot := filepath.Join(base, "www", "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
 	output, _ := renderYAMLPage(docRoot, indexPath, false, 1, false, nil)
 
@@ -683,7 +683,7 @@ func TestRenderErrorPageHasNavbar(t *testing.T) {
 
 func BenchmarkRenderYAMLPage(b *testing.B) {
 	base, _ := os.Getwd()
-	docRoot := filepath.Join(base, "default")
+	docRoot := filepath.Join(base, "www", "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
 
 	b.ResetTimer()
@@ -694,7 +694,7 @@ func BenchmarkRenderYAMLPage(b *testing.B) {
 
 func BenchmarkRenderMarkdownPage(b *testing.B) {
 	base, _ := os.Getwd()
-	docRoot := filepath.Join(base, "default")
+	docRoot := filepath.Join(base, "www", "default")
 	mdPath := filepath.Join(docRoot, "getting-started.md")
 
 	b.ResetTimer()

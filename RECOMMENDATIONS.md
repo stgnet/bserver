@@ -44,42 +44,31 @@ The following recommendations have been implemented:
 - ~~Cache-Control headers for rendered pages and static files~~
 - ~~Auto-generated favicon from domain/title with `_favicon.yaml` override~~
 - ~~Remove unused `_tags.yaml` support (format definitions cover this use case)~~
+- ~~Separate code from content (move YAML definitions and virtual hosts into `www/` subdirectory)~~
 
 ---
 
 ## Remaining
 
-### 1. Embed YAML Definitions with go:embed
-
-YAML definition files (html.yaml, head.yaml, body.yaml, etc.) live in the
-project root alongside Go source files. This means the project root is both
-the Go module root and a runtime content directory. Moving the built-in YAML
-definitions into a dedicated directory and embedding them with `go:embed` would:
-- Clean up the root directory
-- Make the binary self-contained (no need to run from the source directory)
-- Separate code from content
-
-This is the most significant remaining architectural change.
-
-### 2. Release Workflow
+### 1. Release Workflow
 
 The CI only builds and tests. Adding a release workflow that builds binaries
 for linux/amd64, linux/arm64, and darwin/amd64/arm64 when a Git tag is pushed
 would make installation much easier for users who don't have a Go toolchain.
 
-### 3. Rate Limiting
+### 2. Rate Limiting
 
 No rate limiting or request size limits beyond Go's defaults. For a
 production-facing web server, adding basic rate limiting would improve
 resilience against abuse.
 
-### 4. Per-Virtual-Host Script Permissions
+### 3. Per-Virtual-Host Script Permissions
 
 Currently, `-no-scripts` is a global toggle. In a shared hosting context,
 per-virtual-host script permission controls (e.g., a `_config.yaml` file in
 each site directory) would provide finer-grained security.
 
-### 5. Code of Conduct
+### 4. Code of Conduct
 
 Most open-source projects include a code of conduct. Consider adding
 `CODE_OF_CONDUCT.md`.
@@ -88,8 +77,7 @@ Most open-source projects include a code of conduct. Consider adding
 
 ## Priority Ranking (remaining items)
 
-1. **Embed YAML definitions** (architecture)
-2. **Release workflow** (distribution)
-3. **Rate limiting** (production hardening)
-4. **Per-virtual-host script permissions** (security, future)
-5. **Code of conduct** (community)
+1. **Release workflow** (distribution)
+2. **Rate limiting** (production hardening)
+3. **Per-virtual-host script permissions** (security, future)
+4. **Code of conduct** (community)

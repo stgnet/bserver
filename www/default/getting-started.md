@@ -17,13 +17,15 @@ go build
 ```
 
 By default, bserver listens on port 80 (HTTP) and serves content from the
-current working directory. Subdirectories matching domain names are used as
-virtual host roots.
+`www/` subdirectory of the current working directory. Subdirectories matching
+domain names are used as virtual host roots. Use the `-base` flag or
+`BASE_DIR` environment variable to override the content directory.
 
 ## How It Works
 
-bserver serves virtual hosts from subdirectories. For example, if you run
-bserver in `/var/www/`, it will serve `example.com` from `/var/www/example.com/`.
+bserver serves virtual hosts from subdirectories under its content root. For
+example, if the content root is `/var/www/`, it will serve `example.com` from
+`/var/www/example.com/`.
 
 The `default/` directory is used as a fallback for any host that doesn't have
 its own directory. This documentation site itself is the default site.
@@ -42,8 +44,9 @@ mysite.com/
 └── style.yaml          # Custom CSS styles (optional)
 ```
 
-The root bserver directory contains shared definitions (html.yaml, head.yaml,
-body.yaml, navbar.yaml, etc.) that are inherited by all sites.
+The content root directory (`www/`) contains shared definitions (html.yaml,
+head.yaml, body.yaml, navbar.yaml, etc.) that are inherited by all sites.
+You can copy any of these into your site directory to customize them.
 
 ## Your First Page
 
@@ -91,7 +94,7 @@ When bserver encounters a name reference like `footer`, it searches for
 3. Up to the document root and one level above
 
 This cascading search allows shared definitions (like the navbar) to live in
-the bserver root directory while site-specific content lives in the site
+the content root directory while site-specific content lives in the site
 directory. Your site's `navlinks.yaml` overrides the default navigation, but
 the navbar structure itself is inherited.
 
@@ -153,6 +156,7 @@ bserver can be configured with environment variables:
 | `HTTPS_ADDR` | `:443` | HTTPS listen address |
 | `CERT_CACHE` | `./cert-cache` | Certificate cache directory |
 | `PHP_CGI` | (auto-detected) | Path to php-cgi executable |
+| `BASE_DIR` | (empty) | Web content root directory |
 | `INDEX` | `index.yaml,index.md,...` | Index file search order |
 
 ## Command-Line Flags
@@ -161,6 +165,7 @@ All environment variables above have corresponding flags. Additional flags:
 
 | Flag | Default | Description |
 |------|---------|-------------|
+| `-base` | `www` | Web content root directory |
 | `-version` | | Print version and exit |
 | `-no-scripts` | `false` | Disable server-side script execution in YAML |
 | `-cache-size` | `1024` | Render cache max size in MB (0 to disable) |

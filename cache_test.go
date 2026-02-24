@@ -264,7 +264,7 @@ func TestCacheIntegrationWithRender(t *testing.T) {
 	rc := newRenderCache(1<<20, 5*time.Minute)
 	defer rc.Close()
 
-	docRoot := filepath.Join(func() string { b, _ := os.Getwd(); return b }(), "default")
+	docRoot := filepath.Join(func() string { b, _ := os.Getwd(); return b }(), "www", "default")
 	yamlPath := filepath.Join(docRoot, "index.yaml")
 	key := cacheKey(docRoot, yamlPath)
 
@@ -307,7 +307,7 @@ func TestCacheControlHeaderOnRenderedPage(t *testing.T) {
 
 	mux := &virtualHostMux{
 		cfg: &config{
-			Base:            base,
+			Base:            filepath.Join(base, "www"),
 			IndexPriority:   []string{"index.yaml", "index.md"},
 			MaxParentLevels: 1,
 			Cache:           cache,

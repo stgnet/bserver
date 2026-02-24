@@ -39,7 +39,7 @@ var Version = "dev"
 
 // config holds runtime configuration.
 type config struct {
-	Base            string // cwd
+	Base            string // web content root (www directory)
 	HTTPAddr        string
 	HTTPSAddr       string
 	CacheDir        string
@@ -473,6 +473,7 @@ func main() {
 		cacheDir        = getenv("CERT_CACHE", "./cert-cache")              // cert cache
 		phpcgi          = getenv("PHP_CGI", findPHPCGI())                    // php-cgi binary
 		indexStr        = getenv("INDEX", "index.yaml,index.md,index.php,index.html,index.htm") // comma-separated
+		baseDir         = getenv("BASE_DIR", "")                             // web content root
 		maxParentLvls   = DefaultMaxParentLevels
 		showVersion     bool
 		scriptsDisabled bool
@@ -481,6 +482,7 @@ func main() {
 		maxStaticAgeSec int
 	)
 
+	flag.StringVar(&baseDir, "base", baseDir, "web content root directory (default: www subdirectory of cwd)")
 	flag.StringVar(&leEmail, "email", leEmail, "Let's Encrypt contact email")
 	flag.StringVar(&httpAddr, "http", httpAddr, "HTTP listen addr")
 	flag.StringVar(&httpsAddr, "https", httpsAddr, "HTTPS listen addr")
@@ -509,10 +511,23 @@ func main() {
 		log.Printf("Using php-cgi: %s", phpcgi)
 	}
 
-	base, baseErr := os.Getwd()
-	if baseErr != nil {
-		log.Printf("Getwd error: %v", baseErr)
-		os.Exit(1)
+	var base string
+	if baseDir != "" {
+		// Explicit base directory from -base flag or BASE_DIR env.
+		abs, err := filepath.Abs(baseDir)
+		if err != nil {
+			log.Printf("Invalid base directory %q: %v", baseDir, err)
+			os.Exit(1)
+		}
+		base = abs
+	} else {
+		// Default: www/ subdirectory of the current working directory.
+		cwd, err := os.Getwd()
+		if err != nil {
+			log.Printf("Getwd error: %v", err)
+			os.Exit(1)
+		}
+		base = filepath.Join(cwd, "www")
 	}
 	// Resolve symlinks so paths match what child processes see.
 	// On macOS, ~/src may be a symlink to ~/Documents/src; without

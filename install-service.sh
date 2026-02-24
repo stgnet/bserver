@@ -95,7 +95,7 @@ SyslogIdentifier=$SERVICE_NAME
 # Hardening
 NoNewPrivileges=yes
 ProtectSystem=strict
-ReadWritePaths=$SCRIPT_DIR/cert-cache $SCRIPT_DIR
+ReadWritePaths=$SCRIPT_DIR/www/cert-cache $SCRIPT_DIR/www
 ProtectHome=read-only
 PrivateTmp=yes
 

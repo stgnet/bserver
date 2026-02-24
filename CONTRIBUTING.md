@@ -13,7 +13,7 @@ bserver is a YAML-driven web server written in Go. The codebase is small and foc
 | `style.go` | CSS rendering from YAML style definitions |
 | `orderedmap.go` | Insertion-order-preserving map for YAML parsing |
 
-YAML component templates (`html.yaml`, `navbar.yaml`, etc.) live in the project root. The `default/` directory is the built-in documentation site that also serves as a working example.
+YAML component templates (`html.yaml`, `navbar.yaml`, etc.) live in the `www/` directory. The `www/default/` directory is the built-in documentation site that also serves as a working example. This separation keeps Go source in the project root and web content in `www/`, mirroring the `/var/www` convention.
 
 ## Building
 
