@@ -45,30 +45,25 @@ The following recommendations have been implemented:
 - ~~Auto-generated favicon from domain/title with `_favicon.yaml` override~~
 - ~~Remove unused `_tags.yaml` support (format definitions cover this use case)~~
 - ~~Separate code from content (move YAML definitions and virtual hosts into `www/` subdirectory)~~
+- ~~Release workflow (cross-compile binaries on Git tag push via GitHub Actions)~~
 
 ---
 
 ## Remaining
 
-### 1. Release Workflow
-
-The CI only builds and tests. Adding a release workflow that builds binaries
-for linux/amd64, linux/arm64, and darwin/amd64/arm64 when a Git tag is pushed
-would make installation much easier for users who don't have a Go toolchain.
-
-### 2. Rate Limiting
+### 1. Rate Limiting
 
 No rate limiting or request size limits beyond Go's defaults. For a
 production-facing web server, adding basic rate limiting would improve
 resilience against abuse.
 
-### 3. Per-Virtual-Host Script Permissions
+### 2. Per-Virtual-Host Script Permissions
 
 Currently, `-no-scripts` is a global toggle. In a shared hosting context,
 per-virtual-host script permission controls (e.g., a `_config.yaml` file in
 each site directory) would provide finer-grained security.
 
-### 4. Code of Conduct
+### 3. Code of Conduct
 
 Most open-source projects include a code of conduct. Consider adding
 `CODE_OF_CONDUCT.md`.
@@ -77,7 +72,6 @@ Most open-source projects include a code of conduct. Consider adding
 
 ## Priority Ranking (remaining items)
 
-1. **Release workflow** (distribution)
-2. **Rate limiting** (production hardening)
-3. **Per-virtual-host script permissions** (security, future)
-4. **Code of conduct** (community)
+1. **Rate limiting** (production hardening)
+2. **Per-virtual-host script permissions** (security, future)
+3. **Code of conduct** (community)
