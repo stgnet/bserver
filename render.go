@@ -44,7 +44,7 @@ var voidElements = map[string]bool{
 	"col": true, "embed": true, "track": true, "wbr": true,
 }
 
-// knownHTMLTags is the default set of HTML tags recognized without needing _tags.yaml.
+// knownHTMLTags is the set of HTML tags recognized by the renderer.
 var knownHTMLTags = map[string]bool{
 	"html": true, "head": true, "body": true, "title": true,
 	"meta": true, "link": true, "style": true, "script": true,
@@ -80,8 +80,6 @@ type renderContext struct {
 	maxParentLevels int                    // how many levels above docRoot to search (-1 = unlimited)
 	defs            map[string]interface{} // content definitions (name -> yaml value)
 	formats         map[string]*formatDef  // format definitions (^name -> formatDef)
-	tags            map[string]bool        // tags loaded from _tags.yaml files
-	tagsLoaded      map[string]bool        // directories already scanned for _tags.yaml
 	filesLoaded     map[string]bool        // yaml files already loaded (prevent re-loading)
 	resolving       map[string]bool        // cycle detection
 	debug           bool                   // emit HTML comments tracing resolution
@@ -100,16 +98,10 @@ func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, sc
 		maxParentLevels: maxParentLevels,
 		defs:            make(map[string]interface{}),
 		formats:         make(map[string]*formatDef),
-		tags:            make(map[string]bool),
-		tagsLoaded:      make(map[string]bool),
 		filesLoaded:     make(map[string]bool),
 		resolving:       make(map[string]bool),
 		debug:           debug,
 		scriptsDisabled: scriptsDisabled,
-	}
-
-	for t := range knownHTMLTags {
-		ctx.tags[t] = true
 	}
 
 	// Determine the request directory and optionally pre-load a specific yaml file.
@@ -174,16 +166,10 @@ func renderErrorPage(docRoot string, statusCode int, message string, debug bool,
 		maxParentLevels: maxParentLevels,
 		defs:            make(map[string]interface{}),
 		formats:         make(map[string]*formatDef),
-		tags:            make(map[string]bool),
-		tagsLoaded:      make(map[string]bool),
 		filesLoaded:     make(map[string]bool),
 		resolving:       make(map[string]bool),
 		debug:           debug,
 		scriptsDisabled: scriptsDisabled,
-	}
-
-	for t := range knownHTMLTags {
-		ctx.tags[t] = true
 	}
 
 	// Pre-seed error information as named definitions.
@@ -245,16 +231,10 @@ func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int,
 		maxParentLevels: maxParentLevels,
 		defs:            make(map[string]interface{}),
 		formats:         make(map[string]*formatDef),
-		tags:            make(map[string]bool),
-		tagsLoaded:      make(map[string]bool),
 		filesLoaded:     make(map[string]bool),
 		resolving:       make(map[string]bool),
 		debug:           debug,
 		scriptsDisabled: scriptsDisabled,
-	}
-
-	for t := range knownHTMLTags {
-		ctx.tags[t] = true
 	}
 
 	// Read and convert markdown to HTML.
@@ -403,35 +383,6 @@ func (ctx *renderContext) mergeDef(name string, value interface{}) {
 	ctx.defs[name] = value
 }
 
-// loadTagsForDir loads _tags.yaml from the given directory if not already loaded.
-func (ctx *renderContext) loadTagsForDir(dir string) {
-	if ctx.tagsLoaded[dir] {
-		return
-	}
-	ctx.tagsLoaded[dir] = true
-	tagsFile := filepath.Join(dir, "_tags.yaml")
-	data, err := os.ReadFile(tagsFile)
-	if err != nil {
-		return
-	}
-	parsed, parseErr := parseYAMLOrdered(data)
-	if parseErr != nil {
-		return
-	}
-	switch v := parsed.(type) {
-	case []interface{}:
-		for _, item := range v {
-			if t, ok := item.(string); ok {
-				ctx.tags[strings.ToLower(t)] = true
-			}
-		}
-	case *OrderedMap:
-		for _, t := range v.Keys() {
-			ctx.tags[strings.ToLower(t)] = true
-		}
-	}
-}
-
 // findDefinition looks up a name: first in already-loaded defs, then searches
 // for name.yaml starting from requestDir and walking up through parent
 // directories. The search goes up to maxParentLevels above docRoot
@@ -457,8 +408,6 @@ func (ctx *renderContext) findDefinition(name string) (interface{}, string, bool
 
 	dir := ctx.requestDir
 	for {
-		ctx.loadTagsForDir(dir)
-
 		candidate := filepath.Join(dir, name+".yaml")
 		if _, loaded := ctx.filesLoaded[candidate]; !loaded {
 			if _, err := os.Stat(candidate); err == nil {
@@ -636,7 +585,7 @@ func (ctx *renderContext) resolveInlineContent(val interface{}, depth int) {
 
 // isTag returns true if name is a recognized HTML tag.
 func (ctx *renderContext) isTag(name string) bool {
-	return ctx.tags[strings.ToLower(name)]
+	return knownHTMLTags[strings.ToLower(name)]
 }
 
 // tagForName determines the HTML tag to use for a name.
