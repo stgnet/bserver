@@ -1,0 +1,42 @@
+# _favicon.yaml — Auto-generated favicon configuration
+#
+# Place this file in a virtual host's document root to customize the
+# auto-generated favicon.ico. If this file is absent (or all values are
+# commented out), bserver generates a default text favicon using the
+# first 3 characters of the domain name, white on black.
+#
+# There are two modes: text mode and image mode. Set "image" to switch
+# to image mode; otherwise text mode is used.
+
+# --- Text mode (default) ---
+
+# Text to render in the favicon. 1-3 characters works best.
+# Default: first 3 letters of the domain name, uppercased
+#   e.g., "example.com" -> "EXA", "default" -> "DEF"
+#text: ABC
+
+# Foreground (text) color.
+# Accepts named colors or hex (#RGB, #RRGGBB).
+# Named colors: black, white, red, green, blue, yellow, cyan, magenta,
+#   orange, purple, gray, grey, brown, pink, navy, teal, lime, maroon,
+#   olive, silver
+# Default: white
+#color: white
+
+# Background color. Same color format as above.
+# Default: black
+#background: black
+
+# --- Image mode ---
+
+# Path to a source image (PNG, JPEG, GIF). Relative paths are resolved
+# from the document root. Setting this switches from text mode to image
+# mode — the "text", "color", and "background" fields are ignored.
+#image: logo.png
+
+# How the source image is fitted into the square favicon:
+#   contain  — scale to fit, preserving aspect ratio; gaps are transparent
+#   crop     — scale to fill, center-cropping any overflow
+#   stretch  — distort to fill the square exactly
+# Default: contain
+#fit: contain
