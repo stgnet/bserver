@@ -162,8 +162,8 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 1. A subdirectory with the same name (directory takes precedence)
 	// 2. A sibling .yaml or .md file
 	if filepath.Ext(fsPath) == "" {
-		// Check for a subdirectory first
-		if di, derr := os.Stat(fsPath); derr == nil && di.IsDir() {
+		// Check for a subdirectory first (reuse stat result from above)
+		if info != nil && info.IsDir() {
 			// Directory exists but no index/name file was found above;
 			// this was already handled in the directory block, so fall through
 		} else {
@@ -248,7 +248,10 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 		env = append(env, "PATH="+p)
 	}
 
-	cmd := exec.Command(m.cfg.PHPCGI)
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, m.cfg.PHPCGI)
 	cmd.Dir = docroot
 	cmd.Env = env
 	cmd.Stdin = r.Body
@@ -258,6 +261,11 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 	cmd.Stderr = os.Stderr // PHP warnings/errors go to server log
 
 	if err := cmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			log.Printf("php-cgi timeout after 30s for %s", scriptFilename)
+			http.Error(w, "Gateway Timeout", http.StatusGatewayTimeout)
+			return
+		}
 		log.Printf("php-cgi error for %s (cwd=%s): %v", scriptFilename, docroot, err)
 		if stdoutBuf.Len() == 0 {
 			http.Error(w, "CGI Error", http.StatusInternalServerError)
@@ -819,7 +827,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		start := time.Now()
 		lrw := &loggingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 		next.ServeHTTP(lrw, r)
-		log.Printf("%s %s %d %s", r.Method, r.URL.Path, lrw.statusCode, time.Since(start).Round(time.Millisecond))
+		log.Printf("%s %s %s %d %s", r.Host, r.Method, r.URL.Path, lrw.statusCode, time.Since(start).Round(time.Millisecond))
 	})
 }
 
