@@ -134,11 +134,3 @@ Override the version at build time with:
 go build -ldflags "-X main.Version=1.0.0"
 ```
 
-## Script Safety
-
-Use `-no-scripts` to disable all server-side script execution in YAML files.
-When enabled, `!script` tags are ignored and produce no output. PHP execution
-is unaffected by this flag.
-
-This is useful in shared hosting environments or when running untrusted YAML
-content where server-side code execution is not desired.

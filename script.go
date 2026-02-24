@@ -101,13 +101,7 @@ func (ctx *renderContext) buildScriptEnv(scriptFile string) []string {
 //   - Iterates with `record` variable set to each record
 //   - Collects stdout as the rendered HTML
 //
-// If scriptsDisabled is true on the renderContext, scripts are not executed and
-// a placeholder comment is returned instead.
 func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
-	if ctx.scriptsDisabled {
-		return "<!-- script execution disabled -->\n"
-	}
-
 	// Convert OrderedMap to a list of {key, value} records for script iteration,
 	// matching the $key/$value convention used by renderIterated.
 	scriptData := data

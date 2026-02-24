@@ -273,7 +273,7 @@ func TestCacheIntegrationWithRender(t *testing.T) {
 		t.Fatal("expected cache miss on first access")
 	}
 
-	output, sourceFiles := renderYAMLPage(docRoot, yamlPath, false, 1, false, nil)
+	output, sourceFiles := renderYAMLPage(docRoot, yamlPath, false, 1, nil)
 	rc.Put(key, output, sourceFiles)
 
 	// Second access: cache hit with same content

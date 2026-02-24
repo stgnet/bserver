@@ -28,7 +28,7 @@ The following recommendations have been implemented:
 - ~~Define `maxRenderDepth` constant (replace magic number 50)~~
 - ~~Fix `os.Environ()` leak to scripts~~
 - ~~Add `-version` flag~~
-- ~~Add `-no-scripts` flag to disable script execution~~
+- ~~Add `-no-scripts` flag to disable script execution~~ (removed — unnecessary for single-operator model)
 - ~~Add security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy)~~
 - ~~Add server.go tests (HTTP handlers, middleware, virtual hosting)~~
 - ~~Add orderedmap_test.go with dedicated unit tests~~
@@ -60,13 +60,15 @@ favicon, fonts) so any safe limit must be generous. In production, bserver
 typically sits behind nginx/caddy/CDN which handle rate limiting better at
 the network layer.
 
-### 1. Per-Virtual-Host Script Permissions
+### ~~Per-Virtual-Host Script Permissions~~ (skipped)
 
-Currently, `-no-scripts` is a global toggle. In a shared hosting context,
-per-virtual-host script permission controls (e.g., a `_config.yaml` file in
-each site directory) would provide finer-grained security.
+Not applicable — bserver assumes a single trusted operator. The `-no-scripts`
+flag was removed entirely since if you control the YAML content, you control
+what scripts run; there's no security boundary to enforce. The config model
+also means any vhost can override its own settings, so per-vhost restrictions
+would be trivially bypassed.
 
-### 2. Code of Conduct
+### 1. Code of Conduct
 
 Most open-source projects include a code of conduct. Consider adding
 `CODE_OF_CONDUCT.md`.
@@ -75,5 +77,4 @@ Most open-source projects include a code of conduct. Consider adding
 
 ## Priority Ranking (remaining items)
 
-1. **Per-virtual-host script permissions** (security)
-2. **Code of conduct** (community)
+1. **Code of conduct** (community)

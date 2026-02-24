@@ -97,7 +97,6 @@ This produces:
 | `-index` | `index.yaml,index.md,index.php,index.html,index.htm` | Index file priority |
 | `-parent-levels` | `1` | Max directory levels above docroot for YAML search |
 | `-base` | `www` | Web content root directory |
-| `-no-scripts` | `false` | Disable server-side script execution |
 | `-version` | | Print version and exit |
 
 ### Environment Variables

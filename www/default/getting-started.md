@@ -167,7 +167,6 @@ All environment variables above have corresponding flags. Additional flags:
 |------|---------|-------------|
 | `-base` | `www` | Web content root directory |
 | `-version` | | Print version and exit |
-| `-no-scripts` | `false` | Disable server-side script execution in YAML |
 | `-cache-size` | `1024` | Render cache max size in MB (0 to disable) |
 | `-cache-age` | `900` | Render cache max entry age in seconds |
 | `-static-age` | `86400` | Max Cache-Control age for static files in seconds |

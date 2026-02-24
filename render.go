@@ -83,13 +83,12 @@ type renderContext struct {
 	filesLoaded     map[string]bool        // yaml files already loaded (prevent re-loading)
 	resolving       map[string]bool        // cycle detection
 	debug           bool                   // emit HTML comments tracing resolution
-	scriptsDisabled bool                   // when true, scripts are not executed
 }
 
 // renderYAMLPage is the entry point: given a request for a path within docRoot,
 // produce a complete HTML page. Returns the HTML and the list of source files
 // loaded during rendering (for cache dependency tracking).
-func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, scriptsDisabled bool, r *http.Request) (string, []string) {
+func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, r *http.Request) (string, []string) {
 	ctx := &renderContext{
 		docRoot:         docRoot,
 		requestDir:      reqPath,
@@ -101,7 +100,6 @@ func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, sc
 		filesLoaded:     make(map[string]bool),
 		resolving:       make(map[string]bool),
 		debug:           debug,
-		scriptsDisabled: scriptsDisabled,
 	}
 
 	// Determine the request directory and optionally pre-load a specific yaml file.
@@ -153,7 +151,7 @@ func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, sc
 //	errordescription — the standard status text (e.g., "Not Found")
 //	errortitle       — "404 — Not Found" (plain text for use in tags like h1: $errortitle)
 //	errormessage     — detail message (plain text for use in tags like p: $errormessage)
-func renderErrorPage(docRoot string, statusCode int, message string, debug bool, maxParentLevels int, scriptsDisabled bool, r *http.Request) (string, []string) {
+func renderErrorPage(docRoot string, statusCode int, message string, debug bool, maxParentLevels int, r *http.Request) (string, []string) {
 	requestURI := "/"
 	if r != nil && r.URL != nil {
 		requestURI = r.URL.Path
@@ -169,7 +167,6 @@ func renderErrorPage(docRoot string, statusCode int, message string, debug bool,
 		filesLoaded:     make(map[string]bool),
 		resolving:       make(map[string]bool),
 		debug:           debug,
-		scriptsDisabled: scriptsDisabled,
 	}
 
 	// Pre-seed error information as named definitions.
@@ -222,7 +219,7 @@ func renderErrorPage(docRoot string, statusCode int, message string, debug bool,
 // renderMarkdownPage renders a markdown file within the full YAML page structure.
 // The markdown content becomes the "main" definition, so it gets the same
 // header, navbar, styles, footer, etc. as YAML pages.
-func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int, scriptsDisabled bool, r *http.Request) (string, []string) {
+func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int, r *http.Request) (string, []string) {
 	ctx := &renderContext{
 		docRoot:         docRoot,
 		requestDir:      filepath.Dir(mdPath),
@@ -234,7 +231,6 @@ func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int,
 		filesLoaded:     make(map[string]bool),
 		resolving:       make(map[string]bool),
 		debug:           debug,
-		scriptsDisabled: scriptsDisabled,
 	}
 
 	// Read and convert markdown to HTML.

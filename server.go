@@ -47,7 +47,6 @@ type config struct {
 	PHPCGI          string // path to php-cgi
 	IndexPriority   []string
 	MaxParentLevels int    // how many dirs above docRoot the YAML search may traverse
-	ScriptsDisabled bool   // when true, YAML script execution is disabled
 
 	// Render cache
 	Cache          *renderCache
@@ -329,7 +328,7 @@ func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docR
 		}
 	}
 
-	output, sourceFiles := renderYAMLPage(docRoot, yamlPath, debug, m.cfg.MaxParentLevels, m.cfg.ScriptsDisabled, r)
+	output, sourceFiles := renderYAMLPage(docRoot, yamlPath, debug, m.cfg.MaxParentLevels, r)
 
 	if !debug && m.cfg.Cache != nil {
 		m.cfg.Cache.Put(key, output, sourceFiles)
@@ -358,7 +357,7 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 		}
 	}
 
-	output, sourceFiles := renderMarkdownPage(docRoot, mdPath, debug, m.cfg.MaxParentLevels, m.cfg.ScriptsDisabled, r)
+	output, sourceFiles := renderMarkdownPage(docRoot, mdPath, debug, m.cfg.MaxParentLevels, r)
 
 	if !debug && m.cfg.Cache != nil {
 		m.cfg.Cache.Put(key, output, sourceFiles)
@@ -376,7 +375,7 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 // If no error template is found, it falls back to a plain-text response.
 func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, docRoot string, statusCode int, message string) {
 	_, debug := r.URL.Query()["debug"]
-	output, _ := renderErrorPage(docRoot, statusCode, message, debug, m.cfg.MaxParentLevels, m.cfg.ScriptsDisabled, r)
+	output, _ := renderErrorPage(docRoot, statusCode, message, debug, m.cfg.MaxParentLevels, r)
 	if output == "" {
 		http.Error(w, fmt.Sprintf("%d %s", statusCode, http.StatusText(statusCode)), statusCode)
 		return
@@ -475,9 +474,8 @@ func main() {
 		indexStr        = getenv("INDEX", "index.yaml,index.md,index.php,index.html,index.htm") // comma-separated
 		baseDir         = getenv("BASE_DIR", "")                             // web content root
 		maxParentLvls   = DefaultMaxParentLevels
-		showVersion     bool
-		scriptsDisabled bool
-		cacheMaxSizeMB  int
+		showVersion    bool
+		cacheMaxSizeMB int
 		cacheMaxAgeSec  int
 		maxStaticAgeSec int
 	)
@@ -491,7 +489,6 @@ func main() {
 	flag.StringVar(&indexStr, "index", indexStr, "comma-separated index file priority")
 	flag.IntVar(&maxParentLvls, "parent-levels", maxParentLvls, "max directory levels above docroot for YAML search (-1=unlimited)")
 	flag.BoolVar(&showVersion, "version", false, "print version and exit")
-	flag.BoolVar(&scriptsDisabled, "no-scripts", false, "disable server-side script execution in YAML")
 	flag.IntVar(&cacheMaxSizeMB, "cache-size", 1024, "render cache max size in MB (0 to disable)")
 	flag.IntVar(&cacheMaxAgeSec, "cache-age", int(defaultCacheMaxAge.Seconds()), "render cache max entry age in seconds")
 	flag.IntVar(&maxStaticAgeSec, "static-age", 86400, "max Cache-Control age for static files in seconds")
@@ -559,7 +556,6 @@ func main() {
 		LEEmail:         leEmail,
 		PHPCGI:          phpcgi,
 		MaxParentLevels: maxParentLvls,
-		ScriptsDisabled: scriptsDisabled,
 		Cache:           cache,
 		CacheMaxAge:     cacheMaxAge,
 		MaxStaticAge:    maxStaticAge,
@@ -663,10 +659,6 @@ func main() {
 
 	// Drop privileges AFTER opening privileged ports but BEFORE serving
 	dropPrivileges()
-
-	if scriptsDisabled {
-		log.Printf("Script execution is disabled (-no-scripts)")
-	}
 
 	// Start servers
 	errCh := make(chan error, 2)
