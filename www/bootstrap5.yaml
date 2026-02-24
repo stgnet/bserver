@@ -7,7 +7,6 @@ bootstrap5:
     integrity: sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH
     crossorigin: anonymous
 
-# this probably should get snuck into footer instead
 bootstrap5js:
 ^bootstrap5js:
   tag: script

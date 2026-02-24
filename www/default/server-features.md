@@ -62,7 +62,7 @@ proxies cache content efficiently.
 ### Rendered Pages
 
 YAML and markdown pages receive a `Cache-Control: public, max-age=N` header
-where N matches the `-cache-age` setting (default 300 seconds / 5 minutes).
+where N matches the `-cache-age` setting (default 900 seconds / 15 minutes).
 This tells browsers to reuse the page without re-requesting it for that
 duration.
 
@@ -95,13 +95,13 @@ files, rendered pages, error pages, and PHP output.
 
 ## Request Logging
 
-Every HTTP request is logged with the method, path, response status code, and
-duration:
+Every HTTP request is logged with the hostname, method, path, response status
+code, and duration:
 
 ```
-GET / 200 12ms
-GET /about 200 3ms
-GET /missing 404 1ms
+example.com GET / 200 12ms
+example.com GET /about 200 3ms
+example.com GET /missing 404 1ms
 ```
 
 Cached responses are typically much faster than first renders, making it easy

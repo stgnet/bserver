@@ -264,8 +264,8 @@ This makes missing definitions immediately obvious during development.
 
 ## Debug Mode
 
-Set the `DEBUG` environment variable to enable debug HTML comments throughout
-the rendered output:
+Add `?debug` to any URL to enable debug HTML comments throughout the rendered
+output:
 
 ```html
 <!-- resolve "html" from /path/to/html.yaml -->
