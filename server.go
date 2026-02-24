@@ -39,19 +39,14 @@ var Version = "dev"
 
 // config holds runtime configuration.
 type config struct {
-	Base            string // web content root (www directory)
-	HTTPAddr        string
-	HTTPSAddr       string
-	CacheDir        string
-	LEEmail         string
-	PHPCGI          string // path to php-cgi
-	IndexPriority   []string
-	MaxParentLevels int    // how many dirs above docRoot the YAML search may traverse
-
-	// Render cache
-	Cache          *renderCache
-	CacheMaxAge    time.Duration // max age for cached rendered pages
-	MaxStaticAge   time.Duration // max Cache-Control age for static files
+	Base     string // web content root (www directory)
+	HTTPAddr string
+	HTTPSAddr string
+	CacheDir string
+	LEEmail  string
+	PHPCGI   string // path to php-cgi
+	Cache    *renderCache
+	Site     siteSettings // server-wide defaults (per-vhost _config.yaml can override)
 }
 
 // virtualHostMux dynamically serves based on cwd directories.
@@ -80,6 +75,9 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		root = defaultRoot
 	}
 
+	// Resolve per-vhost settings (cached, mtime-invalidated)
+	site := vhostSettings(root, m.cfg.Site)
+
 	upath := path.Clean("/" + r.URL.Path)
 
 	// Favicon: generate from _favicon.yaml (or defaults) when no real file exists
@@ -87,13 +85,13 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		icoPath := filepath.Join(root, "favicon.ico")
 		if st, err := os.Stat(icoPath); err == nil && !st.IsDir() {
 			w.Header().Set("Content-Type", "image/x-icon")
-			if cc := staticFileCacheControl(st.ModTime(), m.cfg.MaxStaticAge); cc != "" {
+			if cc := staticFileCacheControl(st.ModTime(), site.StaticAge); cc != "" {
 				w.Header().Set("Cache-Control", cc)
 			}
 			http.ServeFile(w, r, icoPath)
 			return
 		}
-		m.serveFavicon(w, r, root)
+		m.serveFavicon(w, r, root, site)
 		return
 	}
 
@@ -103,7 +101,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err == nil && info.IsDir() {
 		found := false
 		// First look for index files (index.yaml, index.md, etc.)
-		for _, idx := range m.cfg.IndexPriority {
+		for _, idx := range site.Index {
 			cand := filepath.Join(fsPath, idx)
 			if st, err := os.Stat(cand); err == nil && !st.IsDir() {
 				fsPath = cand
@@ -114,7 +112,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// If no index file, look for name.* files (e.g., bhaven/bhaven.yaml)
 		if !found {
 			dirName := filepath.Base(fsPath)
-			for _, idx := range m.cfg.IndexPriority {
+			for _, idx := range site.Index {
 				ext := filepath.Ext(idx)
 				cand := filepath.Join(fsPath, dirName+ext)
 				if st, err := os.Stat(cand); err == nil && !st.IsDir() {
@@ -133,7 +131,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// YAML rendering: if the resolved path is a .yaml file, render it as HTML
 	if strings.HasSuffix(strings.ToLower(fsPath), ".yaml") {
 		if st, err := os.Stat(fsPath); err == nil && !st.IsDir() {
-			m.handleYAML(w, r, root, fsPath)
+			m.handleYAML(w, r, root, fsPath, site)
 			return
 		}
 	}
@@ -141,7 +139,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Markdown rendering: if the resolved path is a .md file, render it within the YAML page structure
 	if strings.HasSuffix(strings.ToLower(fsPath), ".md") {
 		if st, err := os.Stat(fsPath); err == nil && !st.IsDir() {
-			m.handleMarkdown(w, r, root, fsPath)
+			m.handleMarkdown(w, r, root, fsPath, site)
 			return
 		}
 	}
@@ -151,7 +149,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", ctype)
 		}
 		// Set Cache-Control for static files based on file age
-		if cc := staticFileCacheControl(st.ModTime(), m.cfg.MaxStaticAge); cc != "" {
+		if cc := staticFileCacheControl(st.ModTime(), site.StaticAge); cc != "" {
 			w.Header().Set("Cache-Control", cc)
 		}
 		http.ServeFile(w, r, fsPath)
@@ -170,12 +168,12 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			// No directory — try sibling .yaml then .md
 			yamlPath := fsPath + ".yaml"
 			if st, err := os.Stat(yamlPath); err == nil && !st.IsDir() {
-				m.handleYAML(w, r, root, yamlPath)
+				m.handleYAML(w, r, root, yamlPath, site)
 				return
 			}
 			mdPath := fsPath + ".md"
 			if st, err := os.Stat(mdPath); err == nil && !st.IsDir() {
-				m.handleMarkdown(w, r, root, mdPath)
+				m.handleMarkdown(w, r, root, mdPath, site)
 				return
 			}
 		}
@@ -189,7 +187,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	m.serveErrorPage(w, r, root, http.StatusNotFound, "")
+	m.serveErrorPage(w, r, root, http.StatusNotFound, "", site)
 }
 
 func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host, docroot, scriptFilename string) {
@@ -321,7 +319,7 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 	w.Write(body)
 }
 
-func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docRoot, yamlPath string) {
+func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docRoot, yamlPath string, site siteSettings) {
 	_, debug := r.URL.Query()["debug"]
 	key := cacheKey(docRoot, yamlPath)
 
@@ -329,14 +327,14 @@ func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docR
 	if !debug && m.cfg.Cache != nil {
 		if cached, ok := m.cfg.Cache.Get(key); ok {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(m.cfg.CacheMaxAge.Seconds())))
+			w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(cached))
 			return
 		}
 	}
 
-	output, sourceFiles := renderYAMLPage(docRoot, yamlPath, debug, m.cfg.MaxParentLevels, r)
+	output, sourceFiles := renderYAMLPage(docRoot, yamlPath, debug, site.ParentLevels, r)
 
 	if !debug && m.cfg.Cache != nil {
 		m.cfg.Cache.Put(key, output, sourceFiles)
@@ -344,13 +342,13 @@ func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docR
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if !debug {
-		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(m.cfg.CacheMaxAge.Seconds())))
+		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(output))
 }
 
-func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, docRoot, mdPath string) {
+func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, docRoot, mdPath string, site siteSettings) {
 	_, debug := r.URL.Query()["debug"]
 	key := cacheKey(docRoot, mdPath)
 
@@ -358,14 +356,14 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 	if !debug && m.cfg.Cache != nil {
 		if cached, ok := m.cfg.Cache.Get(key); ok {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(m.cfg.CacheMaxAge.Seconds())))
+			w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(cached))
 			return
 		}
 	}
 
-	output, sourceFiles := renderMarkdownPage(docRoot, mdPath, debug, m.cfg.MaxParentLevels, r)
+	output, sourceFiles := renderMarkdownPage(docRoot, mdPath, debug, site.ParentLevels, r)
 
 	if !debug && m.cfg.Cache != nil {
 		m.cfg.Cache.Put(key, output, sourceFiles)
@@ -373,7 +371,7 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if !debug {
-		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(m.cfg.CacheMaxAge.Seconds())))
+		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(output))
@@ -381,9 +379,9 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 
 // serveErrorPage renders an error page through the YAML system.
 // If no error template is found, it falls back to a plain-text response.
-func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, docRoot string, statusCode int, message string) {
+func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, docRoot string, statusCode int, message string, site siteSettings) {
 	_, debug := r.URL.Query()["debug"]
-	output, _ := renderErrorPage(docRoot, statusCode, message, debug, m.cfg.MaxParentLevels, r)
+	output, _ := renderErrorPage(docRoot, statusCode, message, debug, site.ParentLevels, r)
 	if output == "" {
 		http.Error(w, fmt.Sprintf("%d %s", statusCode, http.StatusText(statusCode)), statusCode)
 		return
@@ -394,7 +392,7 @@ func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, 
 }
 
 // serveFavicon generates and serves a favicon from _favicon.yaml or defaults.
-func (m *virtualHostMux) serveFavicon(w http.ResponseWriter, r *http.Request, docRoot string) {
+func (m *virtualHostMux) serveFavicon(w http.ResponseWriter, r *http.Request, docRoot string, site siteSettings) {
 	data, err := getCachedFavicon(docRoot)
 	if err != nil {
 		log.Printf("favicon error for %s: %v", docRoot, err)
@@ -402,7 +400,7 @@ func (m *virtualHostMux) serveFavicon(w http.ResponseWriter, r *http.Request, do
 		return
 	}
 	w.Header().Set("Content-Type", "image/x-icon")
-	w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(m.cfg.MaxStaticAge.Seconds())))
+	w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.StaticAge.Seconds())))
 	w.Write(data)
 }
 
@@ -474,32 +472,12 @@ func getOrCreateSelfSignedCert(host, cacheDir string) (*tls.Certificate, error) 
 
 func main() {
 	var (
-		leEmail         = getenv("LE_EMAIL", "")                            // Let's Encrypt contact email
-		httpAddr        = getenv("HTTP_ADDR", ":80")                        // public HTTP
-		httpsAddr       = getenv("HTTPS_ADDR", ":443")                      // public HTTPS
-		cacheDir        = getenv("CERT_CACHE", "./cert-cache")              // cert cache
-		phpcgi          = getenv("PHP_CGI", findPHPCGI())                    // php-cgi binary
-		indexStr        = getenv("INDEX", "index.yaml,index.md,index.php,index.html,index.htm") // comma-separated
-		baseDir         = getenv("BASE_DIR", "")                             // web content root
-		maxParentLvls   = DefaultMaxParentLevels
-		showVersion    bool
-		cacheMaxSizeMB int
-		cacheMaxAgeSec  int
-		maxStaticAgeSec int
+		baseDir     string
+		showVersion bool
 	)
 
-	flag.StringVar(&baseDir, "base", baseDir, "web content root directory (default: www subdirectory of cwd)")
-	flag.StringVar(&leEmail, "email", leEmail, "Let's Encrypt contact email")
-	flag.StringVar(&httpAddr, "http", httpAddr, "HTTP listen addr")
-	flag.StringVar(&httpsAddr, "https", httpsAddr, "HTTPS listen addr")
-	flag.StringVar(&cacheDir, "cache", cacheDir, "certificate cache directory")
-	flag.StringVar(&phpcgi, "php", phpcgi, "path to php-cgi executable")
-	flag.StringVar(&indexStr, "index", indexStr, "comma-separated index file priority")
-	flag.IntVar(&maxParentLvls, "parent-levels", maxParentLvls, "max directory levels above docroot for YAML search (-1=unlimited)")
+	flag.StringVar(&baseDir, "base", "", "web content root directory (default: www subdirectory of cwd)")
 	flag.BoolVar(&showVersion, "version", false, "print version and exit")
-	flag.IntVar(&cacheMaxSizeMB, "cache-size", 1024, "render cache max size in MB (0 to disable)")
-	flag.IntVar(&cacheMaxAgeSec, "cache-age", int(defaultCacheMaxAge.Seconds()), "render cache max entry age in seconds")
-	flag.IntVar(&maxStaticAgeSec, "static-age", 86400, "max Cache-Control age for static files in seconds")
 	flag.Parse()
 
 	if showVersion {
@@ -507,18 +485,13 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Warn if php-cgi was not found
-	if phpcgi == "" {
-		log.Printf("Warning: php-cgi not found in PATH or common locations; .php files will not work (set -php flag or PHP_CGI env)")
-	} else if _, err := os.Stat(phpcgi); err != nil {
-		log.Printf("Warning: php-cgi not found at %s; .php files will not work (set -php flag or PHP_CGI env)", phpcgi)
-	} else {
-		log.Printf("Using php-cgi: %s", phpcgi)
+	// Determine base directory: -base flag > BASE_DIR env > ./www
+	if baseDir == "" {
+		baseDir = os.Getenv("BASE_DIR")
 	}
 
 	var base string
 	if baseDir != "" {
-		// Explicit base directory from -base flag or BASE_DIR env.
 		abs, err := filepath.Abs(baseDir)
 		if err != nil {
 			log.Printf("Invalid base directory %q: %v", baseDir, err)
@@ -526,7 +499,6 @@ func main() {
 		}
 		base = abs
 	} else {
-		// Default: www/ subdirectory of the current working directory.
 		cwd, err := os.Getwd()
 		if err != nil {
 			log.Printf("Getwd error: %v", err)
@@ -535,16 +507,78 @@ func main() {
 		base = filepath.Join(cwd, "www")
 	}
 	// Resolve symlinks so paths match what child processes see.
-	// On macOS, ~/src may be a symlink to ~/Documents/src; without
-	// resolving, PHP's realpath-based include resolution can fail.
 	if resolved, err := filepath.EvalSymlinks(base); err == nil {
 		base = resolved
+	}
+
+	// Load _config.yaml from the base directory.
+	// Precedence: _config.yaml value > environment variable > built-in default.
+	yamlCfg := loadConfigMap(filepath.Join(base, "_config.yaml"))
+	if yamlCfg != nil {
+		log.Printf("Loaded configuration from %s/_config.yaml", base)
+	}
+
+	resolve := func(yamlKey, envVar, def string) string {
+		if v, ok := configString(yamlCfg, yamlKey, ""); ok {
+			def = v
+		}
+		if envVar != "" {
+			if v := os.Getenv(envVar); v != "" {
+				return v
+			}
+		}
+		return def
+	}
+	resolveInt := func(yamlKey string, def int) int {
+		if v, ok := configInt(yamlCfg, yamlKey, 0); ok {
+			return v
+		}
+		return def
+	}
+
+	httpAddr := resolve("http", "HTTP_ADDR", ":80")
+	httpsAddr := resolve("https", "HTTPS_ADDR", ":443")
+	leEmail := resolve("email", "LE_EMAIL", "")
+	cacheDir := resolve("cert-cache", "CERT_CACHE", "./cert-cache")
+	cacheMaxSizeMB := resolveInt("cache-size", 1024)
+	cacheMaxAgeSec := resolveInt("cache-age", int(defaultCacheMaxAge.Seconds()))
+	maxStaticAgeSec := resolveInt("static-age", 86400)
+	maxParentLvls := resolveInt("parent-levels", DefaultMaxParentLevels)
+
+	// PHP: _config.yaml > PHP_CGI env > auto-detect
+	phpcgi := resolve("php", "PHP_CGI", "")
+	if phpcgi == "" {
+		phpcgi = findPHPCGI()
+	}
+
+	// Index priority: _config.yaml > INDEX env > default
+	var indexPriority []string
+	if idx, ok := configIndex(yamlCfg, "index"); ok {
+		indexPriority = idx
+	} else if v := os.Getenv("INDEX"); v != "" {
+		for _, p := range strings.Split(v, ",") {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				indexPriority = append(indexPriority, p)
+			}
+		}
+	} else {
+		indexPriority = []string{"index.yaml", "index.md", "index.php", "index.html", "index.htm"}
+	}
+
+	// Warn if php-cgi was not found
+	if phpcgi == "" {
+		log.Printf("Warning: php-cgi not found in PATH or common locations; .php files will not work (set php in _config.yaml or PHP_CGI env)")
+	} else if _, err := os.Stat(phpcgi); err != nil {
+		log.Printf("Warning: php-cgi not found at %s; .php files will not work", phpcgi)
+	} else {
+		log.Printf("Using php-cgi: %s", phpcgi)
 	}
 
 	cacheMaxAge := time.Duration(cacheMaxAgeSec) * time.Second
 	maxStaticAge := time.Duration(maxStaticAgeSec) * time.Second
 
-	// Initialize render cache (unless disabled with -cache-size=0)
+	// Initialize render cache (unless disabled with cache-size: 0)
 	var cache *renderCache
 	if cacheMaxSizeMB > 0 {
 		configuredMax := int64(cacheMaxSizeMB) * (1 << 20) // MB to bytes
@@ -553,31 +587,23 @@ func main() {
 		log.Printf("Render cache: %s max, %s max age, fsnotify file watching",
 			formatBytes(effectiveMax), cacheMaxAge)
 	} else {
-		log.Printf("Render cache disabled (-cache-size=0)")
+		log.Printf("Render cache disabled (cache-size: 0)")
 	}
 
 	cfg := &config{
-		Base:            base,
-		HTTPAddr:        httpAddr,
-		HTTPSAddr:       httpsAddr,
-		CacheDir:        cacheDir,
-		LEEmail:         leEmail,
-		PHPCGI:          phpcgi,
-		MaxParentLevels: maxParentLvls,
-		Cache:           cache,
-		CacheMaxAge:     cacheMaxAge,
-		MaxStaticAge:    maxStaticAge,
-		IndexPriority: func() []string {
-			parts := strings.Split(indexStr, ",")
-			var out []string
-			for _, p := range parts {
-				p = strings.TrimSpace(p)
-				if p != "" {
-					out = append(out, p)
-				}
-			}
-			return out
-		}(),
+		Base:     base,
+		HTTPAddr: httpAddr,
+		HTTPSAddr: httpsAddr,
+		CacheDir: cacheDir,
+		LEEmail:  leEmail,
+		PHPCGI:   phpcgi,
+		Cache:    cache,
+		Site: siteSettings{
+			CacheAge:     cacheMaxAge,
+			StaticAge:    maxStaticAge,
+			ParentLevels: maxParentLvls,
+			Index:        indexPriority,
+		},
 	}
 
 	mux := &virtualHostMux{cfg: cfg}

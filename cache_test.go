@@ -307,12 +307,14 @@ func TestCacheControlHeaderOnRenderedPage(t *testing.T) {
 
 	mux := &virtualHostMux{
 		cfg: &config{
-			Base:            filepath.Join(base, "www"),
-			IndexPriority:   []string{"index.yaml", "index.md"},
-			MaxParentLevels: 1,
-			Cache:           cache,
-			CacheMaxAge:     5 * time.Minute,
-			MaxStaticAge:    24 * time.Hour,
+			Base:  filepath.Join(base, "www"),
+			Cache: cache,
+			Site: siteSettings{
+				Index:        []string{"index.yaml", "index.md"},
+				ParentLevels: 1,
+				CacheAge:     5 * time.Minute,
+				StaticAge:    24 * time.Hour,
+			},
 		},
 	}
 

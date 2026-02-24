@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // newTestMux creates a virtualHostMux configured for testing with the given base directory.
@@ -14,9 +15,13 @@ func newTestMux(t *testing.T, base string) *virtualHostMux {
 	t.Helper()
 	return &virtualHostMux{
 		cfg: &config{
-			Base:            base,
-			IndexPriority:   []string{"index.yaml", "index.md", "index.html"},
-			MaxParentLevels: 1,
+			Base: base,
+			Site: siteSettings{
+				CacheAge:     15 * time.Minute,
+				StaticAge:    24 * time.Hour,
+				ParentLevels: 1,
+				Index:        []string{"index.yaml", "index.md", "index.html"},
+			},
 		},
 	}
 }

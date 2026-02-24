@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestParseColor(t *testing.T) {
@@ -264,8 +265,11 @@ func TestServeFaviconHTTP(t *testing.T) {
 	os.Mkdir(docRoot, 0755)
 
 	cfg := &config{
-		Base:         dir,
-		MaxStaticAge: 86400,
+		Base: dir,
+		Site: siteSettings{
+			StaticAge: 86400 * time.Second,
+			Index:     []string{"index.yaml"},
+		},
 	}
 	mux := &virtualHostMux{cfg: cfg}
 
@@ -296,8 +300,11 @@ func TestServeFaviconRealFilePreferred(t *testing.T) {
 	os.WriteFile(filepath.Join(docRoot, "favicon.ico"), fakeICO, 0644)
 
 	cfg := &config{
-		Base:         dir,
-		MaxStaticAge: 86400,
+		Base: dir,
+		Site: siteSettings{
+			StaticAge: 86400 * time.Second,
+			Index:     []string{"index.yaml"},
+		},
 	}
 	mux := &virtualHostMux{cfg: cfg}
 
