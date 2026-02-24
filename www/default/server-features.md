@@ -46,13 +46,15 @@ maximum. On non-Linux platforms, the configured maximum is used as-is.
 
 ### Configuration
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `-cache-size` | `1024` | Maximum cache size in MB (0 to disable) |
-| `-cache-age` | `900` | Maximum entry age in seconds (15 minutes) |
-| `-static-age` | `86400` | Maximum Cache-Control age for static files in seconds (24 hours) |
+These settings go in `_config.yaml` (in the www directory):
 
-Set `-cache-size=0` to disable caching entirely.
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `cache-size` | `1024` | Maximum cache size in MB (0 to disable) |
+| `cache-age` | `900` | Maximum entry age in seconds (15 minutes) |
+| `static-age` | `86400` | Maximum Cache-Control age for static files in seconds (24 hours) |
+
+Set `cache-size: 0` to disable caching entirely.
 
 ## Cache-Control Headers
 
@@ -62,7 +64,7 @@ proxies cache content efficiently.
 ### Rendered Pages
 
 YAML and markdown pages receive a `Cache-Control: public, max-age=N` header
-where N matches the `-cache-age` setting (default 900 seconds / 15 minutes).
+where N matches the `cache-age` setting (default 900 seconds / 15 minutes).
 This tells browsers to reuse the page without re-requesting it for that
 duration.
 
@@ -71,7 +73,7 @@ duration.
 For static files (images, CSS, JavaScript, fonts, etc.), bserver uses a
 heuristic based on the file's last modification time:
 
-- **max-age = half the file's age**, capped at `-static-age` (default 24 hours)
+- **max-age = half the file's age**, capped at `static-age` (default 24 hours)
 - **Minimum 60 seconds** for very recently modified files
 
 For example, a CSS file last modified 2 hours ago gets `max-age=3600` (1 hour).

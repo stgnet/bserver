@@ -145,32 +145,34 @@ style:
 Or include Bootstrap 5 (already included in the default navbar) for a full
 CSS framework.
 
-## Environment Variables
+## Configuration
 
-bserver can be configured with environment variables:
+bserver is configured through `_config.yaml` in the www directory. All settings
+have sensible defaults — the file is optional. See `www/_config.yaml` for a
+documented template with all available settings.
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `LE_EMAIL` | (empty) | Let's Encrypt contact email |
-| `HTTP_ADDR` | `:80` | HTTP listen address |
-| `HTTPS_ADDR` | `:443` | HTTPS listen address |
-| `CERT_CACHE` | `./cert-cache` | Certificate cache directory |
-| `PHP_CGI` | (auto-detected) | Path to php-cgi executable |
-| `BASE_DIR` | (empty) | Web content root directory |
-| `INDEX` | `index.yaml,index.md,...` | Index file search order |
+Per-site overrides: place a `_config.yaml` in a virtual host directory
+(e.g., `www/example.com/_config.yaml`) to override `cache-age`, `static-age`,
+`parent-levels`, and `index` for that site.
+
+Environment variables override `_config.yaml` values:
+
+| Variable | Config key | Default | Description |
+|----------|------------|---------|-------------|
+| `HTTP_ADDR` | `http` | `:80` | HTTP listen address |
+| `HTTPS_ADDR` | `https` | `:443` | HTTPS listen address |
+| `LE_EMAIL` | `email` | (empty) | Let's Encrypt contact email |
+| `CERT_CACHE` | `cert-cache` | `./cert-cache` | Certificate cache directory |
+| `PHP_CGI` | `php` | (auto-detected) | Path to php-cgi executable |
+| `INDEX` | `index` | `index.yaml,index.md,...` | Index file search order |
+| `BASE_DIR` | — | (empty) | Web content root directory |
 
 ## Command-Line Flags
 
-All environment variables above have corresponding flags. Additional flags:
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `-base` | `www` | Web content root directory |
-| `-version` | | Print version and exit |
-| `-cache-size` | `1024` | Render cache max size in MB (0 to disable) |
-| `-cache-age` | `900` | Render cache max entry age in seconds |
-| `-static-age` | `86400` | Max Cache-Control age for static files in seconds |
-| `-parent-levels` | `1` | Max directory levels above docroot for YAML search |
+| Flag | Description |
+|------|-------------|
+| `-base` | Web content root directory (default: `www` subdirectory of cwd) |
+| `-version` | Print version and exit |
 
 See [Server Features](/server-features) for details on caching, security
 headers, and other production features.

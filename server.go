@@ -512,7 +512,7 @@ func main() {
 	}
 
 	// Load _config.yaml from the base directory.
-	// Precedence: _config.yaml value > environment variable > built-in default.
+	// Precedence: environment variable > _config.yaml value > built-in default.
 	yamlCfg := loadConfigMap(filepath.Join(base, "_config.yaml"))
 	if yamlCfg != nil {
 		log.Printf("Loaded configuration from %s/_config.yaml", base)
@@ -737,12 +737,6 @@ func main() {
 
 const acmeALPNProto = "acme-tls/1"
 
-func getenv(key, def string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return def
-}
 
 // findPHPCGI searches for the php-cgi executable. It first checks $PATH
 // via exec.LookPath, then tries common installation locations.

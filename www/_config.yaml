@@ -5,7 +5,7 @@
 # (e.g., www/example.com/_config.yaml) to override cache-age, static-age,
 # parent-levels, and index for that site only.
 #
-# Precedence: _config.yaml value > environment variable > built-in default.
+# Precedence: environment variable > _config.yaml value > built-in default.
 # The -base flag (or BASE_DIR env) sets the www directory itself.
 
 # ---- Server-wide settings (not overridable per-site) ----
