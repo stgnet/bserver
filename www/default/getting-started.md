@@ -17,13 +17,15 @@ go build
 ```
 
 By default, bserver listens on port 80 (HTTP) and serves content from the
-current working directory. Subdirectories matching domain names are used as
-virtual host roots.
+`www/` subdirectory of the current working directory. Subdirectories matching
+domain names are used as virtual host roots. Use the `-base` flag or
+`BASE_DIR` environment variable to override the content directory.
 
 ## How It Works
 
-bserver serves virtual hosts from subdirectories. For example, if you run
-bserver in `/var/www/`, it will serve `example.com` from `/var/www/example.com/`.
+bserver serves virtual hosts from subdirectories under its content root. For
+example, if the content root is `/var/www/`, it will serve `example.com` from
+`/var/www/example.com/`.
 
 The `default/` directory is used as a fallback for any host that doesn't have
 its own directory. This documentation site itself is the default site.
@@ -42,8 +44,9 @@ mysite.com/
 └── style.yaml          # Custom CSS styles (optional)
 ```
 
-The root bserver directory contains shared definitions (html.yaml, head.yaml,
-body.yaml, navbar.yaml, etc.) that are inherited by all sites.
+The content root directory (`www/`) contains shared definitions (html.yaml,
+head.yaml, body.yaml, navbar.yaml, etc.) that are inherited by all sites.
+You can copy any of these into your site directory to customize them.
 
 ## Your First Page
 
@@ -91,7 +94,7 @@ When bserver encounters a name reference like `footer`, it searches for
 3. Up to the document root and one level above
 
 This cascading search allows shared definitions (like the navbar) to live in
-the bserver root directory while site-specific content lives in the site
+the content root directory while site-specific content lives in the site
 directory. Your site's `navlinks.yaml` overrides the default navigation, but
 the navbar structure itself is inherited.
 
@@ -142,19 +145,41 @@ style:
 Or include Bootstrap 5 (already included in the default navbar) for a full
 CSS framework.
 
-## Environment Variables
+## Configuration
 
-bserver can be configured with environment variables:
+bserver is configured through `_config.yaml` in the www directory. All settings
+have sensible defaults — the file is optional. See `www/_config.yaml` for a
+documented template with all available settings.
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `HTTP` | `:80` | HTTP listen address |
-| `HTTPS` | `:443` | HTTPS listen address |
-| `INDEX` | `index.yaml,index.md,...` | Index file search order |
-| `DEBUG` | (unset) | Enable debug HTML comments |
+Per-site overrides: place a `_config.yaml` in a virtual host directory
+(e.g., `www/example.com/_config.yaml`) to override `cache-age`, `static-age`,
+`parent-levels`, and `index` for that site.
+
+Environment variables override `_config.yaml` values:
+
+| Variable | Config key | Default | Description |
+|----------|------------|---------|-------------|
+| `HTTP_ADDR` | `http` | `:80` | HTTP listen address |
+| `HTTPS_ADDR` | `https` | `:443` | HTTPS listen address |
+| `LE_EMAIL` | `email` | (empty) | Let's Encrypt contact email |
+| `CERT_CACHE` | `cert-cache` | `./cert-cache` | Certificate cache directory |
+| `PHP_CGI` | `php` | (auto-detected) | Path to php-cgi executable |
+| `INDEX` | `index` | `index.yaml,index.md,...` | Index file search order |
+| `BASE_DIR` | — | (empty) | Web content root directory |
+
+## Command-Line Flags
+
+| Flag | Description |
+|------|-------------|
+| `-base` | Web content root directory (default: `www` subdirectory of cwd) |
+| `-version` | Print version and exit |
+
+See [Server Features](/server-features) for details on caching, security
+headers, and other production features.
 
 ## Next Steps
 
 - [Content Definitions](/definitions) - Learn how YAML keys become HTML
 - [Format Definitions](/formats) - Create reusable HTML components
 - [Built-in Components](/components) - Explore what's included
+- [Server Features](/server-features) - Caching, security headers, and more

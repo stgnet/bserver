@@ -1,0 +1,29 @@
+# error.yaml — default error page template
+#
+# The rendering system pre-seeds these definitions for error pages:
+#
+#   $errornumber      — the HTTP status code (e.g., "404")
+#   $errordescription — the standard status text (e.g., "Not Found")
+#   $errortitle       — "404 — Not Found" (for use in headings)
+#   $errormessage     — detail message (e.g., the path that was not found)
+#
+# Use $varname in format definition content to reference these values:
+#
+#   ^error:
+#     content:
+#       - h1: $errortitle
+#       - p: $errormessage
+#
+# Sites can override this file, or create specific error pages:
+#   error404.yaml  — custom 404 page (takes precedence over error.yaml)
+#   error500.yaml  — custom 500 page
+
+^error:
+  tag: div
+  params:
+    class: text-center py-5
+  content:
+    - h1: $errortitle
+    - p: $errormessage
+
+error:

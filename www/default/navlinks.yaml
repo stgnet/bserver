@@ -5,4 +5,6 @@ navlinks:
   "/formats": Formats
   "/components": Components
   "/scripts": Scripts
+  "/error-handling": Error Handling
+  "/server-features": Server
   "/advanced": Advanced

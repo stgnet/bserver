@@ -1,5 +1,5 @@
 ^ulinks:
   tag: ul
-  contents: 
+  contents:
     li:
       link: '$*'

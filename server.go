@@ -8,14 +8,10 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
-	//"encoding/pem"
-	//"crypto/x509/pem"
 	"crypto/x509/pkix"
-	//"encoding/base64"
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/big"
 	"mime"
@@ -23,6 +19,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"os/user"
 	"path"
 	"path/filepath"
@@ -35,16 +32,21 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
+// Version is the build version of bserver. Override at build time with:
+//
+//	go build -ldflags "-X main.Version=1.2.3"
+var Version = "dev"
+
 // config holds runtime configuration.
 type config struct {
-	Base            string // cwd
-	HTTPAddr        string
-	HTTPSAddr       string
-	CacheDir        string
-	LEEmail         string
-	PHPCGI          string // path to php-cgi
-	IndexPriority   []string
-	MaxParentLevels int    // how many dirs above docRoot the YAML search may traverse
+	Base     string // web content root (www directory)
+	HTTPAddr string
+	HTTPSAddr string
+	CacheDir string
+	LEEmail  string
+	PHPCGI   string // path to php-cgi
+	Cache    *renderCache
+	Site     siteSettings // server-wide defaults (per-vhost _config.yaml can override)
 }
 
 // virtualHostMux dynamically serves based on cwd directories.
@@ -62,25 +64,44 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	root := filepath.Join(m.cfg.Base, host)
 	if st, err := os.Stat(root); err != nil || !st.IsDir() {
-		hostReason := pathErrReason(root, err, st)
 		// Fall back to "default" directory if the virtual host isn't found
 		defaultRoot := filepath.Join(m.cfg.Base, "default")
 		if st, err := os.Stat(defaultRoot); err != nil || !st.IsDir() {
-			defaultReason := pathErrReason(defaultRoot, err, st)
-			http.Error(w, fmt.Sprintf("host %q: %s; default: %s", host, hostReason, defaultReason), http.StatusNotFound)
+			// Log detailed path info server-side; return generic 404 to client
+			log.Printf("404: host %q not found, default also unavailable (base=%s)", host, m.cfg.Base)
+			http.Error(w, "Not Found", http.StatusNotFound)
 			return
 		}
 		root = defaultRoot
 	}
 
+	// Resolve per-vhost settings (cached, mtime-invalidated)
+	site := vhostSettings(root, m.cfg.Site)
+
 	upath := path.Clean("/" + r.URL.Path)
+
+	// Favicon: generate from _favicon.yaml (or defaults) when no real file exists
+	if upath == "/favicon.ico" {
+		icoPath := filepath.Join(root, "favicon.ico")
+		if st, err := os.Stat(icoPath); err == nil && !st.IsDir() {
+			w.Header().Set("Content-Type", "image/x-icon")
+			if cc := staticFileCacheControl(st.ModTime(), site.StaticAge); cc != "" {
+				w.Header().Set("Cache-Control", cc)
+			}
+			http.ServeFile(w, r, icoPath)
+			return
+		}
+		m.serveFavicon(w, r, root, site)
+		return
+	}
+
 	fsPath := filepath.Join(root, filepath.FromSlash(upath))
 
 	info, err := os.Stat(fsPath)
 	if err == nil && info.IsDir() {
 		found := false
 		// First look for index files (index.yaml, index.md, etc.)
-		for _, idx := range m.cfg.IndexPriority {
+		for _, idx := range site.Index {
 			cand := filepath.Join(fsPath, idx)
 			if st, err := os.Stat(cand); err == nil && !st.IsDir() {
 				fsPath = cand
@@ -91,7 +112,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// If no index file, look for name.* files (e.g., bhaven/bhaven.yaml)
 		if !found {
 			dirName := filepath.Base(fsPath)
-			for _, idx := range m.cfg.IndexPriority {
+			for _, idx := range site.Index {
 				ext := filepath.Ext(idx)
 				cand := filepath.Join(fsPath, dirName+ext)
 				if st, err := os.Stat(cand); err == nil && !st.IsDir() {
@@ -110,7 +131,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// YAML rendering: if the resolved path is a .yaml file, render it as HTML
 	if strings.HasSuffix(strings.ToLower(fsPath), ".yaml") {
 		if st, err := os.Stat(fsPath); err == nil && !st.IsDir() {
-			m.handleYAML(w, r, root, fsPath)
+			m.handleYAML(w, r, root, fsPath, site)
 			return
 		}
 	}
@@ -118,7 +139,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Markdown rendering: if the resolved path is a .md file, render it within the YAML page structure
 	if strings.HasSuffix(strings.ToLower(fsPath), ".md") {
 		if st, err := os.Stat(fsPath); err == nil && !st.IsDir() {
-			m.handleMarkdown(w, r, root, fsPath)
+			m.handleMarkdown(w, r, root, fsPath, site)
 			return
 		}
 	}
@@ -126,6 +147,10 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if st, err := os.Stat(fsPath); err == nil && !st.IsDir() {
 		if ctype := mime.TypeByExtension(filepath.Ext(fsPath)); ctype != "" {
 			w.Header().Set("Content-Type", ctype)
+		}
+		// Set Cache-Control for static files based on file age
+		if cc := staticFileCacheControl(st.ModTime(), site.StaticAge); cc != "" {
+			w.Header().Set("Cache-Control", cc)
 		}
 		http.ServeFile(w, r, fsPath)
 		return
@@ -135,20 +160,20 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 1. A subdirectory with the same name (directory takes precedence)
 	// 2. A sibling .yaml or .md file
 	if filepath.Ext(fsPath) == "" {
-		// Check for a subdirectory first
-		if di, derr := os.Stat(fsPath); derr == nil && di.IsDir() {
+		// Check for a subdirectory first (reuse stat result from above)
+		if info != nil && info.IsDir() {
 			// Directory exists but no index/name file was found above;
 			// this was already handled in the directory block, so fall through
 		} else {
 			// No directory — try sibling .yaml then .md
 			yamlPath := fsPath + ".yaml"
 			if st, err := os.Stat(yamlPath); err == nil && !st.IsDir() {
-				m.handleYAML(w, r, root, yamlPath)
+				m.handleYAML(w, r, root, yamlPath, site)
 				return
 			}
 			mdPath := fsPath + ".md"
 			if st, err := os.Stat(mdPath); err == nil && !st.IsDir() {
-				m.handleMarkdown(w, r, root, mdPath)
+				m.handleMarkdown(w, r, root, mdPath, site)
 				return
 			}
 		}
@@ -162,7 +187,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.NotFound(w, r)
+	m.serveErrorPage(w, r, root, http.StatusNotFound, "", site)
 }
 
 func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host, docroot, scriptFilename string) {
@@ -221,7 +246,10 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 		env = append(env, "PATH="+p)
 	}
 
-	cmd := exec.Command(m.cfg.PHPCGI)
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, m.cfg.PHPCGI)
 	cmd.Dir = docroot
 	cmd.Env = env
 	cmd.Stdin = r.Body
@@ -231,6 +259,11 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 	cmd.Stderr = os.Stderr // PHP warnings/errors go to server log
 
 	if err := cmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			log.Printf("php-cgi timeout after 30s for %s", scriptFilename)
+			http.Error(w, "Gateway Timeout", http.StatusGatewayTimeout)
+			return
+		}
 		log.Printf("php-cgi error for %s (cwd=%s): %v", scriptFilename, docroot, err)
 		if stdoutBuf.Len() == 0 {
 			http.Error(w, "CGI Error", http.StatusInternalServerError)
@@ -286,20 +319,89 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 	w.Write(body)
 }
 
-func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docRoot, yamlPath string) {
+func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docRoot, yamlPath string, site siteSettings) {
 	_, debug := r.URL.Query()["debug"]
-	output := renderYAMLPage(docRoot, yamlPath, debug, m.cfg.MaxParentLevels, r)
+	key := cacheKey(docRoot, yamlPath)
+
+	// Try cache (skip for debug mode)
+	if !debug && m.cfg.Cache != nil {
+		if cached, ok := m.cfg.Cache.Get(key); ok {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(cached))
+			return
+		}
+	}
+
+	output, sourceFiles := renderYAMLPage(docRoot, yamlPath, debug, site.ParentLevels, r)
+
+	if !debug && m.cfg.Cache != nil {
+		m.cfg.Cache.Put(key, output, sourceFiles)
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if !debug {
+		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
+	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(output))
 }
 
-func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, docRoot, mdPath string) {
+func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, docRoot, mdPath string, site siteSettings) {
 	_, debug := r.URL.Query()["debug"]
-	output := renderMarkdownPage(docRoot, mdPath, debug, m.cfg.MaxParentLevels, r)
+	key := cacheKey(docRoot, mdPath)
+
+	// Try cache (skip for debug mode)
+	if !debug && m.cfg.Cache != nil {
+		if cached, ok := m.cfg.Cache.Get(key); ok {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(cached))
+			return
+		}
+	}
+
+	output, sourceFiles := renderMarkdownPage(docRoot, mdPath, debug, site.ParentLevels, r)
+
+	if !debug && m.cfg.Cache != nil {
+		m.cfg.Cache.Put(key, output, sourceFiles)
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if !debug {
+		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
+	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(output))
+}
+
+// serveErrorPage renders an error page through the YAML system.
+// If no error template is found, it falls back to a plain-text response.
+func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, docRoot string, statusCode int, message string, site siteSettings) {
+	_, debug := r.URL.Query()["debug"]
+	output, _ := renderErrorPage(docRoot, statusCode, message, debug, site.ParentLevels, r)
+	if output == "" {
+		http.Error(w, fmt.Sprintf("%d %s", statusCode, http.StatusText(statusCode)), statusCode)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(statusCode)
+	w.Write([]byte(output))
+}
+
+// serveFavicon generates and serves a favicon from _favicon.yaml or defaults.
+func (m *virtualHostMux) serveFavicon(w http.ResponseWriter, r *http.Request, docRoot string, site siteSettings) {
+	data, err := getCachedFavicon(docRoot)
+	if err != nil {
+		log.Printf("favicon error for %s: %v", docRoot, err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "image/x-icon")
+	w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.StaticAge.Seconds())))
+	w.Write(data)
 }
 
 // self-signed certificate cache
@@ -316,8 +418,8 @@ func getOrCreateSelfSignedCert(host, cacheDir string) (*tls.Certificate, error) 
 	}
 
 	// try disk cache
-	if certPEM, err1 := ioutil.ReadFile(certFile); err1 == nil {
-		if keyPEM, err2 := ioutil.ReadFile(keyFile); err2 == nil {
+	if certPEM, err1 := os.ReadFile(certFile); err1 == nil {
+		if keyPEM, err2 := os.ReadFile(keyFile); err2 == nil {
 			cert, err := tls.X509KeyPair(certPEM, keyPEM)
 			if err == nil {
 				selfSignedCache.Store(host, &cert)
@@ -356,8 +458,8 @@ func getOrCreateSelfSignedCert(host, cacheDir string) (*tls.Certificate, error) 
 
 	// write to disk
 	if err := os.MkdirAll(cacheDir, 0700); err == nil {
-		_ = ioutil.WriteFile(certFile, certPEM, 0600)
-		_ = ioutil.WriteFile(keyFile, keyPEM, 0600)
+		_ = os.WriteFile(certFile, certPEM, 0600)
+		_ = os.WriteFile(keyFile, keyPEM, 0600)
 	}
 
 	cert, err := tls.X509KeyPair(certPEM, keyPEM)
@@ -370,67 +472,146 @@ func getOrCreateSelfSignedCert(host, cacheDir string) (*tls.Certificate, error) 
 
 func main() {
 	var (
-		leEmail        = getenv("LE_EMAIL", "")                            // Let's Encrypt contact email
-		httpAddr       = getenv("HTTP_ADDR", ":80")                        // public HTTP
-		httpsAddr      = getenv("HTTPS_ADDR", ":443")                      // public HTTPS
-		cacheDir       = getenv("CERT_CACHE", "./cert-cache")              // cert cache
-		phpcgi         = getenv("PHP_CGI", findPHPCGI())                    // php-cgi binary
-		indexStr       = getenv("INDEX", "index.yaml,index.md,index.php,index.html,index.htm") // comma-separated
-		maxParentLvls  = DefaultMaxParentLevels
+		baseDir     string
+		showVersion bool
 	)
 
-	flag.StringVar(&leEmail, "email", leEmail, "Let's Encrypt contact email")
-	flag.StringVar(&httpAddr, "http", httpAddr, "HTTP listen addr")
-	flag.StringVar(&httpsAddr, "https", httpsAddr, "HTTPS listen addr")
-	flag.StringVar(&cacheDir, "cache", cacheDir, "certificate cache directory")
-	flag.StringVar(&phpcgi, "php", phpcgi, "path to php-cgi executable")
-	flag.StringVar(&indexStr, "index", indexStr, "comma-separated index file priority")
-	flag.IntVar(&maxParentLvls, "parent-levels", maxParentLvls, "max directory levels above docroot for YAML search (-1=unlimited)")
+	flag.StringVar(&baseDir, "base", "", "web content root directory (default: www subdirectory of cwd)")
+	flag.BoolVar(&showVersion, "version", false, "print version and exit")
 	flag.Parse()
 
-	// Warn if php-cgi was not found
-	if phpcgi == "" {
-		log.Printf("Warning: php-cgi not found in PATH or common locations; .php files will not work (set -php flag or PHP_CGI env)")
-	} else if _, err := os.Stat(phpcgi); err != nil {
-		log.Printf("Warning: php-cgi not found at %s; .php files will not work (set -php flag or PHP_CGI env)", phpcgi)
-	} else {
-		log.Printf("Using php-cgi: %s", phpcgi)
+	if showVersion {
+		fmt.Printf("bserver %s\n", Version)
+		os.Exit(0)
 	}
 
-	base, baseErr := os.Getwd()
-	if baseErr != nil {
-		log.Printf("Getwd error: %v", baseErr)
-		os.Exit(1)
+	// Determine base directory: -base flag > BASE_DIR env > ./www
+	if baseDir == "" {
+		baseDir = os.Getenv("BASE_DIR")
+	}
+
+	var base string
+	if baseDir != "" {
+		abs, err := filepath.Abs(baseDir)
+		if err != nil {
+			log.Printf("Invalid base directory %q: %v", baseDir, err)
+			os.Exit(1)
+		}
+		base = abs
+	} else {
+		cwd, err := os.Getwd()
+		if err != nil {
+			log.Printf("Getwd error: %v", err)
+			os.Exit(1)
+		}
+		base = filepath.Join(cwd, "www")
 	}
 	// Resolve symlinks so paths match what child processes see.
-	// On macOS, ~/src may be a symlink to ~/Documents/src; without
-	// resolving, PHP's realpath-based include resolution can fail.
 	if resolved, err := filepath.EvalSymlinks(base); err == nil {
 		base = resolved
 	}
 
-	cfg := &config{
-		Base:            base,
-		HTTPAddr:        httpAddr,
-		HTTPSAddr:       httpsAddr,
-		CacheDir:        cacheDir,
-		LEEmail:         leEmail,
-		PHPCGI:          phpcgi,
-		MaxParentLevels: maxParentLvls,
-		IndexPriority: func() []string {
-			parts := strings.Split(indexStr, ",")
-			var out []string
-			for _, p := range parts {
-				p = strings.TrimSpace(p)
-				if p != "" {
-					out = append(out, p)
-				}
+	// Load _config.yaml from the base directory.
+	// Precedence: environment variable > _config.yaml value > built-in default.
+	yamlCfg := loadConfigMap(filepath.Join(base, "_config.yaml"))
+	if yamlCfg != nil {
+		log.Printf("Loaded configuration from %s/_config.yaml", base)
+	}
+
+	resolve := func(yamlKey, envVar, def string) string {
+		if v, ok := configString(yamlCfg, yamlKey, ""); ok {
+			def = v
+		}
+		if envVar != "" {
+			if v := os.Getenv(envVar); v != "" {
+				return v
 			}
-			return out
-		}(),
+		}
+		return def
+	}
+	resolveInt := func(yamlKey string, def int) int {
+		if v, ok := configInt(yamlCfg, yamlKey, 0); ok {
+			return v
+		}
+		return def
+	}
+
+	httpAddr := resolve("http", "HTTP_ADDR", ":80")
+	httpsAddr := resolve("https", "HTTPS_ADDR", ":443")
+	leEmail := resolve("email", "LE_EMAIL", "")
+	cacheDir := resolve("cert-cache", "CERT_CACHE", "./cert-cache")
+	cacheMaxSizeMB := resolveInt("cache-size", 1024)
+	cacheMaxAgeSec := resolveInt("cache-age", int(defaultCacheMaxAge.Seconds()))
+	maxStaticAgeSec := resolveInt("static-age", 86400)
+	maxParentLvls := resolveInt("parent-levels", DefaultMaxParentLevels)
+
+	// PHP: _config.yaml > PHP_CGI env > auto-detect
+	phpcgi := resolve("php", "PHP_CGI", "")
+	if phpcgi == "" {
+		phpcgi = findPHPCGI()
+	}
+
+	// Index priority: _config.yaml > INDEX env > default
+	var indexPriority []string
+	if idx, ok := configIndex(yamlCfg, "index"); ok {
+		indexPriority = idx
+	} else if v := os.Getenv("INDEX"); v != "" {
+		for _, p := range strings.Split(v, ",") {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				indexPriority = append(indexPriority, p)
+			}
+		}
+	} else {
+		indexPriority = []string{"index.yaml", "index.md", "index.php", "index.html", "index.htm"}
+	}
+
+	// Warn if php-cgi was not found
+	if phpcgi == "" {
+		log.Printf("Warning: php-cgi not found in PATH or common locations; .php files will not work (set php in _config.yaml or PHP_CGI env)")
+	} else if _, err := os.Stat(phpcgi); err != nil {
+		log.Printf("Warning: php-cgi not found at %s; .php files will not work", phpcgi)
+	} else {
+		log.Printf("Using php-cgi: %s", phpcgi)
+	}
+
+	cacheMaxAge := time.Duration(cacheMaxAgeSec) * time.Second
+	maxStaticAge := time.Duration(maxStaticAgeSec) * time.Second
+
+	// Initialize render cache (unless disabled with cache-size: 0)
+	var cache *renderCache
+	if cacheMaxSizeMB > 0 {
+		configuredMax := int64(cacheMaxSizeMB) * (1 << 20) // MB to bytes
+		effectiveMax := detectAvailableRAM(configuredMax)
+		cache = newRenderCache(effectiveMax, cacheMaxAge)
+		log.Printf("Render cache: %s max, %s max age, fsnotify file watching",
+			formatBytes(effectiveMax), cacheMaxAge)
+	} else {
+		log.Printf("Render cache disabled (cache-size: 0)")
+	}
+
+	cfg := &config{
+		Base:     base,
+		HTTPAddr: httpAddr,
+		HTTPSAddr: httpsAddr,
+		CacheDir: cacheDir,
+		LEEmail:  leEmail,
+		PHPCGI:   phpcgi,
+		Cache:    cache,
+		Site: siteSettings{
+			CacheAge:     cacheMaxAge,
+			StaticAge:    maxStaticAge,
+			ParentLevels: maxParentLvls,
+			Index:        indexPriority,
+		},
 	}
 
 	mux := &virtualHostMux{cfg: cfg}
+
+	// Wrap mux with logging and security headers
+	var handler http.Handler = mux
+	handler = securityHeadersMiddleware(handler)
+	handler = loggingMiddleware(handler)
 
 	m := &autocert.Manager{
 		Cache:  autocert.DirCache(cfg.CacheDir),
@@ -442,7 +623,7 @@ func main() {
 	httpsOK := false
 	httpsSrv := &http.Server{
 		Addr:    cfg.HTTPSAddr,
-		Handler: mux,
+		Handler: handler,
 		TLSConfig: &tls.Config{
 			GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 				if !isPublicDomain(hello.ServerName) {
@@ -480,7 +661,7 @@ func main() {
 			http.Redirect(w, r, u.String(), http.StatusPermanentRedirect)
 		}))
 	} else {
-		httpHandler = mux
+		httpHandler = handler
 	}
 
 	httpSrv := &http.Server{
@@ -511,31 +692,9 @@ func main() {
 	}
 
 	// Drop privileges AFTER opening privileged ports but BEFORE serving
-	nobody, err := user.Lookup("nobody")
-	if err != nil {
-		log.Printf("Warning: cannot find user 'nobody': %v (continuing as current user)", err)
-	} else {
-		uid, err := strconv.Atoi(nobody.Uid)
-		if err != nil {
-			log.Printf("Warning: cannot convert UID: %v (continuing as current user)", err)
-		} else {
-			gid, err := strconv.Atoi(nobody.Gid)
-			if err != nil {
-				log.Printf("Warning: cannot convert GID: %v (continuing as current user)", err)
-			} else {
-				if err := syscall.Setgroups([]int{gid}); err != nil {
-					log.Printf("Warning: cannot set supplementary groups: %v (continuing as current user)", err)
-				} else if err := syscall.Setgid(gid); err != nil {
-					log.Printf("Warning: cannot set GID %d: %v (continuing as current user)", gid, err)
-				} else if err := syscall.Setuid(uid); err != nil {
-					log.Printf("Warning: cannot set UID %d: %v (continuing as current user)", uid, err)
-				} else {
-					log.Printf("Changed to nobody user, UID: %d GID: %d", uid, gid)
-				}
-			}
-		}
-	}
+	dropPrivileges()
 
+	// Start servers
 	errCh := make(chan error, 2)
 	go func() {
 		log.Printf("HTTP  -> %s", cfg.HTTPAddr)
@@ -549,24 +708,35 @@ func main() {
 		}()
 	}
 
-	srvErr := <-errCh
-	log.Printf("server error: %v", srvErr)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	_ = httpSrv.Shutdown(ctx)
-	if httpsOK {
-		_ = httpsSrv.Shutdown(ctx)
+	// Wait for a signal (SIGINT, SIGTERM) or a server error
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case sig := <-sigCh:
+		log.Printf("Received signal %v, shutting down gracefully...", sig)
+	case err := <-errCh:
+		log.Printf("Server error: %v, shutting down...", err)
 	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := httpSrv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("HTTP shutdown error: %v", err)
+	}
+	if httpsOK {
+		if err := httpsSrv.Shutdown(shutdownCtx); err != nil {
+			log.Printf("HTTPS shutdown error: %v", err)
+		}
+	}
+	if cache != nil {
+		cache.Close()
+	}
+	log.Printf("Server stopped")
 }
 
 const acmeALPNProto = "acme-tls/1"
 
-func getenv(key, def string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return def
-}
 
 // findPHPCGI searches for the php-cgi executable. It first checks $PATH
 // via exec.LookPath, then tries common installation locations.
@@ -626,18 +796,67 @@ func isPublicDomain(host string) bool {
 	return true
 }
 
-func pathErrReason(path string, err error, info os.FileInfo) string {
+// dropPrivileges attempts to drop to the 'nobody' user after binding
+// privileged ports. Failures are logged as warnings; the server continues
+// as the current user.
+func dropPrivileges() {
+	nobody, err := user.Lookup("nobody")
 	if err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Sprintf("%s does not exist", path)
-		}
-		if os.IsPermission(err) {
-			return fmt.Sprintf("%s permission denied", path)
-		}
-		return fmt.Sprintf("%s error: %v", path, err)
+		log.Printf("Warning: cannot find user 'nobody': %v (continuing as current user)", err)
+		return
 	}
-	if info != nil && !info.IsDir() {
-		return fmt.Sprintf("%s is not a directory", path)
+	uid, err := strconv.Atoi(nobody.Uid)
+	if err != nil {
+		log.Printf("Warning: cannot convert UID: %v (continuing as current user)", err)
+		return
 	}
-	return fmt.Sprintf("%s unknown error", path)
+	gid, err := strconv.Atoi(nobody.Gid)
+	if err != nil {
+		log.Printf("Warning: cannot convert GID: %v (continuing as current user)", err)
+		return
+	}
+	if err := syscall.Setgroups([]int{gid}); err != nil {
+		log.Printf("Warning: cannot set supplementary groups: %v (continuing as current user)", err)
+		return
+	}
+	if err := syscall.Setgid(gid); err != nil {
+		log.Printf("Warning: cannot set GID %d: %v (continuing as current user)", gid, err)
+		return
+	}
+	if err := syscall.Setuid(uid); err != nil {
+		log.Printf("Warning: cannot set UID %d: %v (continuing as current user)", uid, err)
+		return
+	}
+	log.Printf("Dropped privileges to nobody (UID=%d GID=%d)", uid, gid)
+}
+
+// loggingResponseWriter wraps http.ResponseWriter to capture the status code.
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
+
+// loggingMiddleware logs each request with method, path, status, and duration.
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		lrw := &loggingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		next.ServeHTTP(lrw, r)
+		log.Printf("%s %s %s %d %s", r.Host, r.Method, r.URL.Path, lrw.statusCode, time.Since(start).Round(time.Millisecond))
+	})
+}
+
+// securityHeadersMiddleware adds standard security headers to all responses.
+func securityHeadersMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		next.ServeHTTP(w, r)
+	})
 }

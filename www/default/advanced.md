@@ -29,34 +29,24 @@ bserver supports automatic HTTPS with Let's Encrypt certificates via the
 certificates are automatically obtained and renewed for the domains being
 served.
 
-## Custom HTML Tags
+## Known HTML Tags
 
-By default, bserver recognizes standard HTML5 tags. You can register additional
-tags using `_tags.yaml` in any directory:
-
-```yaml
-# _tags.yaml
-- my-component
-- custom-widget
-- app-header
-```
-
-Tags are loaded per-directory as bserver searches upward during name
-resolution. Once a tag is registered, it can be used as a map key to create
-that HTML element:
+bserver recognizes standard HTML5 tags. When a YAML key matches a known tag
+name, it is rendered directly as that HTML element rather than being treated
+as a name to resolve. For custom elements or non-standard tags, use a format
+definition instead:
 
 ```yaml
+^my-component:
+  tag: my-component
+
 main:
   - my-component: "Content inside custom element"
 ```
 
 Renders: `<my-component>Content inside custom element</my-component>`
 
-This is useful for web components or custom element frameworks.
-
-### Default Known Tags
-
-These HTML tags are recognized without `_tags.yaml`:
+### Recognized Tags
 
 **Document:** `html`, `head`, `body`, `title`, `meta`, `link`, `style`,
 `script`
@@ -210,7 +200,7 @@ Search order:
 ```
 
 This cascading search is why shared definitions (like `html.yaml`,
-`navbar.yaml`) in the bserver root directory work for all sites — they're
+`navbar.yaml`) in the content root directory work for all sites — they're
 found when the search walks up from the site directory.
 
 ### Markdown Name Resolution
@@ -274,8 +264,8 @@ This makes missing definitions immediately obvious during development.
 
 ## Debug Mode
 
-Set the `DEBUG` environment variable to enable debug HTML comments throughout
-the rendered output:
+Add `?debug` to any URL to enable debug HTML comments throughout the rendered
+output:
 
 ```html
 <!-- resolve "html" from /path/to/html.yaml -->

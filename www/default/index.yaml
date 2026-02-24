@@ -32,4 +32,6 @@ main:
       /formats: Format Definitions
       /components: Built-in Components
       /scripts: Server-Side Scripts
+      /error-handling: Error Handling
+      /server-features: Server Features
       /advanced: Advanced Features
