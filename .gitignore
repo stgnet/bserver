@@ -4,3 +4,4 @@ cert-cache/
 *.key
 *.crt
 .env
+__pycache__/
