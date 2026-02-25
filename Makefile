@@ -1,4 +1,4 @@
-.PHONY: build test vet lint clean install
+.PHONY: build test vet lint clean install log
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
@@ -22,3 +22,6 @@ clean:
 
 install: build
 	sudo ./install-service.sh
+
+log:
+	./install-service.sh log
