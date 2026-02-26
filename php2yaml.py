@@ -417,8 +417,18 @@ BUILTIN_FORMATS = {
 # Block-level tags that can be converted to markdown
 MARKDOWN_BLOCK_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "hr", "br", "pre", "blockquote", "img"}
 
-# Inline tags that have markdown equivalents
+# Inline tags that have direct markdown equivalents
 MARKDOWN_INLINE_TAGS = {"a", "strong", "b", "em", "i", "code", "br", "span"}
+
+# Tags that require special YAML handling and CANNOT be in markdown.
+# Everything not in this set can be passed through as raw HTML in markdown.
+NON_MARKDOWN_TAGS = {
+    "table", "thead", "tbody", "tfoot", "tr", "th", "td",
+    "form", "input", "textarea", "select", "option", "button", "label",
+    "iframe", "video", "audio", "canvas", "object",
+    "script", "style", "link", "meta", "title",
+    "nav", "header", "footer",
+}
 
 # Minimum consecutive markdown-compatible nodes to trigger grouping
 MIN_MARKDOWN_RUN = 2
@@ -567,39 +577,53 @@ class PageConverter:
         if node.has_php():
             return False
         tag = node.tag.lower()
+        # Tags that require special YAML handling — never markdown
+        if tag in NON_MARKDOWN_TAGS:
+            return False
         # Block-level markdown tags
         if tag in MARKDOWN_BLOCK_TAGS:
             if self._has_significant_attrs(node):
                 return False
             return self._has_markdown_inline_only(node)
-        # Inline tags at block level (e.g. standalone <b>Please Note:</b>)
-        if tag in MARKDOWN_INLINE_TAGS:
-            return self._has_markdown_inline_only(node)
+        # Container tags with class/id/style need format definitions, not markdown
+        if tag in ("div", "section", "article", "aside") and self._has_significant_attrs(node):
+            return False
+        # Any other tag at block level (known inline tags like <b>, <a>,
+        # and unknown inline HTML like <mark>, <del>, etc.) — accept if
+        # children are markdown-compatible. Markdown passes inline HTML through.
+        return self._has_markdown_inline_only(node)
 
     def _has_markdown_inline_only(self, node: DOMNode) -> bool:
-        """Check if all children are text or markdown-compatible tags."""
+        """Check if all children are text or markdown-compatible tags.
+
+        Uses a blacklist (NON_MARKDOWN_TAGS) rather than a whitelist so that
+        unknown inline HTML tags like <mark>, <del>, <ins>, <sub>, <sup>,
+        <abbr>, etc. are accepted — markdown passes inline HTML through.
+        """
         for child in node.children:
             if child.is_text:
                 continue
             if child.is_php:
                 return False
             tag = child.tag.lower()
+            # Tags that require special YAML handling — reject
+            if tag in NON_MARKDOWN_TAGS:
+                return False
             if tag == "li":
                 # li is valid inside ul/ol
                 if not self._has_markdown_inline_only(child):
                     return False
                 continue
-            # Allow block-level markdown children (e.g. <ul> inside <p>)
+            # Block-level markdown tags (h1-h6, p, ul, ol, etc.)
             if tag in MARKDOWN_BLOCK_TAGS:
                 if self._has_significant_attrs(child) and tag != "img":
                     return False
                 if not self._has_markdown_inline_only(child):
                     return False
                 continue
-            if tag not in MARKDOWN_INLINE_TAGS:
-                return False
-            # For inline tags, don't reject based on attributes — markdown
-            # conversion only uses text/href and drops styling attrs anyway.
+            # Everything else (known inline tags AND unknown inline HTML tags
+            # like <mark>, <del>, <ins>, <sub>, <sup>, etc.) — accept and
+            # recurse into children.
             if not self._has_markdown_inline_only(child):
                 return False
         return True
@@ -697,9 +721,6 @@ class PageConverter:
             text = node.text.strip()
             return text  # empty for whitespace, content for real text
         tag = node.tag.lower()
-        # Inline tags at block level — render using inline-to-markdown
-        if tag in MARKDOWN_INLINE_TAGS:
-            return self._inline_to_markdown_element(node).strip()
         if tag in ("h1", "h2", "h3", "h4", "h5", "h6"):
             level = int(tag[1])
             text = self._inline_to_markdown(node).strip()
@@ -744,7 +765,8 @@ class PageConverter:
             text = self._inline_to_markdown(node).strip()
             lines = text.split("\n")
             return "\n".join("> " + line for line in lines)
-        return ""
+        # Any other tag (inline or unknown) — render via inline-to-markdown
+        return self._inline_to_markdown_element(node).strip()
 
     def _group_markdown(self, children: list[DOMNode]) -> list[Any]:
         """Convert children, grouping consecutive markdown-compatible nodes.
