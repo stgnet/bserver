@@ -586,6 +586,36 @@ func TestYAMLParseErrorDashPrefixSeparateFile(t *testing.T) {
 	}
 }
 
+func TestYAMLParseErrorAtTopOfBody(t *testing.T) {
+	// YAML errors must appear at the top of <body>, not buried inside
+	// structural elements like the navbar. When a page file has an error,
+	// the error banner should be injected right after the <body> tag.
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n  - p: - bad yaml text\n",
+	})
+	// Add a navbar to html.yaml so there's structural content before main
+	os.WriteFile(filepath.Join(dir, "html.yaml"),
+		[]byte("html:\n - body\n\nbody:\n - navbar\n - main\n\nnavbar:\n - nav\n\nnav:\n - navitem\n\nnavitem: Home\n"), 0644)
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	if !strings.Contains(output, "YAML error") {
+		t.Fatalf("expected YAML error in output, got: %s", output)
+	}
+	// Error must come right after <body>, before any navbar content
+	bodyIdx := strings.Index(output, "<body>")
+	errorIdx := strings.Index(output, "YAML error")
+	navIdx := strings.Index(output, "Home")
+	if bodyIdx < 0 || errorIdx < 0 {
+		t.Fatal("expected <body> and YAML error in output")
+	}
+	if errorIdx < bodyIdx {
+		t.Error("YAML error should be after <body> tag")
+	}
+	if navIdx >= 0 && errorIdx > navIdx {
+		t.Error("YAML error should appear before navbar content, not after")
+	}
+}
+
 func TestCircularReferenceHandled(t *testing.T) {
 	dir := setupMinimalSite(t, map[string]string{
 		"index.yaml": "main:\n - alpha\n",

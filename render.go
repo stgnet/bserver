@@ -141,7 +141,35 @@ func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, r 
 	var sb strings.Builder
 	sb.WriteString("<!DOCTYPE html>\n")
 	ctx.renderName(&sb, "html", 0)
-	return sb.String(), ctx.sourceFilesList()
+
+	output := sb.String()
+
+	// Inject YAML error banners at the top of <body> so they're always
+	// visible — not buried inside navbar or other structural elements.
+	if len(ctx.yamlErrors) > 0 {
+		var errorBanner strings.Builder
+		for file, errMsg := range ctx.yamlErrors {
+			fmt.Fprintf(&errorBanner,
+				"<div style=\"border:2px dashed red;padding:8px;margin:4px;color:red;\">"+
+					"YAML error in <strong>%s</strong>: %s</div>\n",
+				html.EscapeString(filepath.Base(file)), html.EscapeString(errMsg))
+		}
+		if banner := errorBanner.String(); banner != "" {
+			if idx := strings.Index(output, "<body>"); idx >= 0 {
+				insertPos := idx + len("<body>")
+				output = output[:insertPos] + "\n" + banner + output[insertPos:]
+			} else if idx := strings.Index(output, "<body "); idx >= 0 {
+				// <body> with attributes — find closing >
+				closeIdx := strings.Index(output[idx:], ">")
+				if closeIdx >= 0 {
+					insertPos := idx + closeIdx + 1
+					output = output[:insertPos] + "\n" + banner + output[insertPos:]
+				}
+			}
+		}
+	}
+
+	return output, ctx.sourceFilesList()
 }
 
 // renderErrorPage renders an error page through the YAML rendering pipeline.
@@ -690,17 +718,14 @@ func (ctx *renderContext) renderName(sb *strings.Builder, name string, depth int
 
 	content, source, found := ctx.findDefinition(name)
 
-	// If not found and a YAML parse error exists, show it immediately.
-	// This must happen before special-case handlers (scripts, iteration, etc.)
-	// that would otherwise return early and hide the error.
+	// If not found and a YAML parse error exists, emit a debug comment only.
+	// The actual error banner is injected at the top of <body> by renderYAMLPage
+	// so it's always visible (not buried inside navbar or other structural elements).
 	if !found {
 		if file, errMsg := ctx.yamlErrorForName(name); errMsg != "" {
 			if ctx.debug {
 				fmt.Fprintf(sb, "<!-- %q: YAML parse error in %s: %s -->\n", name, file, errMsg)
 			}
-			fmt.Fprintf(sb, "%s<div style=\"border:2px dashed red;padding:8px;margin:4px;color:red;\">"+
-				"YAML error in <strong>%s</strong>: %s</div>\n",
-				indent(depth), html.EscapeString(file), html.EscapeString(errMsg))
 			return
 		}
 	}
