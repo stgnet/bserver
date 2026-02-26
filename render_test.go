@@ -491,6 +491,35 @@ func TestMalformedYAMLDoesNotPanic(t *testing.T) {
 	}
 }
 
+func TestYAMLParseErrorDisplayed(t *testing.T) {
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n - broken\n",
+		"broken.yaml": "broken:\n\t- invalid yaml\n  mixed indent",
+	})
+
+	// When a YAML file has a parse error, it should show a visible error
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	if !strings.Contains(output, "YAML error") {
+		t.Error("expected visible YAML error message in output")
+	}
+	if !strings.Contains(output, "broken.yaml") {
+		t.Error("expected error to mention the filename broken.yaml")
+	}
+}
+
+func TestYAMLParseErrorInDebug(t *testing.T) {
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n - broken\n",
+		"broken.yaml": "broken:\n\t- invalid yaml\n  mixed indent",
+	})
+
+	// In debug mode, YAML parse errors should appear in HTML comments
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), true, 1, nil)
+	if !strings.Contains(output, "YAML parse error") {
+		t.Error("expected YAML parse error in debug comment")
+	}
+}
+
 func TestCircularReferenceHandled(t *testing.T) {
 	dir := setupMinimalSite(t, map[string]string{
 		"index.yaml": "main:\n - alpha\n",

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -81,6 +82,7 @@ type renderContext struct {
 	defs            map[string]interface{} // content definitions (name -> yaml value)
 	formats         map[string]*formatDef  // format definitions (^name -> formatDef)
 	filesLoaded     map[string]bool        // yaml files already loaded (prevent re-loading)
+	yamlErrors      map[string]string      // yaml files that failed to parse (path -> error message)
 	resolving       map[string]bool        // cycle detection
 	debug           bool                   // emit HTML comments tracing resolution
 }
@@ -98,6 +100,7 @@ func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, r 
 		defs:            make(map[string]interface{}),
 		formats:         make(map[string]*formatDef),
 		filesLoaded:     make(map[string]bool),
+		yamlErrors:      make(map[string]string),
 		resolving:       make(map[string]bool),
 		debug:           debug,
 	}
@@ -165,6 +168,7 @@ func renderErrorPage(docRoot string, statusCode int, message string, debug bool,
 		defs:            make(map[string]interface{}),
 		formats:         make(map[string]*formatDef),
 		filesLoaded:     make(map[string]bool),
+		yamlErrors:      make(map[string]string),
 		resolving:       make(map[string]bool),
 		debug:           debug,
 	}
@@ -229,6 +233,7 @@ func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int,
 		defs:            make(map[string]interface{}),
 		formats:         make(map[string]*formatDef),
 		filesLoaded:     make(map[string]bool),
+		yamlErrors:      make(map[string]string),
 		resolving:       make(map[string]bool),
 		debug:           debug,
 	}
@@ -285,6 +290,8 @@ func (ctx *renderContext) loadYAMLFile(path string) {
 
 	parsed, parseErr := parseYAMLOrdered(data)
 	if parseErr != nil {
+		log.Printf("YAML parse error in %s: %v", path, parseErr)
+		ctx.yamlErrors[path] = parseErr.Error()
 		return
 	}
 
@@ -301,6 +308,18 @@ func (ctx *renderContext) loadYAMLFile(path string) {
 			ctx.defs[name] = list
 		}
 	}
+}
+
+// yamlErrorForName checks if any YAML file matching the given name had a parse error.
+// It searches the yamlErrors map for files named "name.yaml" in any directory.
+func (ctx *renderContext) yamlErrorForName(name string) string {
+	target := name + ".yaml"
+	for path, errMsg := range ctx.yamlErrors {
+		if filepath.Base(path) == target {
+			return errMsg
+		}
+	}
+	return ""
 }
 
 // mergeDoc processes a parsed YAML document's keys into defs and formats.
@@ -621,7 +640,12 @@ func (ctx *renderContext) renderName(sb *strings.Builder, name string, depth int
 		if found {
 			fmt.Fprintf(sb, "<!-- resolve %q from %s -->\n", name, source)
 		} else {
-			fmt.Fprintf(sb, "<!-- %q: not found -->\n", name)
+			// Check if a YAML file for this name had a parse error
+			if errMsg := ctx.yamlErrorForName(name); errMsg != "" {
+				fmt.Fprintf(sb, "<!-- %q: YAML parse error: %s -->\n", name, errMsg)
+			} else {
+				fmt.Fprintf(sb, "<!-- %q: not found -->\n", name)
+			}
 		}
 	}
 
@@ -775,10 +799,16 @@ func (ctx *renderContext) renderName(sb *strings.Builder, name string, depth int
 		return
 	}
 
-	// Unresolved name
-	fmt.Fprintf(sb, "%s<div style=\"border:2px dashed red;padding:8px;margin:4px;color:red;\">"+
-		"Undefined name: <strong>%s</strong></div>\n",
-		indent(depth), html.EscapeString(name))
+	// Unresolved name — check if a YAML parse error is the cause
+	if errMsg := ctx.yamlErrorForName(name); errMsg != "" {
+		fmt.Fprintf(sb, "%s<div style=\"border:2px dashed red;padding:8px;margin:4px;color:red;\">"+
+			"YAML error in <strong>%s.yaml</strong>: %s</div>\n",
+			indent(depth), html.EscapeString(name), html.EscapeString(errMsg))
+	} else {
+		fmt.Fprintf(sb, "%s<div style=\"border:2px dashed red;padding:8px;margin:4px;color:red;\">"+
+			"Undefined name: <strong>%s</strong></div>\n",
+			indent(depth), html.EscapeString(name))
+	}
 }
 
 // renderContent renders a yaml value as page content.
