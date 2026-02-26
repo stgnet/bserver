@@ -74,6 +74,12 @@ def yaml_dump(data: Any, indent: int = 0, flow: bool = False) -> str:
                 elif isinstance(v, str) and "\n" not in v:
                     val = yaml_dump(v, indent + 1)
                     lines.append(f"{pad}- {_yaml_key(k)}: {val}")
+                elif isinstance(v, str) and "\n" in v:
+                    # Multi-line string: put | on same line as key
+                    body_pad = "  " * (indent + 2)
+                    body_lines = v.rstrip("\n").split("\n")
+                    body = "\n".join(f"{body_pad}{l.expandtabs(4)}" for l in body_lines)
+                    lines.append(f"{pad}- {_yaml_key(k)}: |\n{body}")
                 else:
                     # Generate value without padding, then indent to correct level
                     val = yaml_dump(v, 0)
@@ -86,6 +92,12 @@ def yaml_dump(data: Any, indent: int = 0, flow: bool = False) -> str:
                     if isinstance(v, (str, int, float, bool)) and "\n" not in str(v):
                         val = yaml_dump(v, 0)
                         lines.append(f"{pad}{prefix}{_yaml_key(k)}: {val}")
+                    elif isinstance(v, str) and "\n" in v:
+                        # Multi-line string: put | on same line as key
+                        body_pad = "  " * (indent + 2)
+                        body_lines = v.rstrip("\n").split("\n")
+                        body = "\n".join(f"{body_pad}{l.expandtabs(4)}" for l in body_lines)
+                        lines.append(f"{pad}{prefix}{_yaml_key(k)}: |\n{body}")
                     else:
                         # Generate value without padding, then indent to correct level
                         val = yaml_dump(v, 0)
@@ -590,15 +602,16 @@ class PageConverter:
         parts = []
         for child in node.children:
             if child.is_text:
-                parts.append(child.text)
+                # Normalize whitespace: HTML collapses whitespace to single spaces
+                parts.append(re.sub(r'\s+', ' ', child.text))
                 continue
             tag = child.tag.lower()
             if tag == "a":
-                href = child.attrs.get("href", "")
-                text = self._inline_to_markdown(child)
+                href = child.attrs.get("href", "").strip()
+                text = self._inline_to_markdown(child).strip()
                 parts.append(f"[{text}]({href})")
             elif tag in ("strong", "b"):
-                text = self._inline_to_markdown(child)
+                text = self._inline_to_markdown(child).strip()
                 parts.append(f"**{text}**")
             elif tag in ("em", "i"):
                 text = self._inline_to_markdown(child)
