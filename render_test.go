@@ -745,6 +745,54 @@ func BenchmarkRenderYAMLPage(b *testing.B) {
 	}
 }
 
+func TestMarkupMarkdownNamed(t *testing.T) {
+	// Test markup: markdown via a named definition (markdown: |)
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml":    "main:\n - markdown\n",
+		"markdown.yaml": "^markdown:\n  markup: markdown\nmarkdown: |\n  # Hello World\n  This is **bold** text.\n",
+	})
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	if !strings.Contains(output, "<h1>Hello World</h1>") {
+		t.Errorf("expected <h1> from markdown heading, got: %s", output)
+	}
+	if !strings.Contains(output, "<strong>bold</strong>") {
+		t.Errorf("expected <strong> from markdown bold, got: %s", output)
+	}
+}
+
+func TestMarkupMarkdownInline(t *testing.T) {
+	// Test markup: markdown via inline map entry {markdown: "text"}
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml":    "main:\n  - markdown: |\n      # Inline Heading\n      A paragraph with *emphasis*.\n",
+		"markdown.yaml": "^markdown:\n  markup: markdown\n",
+	})
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	if !strings.Contains(output, "<h1>Inline Heading</h1>") {
+		t.Errorf("expected <h1> from inline markdown, got: %s", output)
+	}
+	if !strings.Contains(output, "<em>emphasis</em>") {
+		t.Errorf("expected <em> from inline markdown, got: %s", output)
+	}
+}
+
+func TestMarkupMarkdownWithTag(t *testing.T) {
+	// Test markup: markdown with a tag wrapping the output
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml":   "main:\n  - article: |\n      ## Section\n      Some text.\n",
+		"article.yaml": "^article:\n  tag: article\n  markup: markdown\n",
+	})
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	if !strings.Contains(output, "<article>") {
+		t.Errorf("expected <article> tag wrapper, got: %s", output)
+	}
+	if !strings.Contains(output, "<h2>Section</h2>") {
+		t.Errorf("expected <h2> from markdown, got: %s", output)
+	}
+}
+
 func BenchmarkRenderMarkdownPage(b *testing.B) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "www", "default")

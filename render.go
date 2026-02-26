@@ -277,6 +277,21 @@ func (ctx *renderContext) sourceFilesList() []string {
 	return files
 }
 
+// processMarkup converts string content through a markup processor.
+// Currently supports "markdown" using goldmark.
+func (ctx *renderContext) processMarkup(markup, content string) string {
+	switch strings.ToLower(markup) {
+	case "markdown", "md":
+		var buf bytes.Buffer
+		if err := mdRenderer.Convert([]byte(content), &buf); err != nil {
+			return fmt.Sprintf("<!-- markup error: %v -->\n", err)
+		}
+		return buf.String()
+	default:
+		return fmt.Sprintf("<!-- unknown markup language: %s -->\n", markup)
+	}
+}
+
 // loadYAMLFile reads a yaml file and processes its keys:
 //   - ^name keys go into formats
 //   - +name keys merge into existing defs
@@ -724,6 +739,24 @@ func (ctx *renderContext) renderName(sb *strings.Builder, name string, depth int
 		return
 	}
 
+	// Special case: markup processing (markup: "markdown")
+	// Converts the string content through a markup processor before rendering.
+	if fd != nil && fd.Markup != "" && found {
+		if str, ok := content.(string); ok {
+			converted := ctx.processMarkup(fd.Markup, str)
+			if tag != "" {
+				attrs := ""
+				if fd.Params != nil {
+					attrs = formatParamsWithVars(fd.Params, nil)
+				}
+				writeTagWithContent(sb, tag, attrs, converted, depth)
+			} else {
+				sb.WriteString(converted)
+			}
+			return
+		}
+	}
+
 	// If we have a format with $key/$value params and no $* contents,
 	// this is an iteration format (like ^meta): render each entry separately.
 	if fd != nil && fd.Tag != "" && hasVarSubstitution(fd) && fd.Contents != "$*" {
@@ -935,6 +968,23 @@ func (ctx *renderContext) renderContent(sb *strings.Builder, val interface{}, de
 func (ctx *renderContext) renderInlineTag(sb *strings.Builder, name, tag string, fd *formatDef, content interface{}, depth int) {
 	if ctx.debug {
 		fmt.Fprintf(sb, "<!-- inline tag %q -> <%s> -->\n", name, tag)
+	}
+
+	// Markup processing: convert content through markup processor (e.g., markdown)
+	if fd != nil && fd.Markup != "" {
+		if str, ok := content.(string); ok {
+			converted := ctx.processMarkup(fd.Markup, str)
+			if tag != "" {
+				attrs := ""
+				if fd.Params != nil {
+					attrs = formatParamsWithVars(fd.Params, nil)
+				}
+				writeTagWithContent(sb, tag, attrs, converted, depth)
+			} else {
+				sb.WriteString(converted)
+			}
+			return
+		}
 	}
 
 	// If the format has $var params and content is a map, use entries as var substitutions

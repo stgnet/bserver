@@ -397,6 +397,14 @@ BUILTIN_FORMATS = {
     "row", "col", "section", "code", "navbar",
 }
 
+# Builtin formats whose content: definition already wraps children in a
+# sub-format.  When php2yaml sees e.g. <div class="card"><div class="card-body">
+# content</div></div>, it should output  card: content  instead of
+# card: {card-body: content}  because ^card already wraps with cardbody.
+BUILTIN_CONTENT_WRAPS = {
+    "card": {"card-body", "cardbody"},
+}
+
 
 class PageConverter:
     """Converts a parsed DOM tree into a bserver YAML page structure."""
@@ -788,9 +796,33 @@ class PageConverter:
                 fmt["params"] = dict(params)
             self.formats[fmt_name] = fmt
 
+        # If this is a builtin format that already wraps with a sub-format
+        # (e.g. card wraps with card-body), unwrap the child if it matches.
+        if fmt_name in BUILTIN_CONTENT_WRAPS:
+            wrap_names = BUILTIN_CONTENT_WRAPS[fmt_name]
+            children = self._unwrap_builtin_children(children, wrap_names)
+
         if len(children) == 1:
             return {fmt_name: children[0]}
         return {fmt_name: children}
+
+    def _unwrap_builtin_children(self, children: list, wrap_names: set) -> list:
+        """Unwrap children that match a builtin's content wrapper.
+
+        If the sole child is a dict like {card-body: content}, and card-body
+        is in wrap_names, return the inner content as the children instead.
+        """
+        if len(children) == 1 and isinstance(children[0], dict):
+            child = children[0]
+            if len(child) == 1:
+                key = next(iter(child))
+                # Match by class-derived name (card-body, cardbody, etc.)
+                if key in wrap_names:
+                    inner = child[key]
+                    if isinstance(inner, list):
+                        return inner
+                    return [inner]
+        return children
 
     def _make_format_name(self, tag: str, css_class: str) -> str:
         """Generate a descriptive format name from tag and CSS class."""

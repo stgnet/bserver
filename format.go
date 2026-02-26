@@ -17,6 +17,7 @@ type formatDef struct {
 	Script            string      // script language: "python", "javascript", "php"
 	Code              string      // inline script code (per-record body)
 	File              string      // script file to load code from (relative to docRoot)
+	Markup            string      // markup language for content: "markdown"
 }
 
 // parseFormatDef parses a ^name value into a formatDef struct.
@@ -74,6 +75,11 @@ func parseFormatDef(v interface{}) *formatDef {
 	if fileVal, ok := m.Get("file"); ok {
 		if file, ok := fileVal.(string); ok {
 			fd.File = file
+		}
+	}
+	if markupVal, ok := m.Get("markup"); ok {
+		if markup, ok := markupVal.(string); ok {
+			fd.Markup = markup
 		}
 	}
 	return fd
