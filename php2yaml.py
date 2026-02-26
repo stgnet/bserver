@@ -431,7 +431,7 @@ NON_MARKDOWN_TAGS = {
 }
 
 # Minimum consecutive markdown-compatible nodes to trigger grouping
-MIN_MARKDOWN_RUN = 2
+MIN_MARKDOWN_RUN = 1
 
 # Builtin formats whose content: definition already wraps children in a
 # sub-format.  When php2yaml sees e.g. <div class="card"><div class="card-body">
