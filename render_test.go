@@ -559,6 +559,33 @@ func TestYAMLParseErrorInDebug(t *testing.T) {
 	}
 }
 
+func TestYAMLParseErrorDashPrefix(t *testing.T) {
+	// When a page has unquoted text starting with "- " (which looks like
+	// a YAML list entry), the parse error must be visible in HTML output.
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n  - h1: Service Information\n  - p: - To get on our schedule.\n",
+	})
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	if !strings.Contains(output, "YAML error") {
+		t.Errorf("expected visible YAML error for unquoted dash prefix, got: %s", output)
+	}
+}
+
+func TestYAMLParseErrorDashPrefixSeparateFile(t *testing.T) {
+	// Same as above, but the parse error is in a separate data file
+	// referenced by the page.
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml":   "main:\n - service\n",
+		"service.yaml": "service:\n  - h1: Service\n  - p: - To get on our schedule.\n",
+	})
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	if !strings.Contains(output, "YAML error") {
+		t.Errorf("expected visible YAML error for separate file, got: %s", output)
+	}
+}
+
 func TestCircularReferenceHandled(t *testing.T) {
 	dir := setupMinimalSite(t, map[string]string{
 		"index.yaml": "main:\n - alpha\n",

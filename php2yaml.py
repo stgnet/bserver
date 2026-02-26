@@ -49,6 +49,11 @@ def yaml_dump(data: Any, indent: int = 0, flow: bool = False) -> str:
             body = "\n".join(f"{pad}  {l.expandtabs(4)}" for l in lines)
             return f"{header}\n{body}"
         if _needs_quoting(data):
+            # Prefer block scalar over quotes for readability
+            # Use |- (strip) to avoid adding a trailing newline
+            if len(data) > 40:
+                body = f"{pad}  {data.expandtabs(4)}"
+                return f"|-\n{body}"
             return _quote(data)
         return data
 
@@ -557,17 +562,19 @@ class PageConverter:
         if node.is_php:
             return False
         if node.is_text:
-            # Whitespace-only text between block elements is fine
-            return node.text.strip() == ""
+            # Any text node (including non-whitespace) is markdown-compatible
+            return True
         if node.has_php():
             return False
         tag = node.tag.lower()
-        if tag not in MARKDOWN_BLOCK_TAGS:
-            return False
-        if self._has_significant_attrs(node):
-            return False
-        # Children must be markdown-inline compatible
-        return self._has_markdown_inline_only(node)
+        # Block-level markdown tags
+        if tag in MARKDOWN_BLOCK_TAGS:
+            if self._has_significant_attrs(node):
+                return False
+            return self._has_markdown_inline_only(node)
+        # Inline tags at block level (e.g. standalone <b>Please Note:</b>)
+        if tag in MARKDOWN_INLINE_TAGS:
+            return self._has_markdown_inline_only(node)
 
     def _has_markdown_inline_only(self, node: DOMNode) -> bool:
         """Check if all children are text or markdown-compatible tags."""
@@ -659,11 +666,40 @@ class PageConverter:
                 parts.append(child.outer_html())
         return "".join(parts)
 
+    def _inline_to_markdown_element(self, node: DOMNode) -> str:
+        """Convert a single inline element to markdown (dispatches by tag)."""
+        tag = node.tag.lower()
+        if tag == "a":
+            href = node.attrs.get("href", "").strip()
+            text = self._inline_to_markdown(node).strip()
+            return f"[{text}]({href})"
+        if tag in ("strong", "b"):
+            text = self._inline_to_markdown(node).strip()
+            return f"**{text}**" if text else node.outer_html()
+        if tag in ("em", "i"):
+            if self._has_significant_attrs(node):
+                return node.outer_html()
+            text = self._inline_to_markdown(node)
+            return f"*{text}*" if text.strip() else node.outer_html()
+        if tag == "code":
+            return f"`{node.text_content()}`"
+        if tag == "br":
+            return "  \n"
+        if tag == "span":
+            if self._has_significant_attrs(node):
+                return node.outer_html()
+            return self._inline_to_markdown(node)
+        return node.outer_html()
+
     def _node_to_markdown(self, node: DOMNode) -> str:
         """Convert a single DOM node to a markdown string."""
         if node.is_text:
-            return ""  # whitespace between blocks, skip
+            text = node.text.strip()
+            return text  # empty for whitespace, content for real text
         tag = node.tag.lower()
+        # Inline tags at block level — render using inline-to-markdown
+        if tag in MARKDOWN_INLINE_TAGS:
+            return self._inline_to_markdown_element(node).strip()
         if tag in ("h1", "h2", "h3", "h4", "h5", "h6"):
             level = int(tag[1])
             text = self._inline_to_markdown(node).strip()
