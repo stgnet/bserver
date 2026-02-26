@@ -323,6 +323,10 @@ class PHPHTMLParser(HTMLParser):
             return sentinel
         cleaned = self.PHP_RE.sub(_replace_php, source)
 
+        # Fix common HTML errors before parsing:
+        # Missing > in closing tags: </a</li> → </a></li>
+        cleaned = re.sub(r'</([a-zA-Z][a-zA-Z0-9]*)\s*(?=<)', r'</\1>', cleaned)
+
         self.feed(cleaned)
         self._resolve_php(self.root)
         return self.root
