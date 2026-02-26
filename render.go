@@ -314,16 +314,24 @@ func (ctx *renderContext) loadYAMLFile(path string) {
 	}
 }
 
-// yamlErrorForName checks if any YAML file matching the given name had a parse error.
-// It searches the yamlErrors map for files named "name.yaml" in any directory.
-func (ctx *renderContext) yamlErrorForName(name string) string {
+// yamlErrorForName checks if a YAML parse error may have caused a name to be
+// undefined. First checks for an exact filename match (name.yaml had error),
+// then falls back to returning any YAML error in the context — since a parse
+// error in any loaded file (e.g., index.yaml) could prevent names like "main"
+// from being defined.
+func (ctx *renderContext) yamlErrorForName(name string) (string, string) {
+	// Exact match: name.yaml had error
 	target := name + ".yaml"
 	for path, errMsg := range ctx.yamlErrors {
 		if filepath.Base(path) == target {
-			return errMsg
+			return target, errMsg
 		}
 	}
-	return ""
+	// Any YAML error could be the cause
+	for path, errMsg := range ctx.yamlErrors {
+		return filepath.Base(path), errMsg
+	}
+	return "", ""
 }
 
 // mergeDoc processes a parsed YAML document's keys into defs, formats, and data sources.
@@ -667,16 +675,26 @@ func (ctx *renderContext) renderName(sb *strings.Builder, name string, depth int
 
 	content, source, found := ctx.findDefinition(name)
 
+	// If not found and a YAML parse error exists, show it immediately.
+	// This must happen before special-case handlers (scripts, iteration, etc.)
+	// that would otherwise return early and hide the error.
+	if !found {
+		if file, errMsg := ctx.yamlErrorForName(name); errMsg != "" {
+			if ctx.debug {
+				fmt.Fprintf(sb, "<!-- %q: YAML parse error in %s: %s -->\n", name, file, errMsg)
+			}
+			fmt.Fprintf(sb, "%s<div style=\"border:2px dashed red;padding:8px;margin:4px;color:red;\">"+
+				"YAML error in <strong>%s</strong>: %s</div>\n",
+				indent(depth), html.EscapeString(file), html.EscapeString(errMsg))
+			return
+		}
+	}
+
 	if ctx.debug {
 		if found {
 			fmt.Fprintf(sb, "<!-- resolve %q from %s -->\n", name, source)
 		} else {
-			// Check if a YAML file for this name had a parse error
-			if errMsg := ctx.yamlErrorForName(name); errMsg != "" {
-				fmt.Fprintf(sb, "<!-- %q: YAML parse error: %s -->\n", name, errMsg)
-			} else {
-				fmt.Fprintf(sb, "<!-- %q: not found -->\n", name)
-			}
+			fmt.Fprintf(sb, "<!-- %q: not found -->\n", name)
 		}
 	}
 
@@ -830,16 +848,10 @@ func (ctx *renderContext) renderName(sb *strings.Builder, name string, depth int
 		return
 	}
 
-	// Unresolved name — check if a YAML parse error is the cause
-	if errMsg := ctx.yamlErrorForName(name); errMsg != "" {
-		fmt.Fprintf(sb, "%s<div style=\"border:2px dashed red;padding:8px;margin:4px;color:red;\">"+
-			"YAML error in <strong>%s.yaml</strong>: %s</div>\n",
-			indent(depth), html.EscapeString(name), html.EscapeString(errMsg))
-	} else {
-		fmt.Fprintf(sb, "%s<div style=\"border:2px dashed red;padding:8px;margin:4px;color:red;\">"+
-			"Undefined name: <strong>%s</strong></div>\n",
-			indent(depth), html.EscapeString(name))
-	}
+	// Unresolved name (YAML errors already handled above)
+	fmt.Fprintf(sb, "%s<div style=\"border:2px dashed red;padding:8px;margin:4px;color:red;\">"+
+		"Undefined name: <strong>%s</strong></div>\n",
+		indent(depth), html.EscapeString(name))
 }
 
 // renderContent renders a yaml value as page content.

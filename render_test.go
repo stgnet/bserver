@@ -507,6 +507,45 @@ func TestYAMLParseErrorDisplayed(t *testing.T) {
 	}
 }
 
+func TestYAMLParseErrorPageFile(t *testing.T) {
+	// When the PAGE FILE itself has a parse error, the error should still
+	// appear even though the undefined name (main) doesn't match the
+	// filename (index.yaml).
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n\t- invalid yaml\n  mixed indent",
+	})
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	if !strings.Contains(output, "YAML error") {
+		t.Errorf("expected YAML error block for page file parse error, got: %s", output)
+	}
+	if !strings.Contains(output, "index.yaml") {
+		t.Errorf("expected error to mention index.yaml, got: %s", output)
+	}
+	// Should NOT show generic "Undefined name: main" — YAML error is more informative
+	if strings.Contains(output, "Undefined name") {
+		t.Error("should show YAML error, not generic 'Undefined name'")
+	}
+}
+
+func TestYAMLParseErrorWithScript(t *testing.T) {
+	// When a name has a script-based format (^name with script:) but
+	// the data file has a YAML error, the error should be shown instead
+	// of running the script with no data.
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n - items\n",
+		"items.yaml": "items:\n\t- invalid yaml\n  mixed indent",
+	})
+	// Add a format with script for "items"
+	os.WriteFile(filepath.Join(dir, "html.yaml"),
+		[]byte("html:\n - body\n\n^items:\n  script: python\n  code: |\n    print('should not run')\n"), 0644)
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	if !strings.Contains(output, "YAML error") {
+		t.Errorf("expected YAML error block instead of running script, got: %s", output)
+	}
+}
+
 func TestYAMLParseErrorInDebug(t *testing.T) {
 	dir := setupMinimalSite(t, map[string]string{
 		"index.yaml": "main:\n - broken\n",
