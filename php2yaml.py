@@ -618,10 +618,21 @@ class PageConverter:
                 parts.append(f"[{text}]({href})")
             elif tag in ("strong", "b"):
                 text = self._inline_to_markdown(child).strip()
-                parts.append(f"**{text}**")
+                if text:
+                    parts.append(f"**{text}**")
+                else:
+                    # Empty bold tag (likely used as HTML element) — pass through
+                    parts.append(child.outer_html())
             elif tag in ("em", "i"):
-                text = self._inline_to_markdown(child)
-                parts.append(f"*{text}*")
+                if self._has_significant_attrs(child):
+                    # Has class/id/style — used as HTML element (e.g. icon), not emphasis
+                    parts.append(child.outer_html())
+                else:
+                    text = self._inline_to_markdown(child)
+                    if text.strip():
+                        parts.append(f"*{text}*")
+                    else:
+                        parts.append(child.outer_html())
             elif tag == "code":
                 text = child.text_content()
                 parts.append(f"`{text}`")
@@ -632,14 +643,20 @@ class PageConverter:
                 alt = child.attrs.get("alt", "")
                 parts.append(f"![{alt}]({src})")
             elif tag == "span":
-                parts.append(self._inline_to_markdown(child))
+                if self._has_significant_attrs(child):
+                    # Styled span — pass through as HTML
+                    parts.append(child.outer_html())
+                else:
+                    parts.append(self._inline_to_markdown(child))
             elif tag in MARKDOWN_BLOCK_TAGS:
                 # Block element nested inside inline context (e.g. <ul> inside <p>)
                 md = self._node_to_markdown(child)
                 if md:
                     parts.append("\n\n" + md + "\n\n")
             else:
-                parts.append(child.text_content())
+                # Unknown/untranslatable tag — pass through as raw HTML
+                # (markdown handles inline HTML correctly)
+                parts.append(child.outer_html())
         return "".join(parts)
 
     def _node_to_markdown(self, node: DOMNode) -> str:
