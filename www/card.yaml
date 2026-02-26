@@ -2,3 +2,9 @@
   tag: div
   params:
     class: card
+  content:
+    cardbody: '$*'
+^cardbody:
+  tag: div
+  params:
+    class: card-body
