@@ -482,6 +482,18 @@ func (ctx *renderContext) findDefinition(name string) (interface{}, string, bool
 		dir = parent
 	}
 
+	// Check if a data source is registered for this name (may have been
+	// loaded from a YAML file during an earlier findDefinition call or
+	// pre-loaded as the requested page file).
+	if dd, ok := ctx.dataSources[name]; ok {
+		if result, err := ctx.executeDataSource(name, dd); err == nil {
+			ctx.defs[name] = result
+			return result, "data source", true
+		} else {
+			log.Printf("data source %q error: %v", name, err)
+		}
+	}
+
 	return nil, "", false
 }
 

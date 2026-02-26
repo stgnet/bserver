@@ -63,6 +63,24 @@ func TestDataSourceErrorHandled(t *testing.T) {
 	}
 }
 
+func TestDataSourcePreloadedFile(t *testing.T) {
+	// When the requested page IS the data source file (pre-loaded before
+	// resolveAll), the data source must still execute. This tests the
+	// fallback data source check at the end of findDefinition.
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n - navlinks\n",
+		"navlinks.yaml": "$navlinks:\n  script: python\n  code: |\n    import json\n    print(json.dumps({\"key1\": \"val1\"}))\n",
+	})
+
+	// Request navlinks.yaml as the page — this pre-loads it via loadYAMLFile
+	// before resolveAll runs, so filesLoaded already has it.
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "navlinks.yaml"), false, 1, nil)
+	// The data source should still execute even though the file was pre-loaded
+	if strings.Contains(output, "Undefined name: <strong>navlinks</strong>") {
+		t.Error("data source should execute even when its YAML file was pre-loaded")
+	}
+}
+
 func TestDataSourceNavlinksIntegration(t *testing.T) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "www", "default")

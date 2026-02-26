@@ -105,7 +105,11 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 	// Convert OrderedMap to a list of {key, value} records for script iteration,
 	// matching the $key/$value convention used by renderIterated.
 	scriptData := data
-	if om, ok := data.(*OrderedMap); ok {
+	if data == nil {
+		// No data — send an empty list so the script loop runs zero times
+		// instead of crashing on a null record.
+		scriptData = []interface{}{}
+	} else if om, ok := data.(*OrderedMap); ok {
 		var records []map[string]string
 		om.Range(func(k string, v interface{}) bool {
 			records = append(records, map[string]string{
