@@ -793,6 +793,32 @@ func TestMarkupMarkdownWithTag(t *testing.T) {
 	}
 }
 
+func TestPhpContentAsCode(t *testing.T) {
+	// Test ^php: { script: php } where the content provides the code.
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n  - php: |\n      echo \"<p>Hello from PHP</p>\";\n",
+		"php.yaml":   "^php:\n  script: php\n",
+	})
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	if !strings.Contains(output, "<p>Hello from PHP</p>") {
+		t.Errorf("expected PHP output, got: %s", output)
+	}
+}
+
+func TestPhpContentAsCodeStripTags(t *testing.T) {
+	// Test that <?php ?> tags are stripped from content-as-code.
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n  - php: |\n      <?php echo \"<p>tagged</p>\"; ?>\n",
+		"php.yaml":   "^php:\n  script: php\n",
+	})
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	if !strings.Contains(output, "<p>tagged</p>") {
+		t.Errorf("expected PHP output from tagged code, got: %s", output)
+	}
+}
+
 func BenchmarkRenderMarkdownPage(b *testing.B) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "www", "default")

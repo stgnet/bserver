@@ -970,6 +970,12 @@ func (ctx *renderContext) renderInlineTag(sb *strings.Builder, name, tag string,
 		fmt.Fprintf(sb, "<!-- inline tag %q -> <%s> -->\n", name, tag)
 	}
 
+	// Script processing: execute content as script code (e.g., ^php: script: php)
+	if fd != nil && fd.Script != "" {
+		sb.WriteString(ctx.renderScript(fd, content))
+		return
+	}
+
 	// Markup processing: convert content through markup processor (e.g., markdown)
 	if fd != nil && fd.Markup != "" {
 		if str, ok := content.(string); ok {

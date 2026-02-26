@@ -146,6 +146,23 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 		}
 	}
 	if code == "" {
+		// No explicit code or file — if content is a string, use it as
+		// the script code itself.  This supports format definitions like
+		// ^php: { script: php } where the content provides the code.
+		if str, ok := data.(string); ok && str != "" {
+			code = strings.TrimSpace(str)
+			if strings.HasPrefix(code, "<?php") {
+				code = strings.TrimPrefix(code, "<?php")
+			}
+			if strings.HasSuffix(code, "?>") {
+				code = strings.TrimSuffix(code, "?>")
+			}
+			code = strings.TrimSpace(code)
+			// Single-element array so the foreach wrapper runs once
+			jsonData = []byte("[null]")
+		}
+	}
+	if code == "" {
 		return "<!-- script: no code or file provided -->\n"
 	}
 

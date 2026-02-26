@@ -1108,15 +1108,11 @@ class PageConverter:
             lines.append(f"echo {_php_quote(f'</{node.tag}>')};")
 
     def _make_php_block(self, code: str) -> dict:
-        """Create a YAML inline PHP script entry."""
-        self._php_counter += 1
-        fmt_name = f"php_block_{self._php_counter}"
+        """Create a YAML inline PHP script entry using the php: name."""
         code = textwrap.dedent(code).strip()
-        self.formats[fmt_name] = {
-            "script": "php",
-            "code": code + "\n" if not code.endswith("\n") else code,
-        }
-        return fmt_name
+        if not code.endswith("\n"):
+            code += "\n"
+        return {"php": code}
 
     def _build_output(self) -> dict[str, Any]:
         """Assemble the final YAML document."""
