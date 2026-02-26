@@ -591,15 +591,8 @@ class PageConverter:
                 continue
             if tag not in MARKDOWN_INLINE_TAGS:
                 return False
-            if self._has_significant_attrs(child):
-                if tag == "a":
-                    # <a> with href is fine (href is not "significant")
-                    non_href = {k for k in child.attrs if k != "href"}
-                    if any(k in {"class", "id", "style", "role"} or k.startswith("data-")
-                           for k in non_href):
-                        return False
-                else:
-                    return False
+            # For inline tags, don't reject based on attributes — markdown
+            # conversion only uses text/href and drops styling attrs anyway.
             if not self._has_markdown_inline_only(child):
                 return False
         return True
