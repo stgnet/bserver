@@ -397,6 +397,15 @@ BUILTIN_FORMATS = {
     "row", "col", "section", "code", "navbar",
 }
 
+# Block-level tags that can be converted to markdown
+MARKDOWN_BLOCK_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "hr", "br", "pre", "blockquote"}
+
+# Inline tags that have markdown equivalents
+MARKDOWN_INLINE_TAGS = {"a", "strong", "b", "em", "i", "code", "br", "span"}
+
+# Minimum consecutive markdown-compatible nodes to trigger grouping
+MIN_MARKDOWN_RUN = 2
+
 # Builtin formats whose content: definition already wraps children in a
 # sub-format.  When php2yaml sees e.g. <div class="card"><div class="card-body">
 # content</div></div>, it should output  card: content  instead of
@@ -463,17 +472,12 @@ class PageConverter:
                 header_items = self._convert_children(header_node)
             else:
                 # No <header> tag — collect elements before <main> as header
+                pre_main = []
                 for child in content_root.children:
                     if child is main_node:
                         break
-                    if child.is_text and not child.text.strip():
-                        continue
-                    converted = self._convert_node(child)
-                    if converted is not None:
-                        if isinstance(converted, list):
-                            header_items.extend(converted)
-                        else:
-                            header_items.append(converted)
+                    pre_main.append(child)
+                header_items = self._convert_children(content_root, pre_main)
             self.header_content = header_items
 
             self.main_content = self._convert_children(main_node)
@@ -488,17 +492,9 @@ class PageConverter:
             if footer_node:
                 self.footer_content = self._convert_children(footer_node)
             # Everything else in body goes to main
-            remaining = []
-            for child in content_root.children:
-                if child is header_node or child is footer_node:
-                    continue
-                converted = self._convert_node(child)
-                if converted is not None:
-                    if isinstance(converted, list):
-                        remaining.extend(converted)
-                    else:
-                        remaining.append(converted)
-            self.main_content = remaining
+            remaining_children = [child for child in content_root.children
+                                  if child is not header_node and child is not footer_node]
+            self.main_content = self._convert_children(content_root, remaining_children)
 
         return self._build_output()
 
@@ -542,16 +538,171 @@ class PageConverter:
                 if src:
                     self.scripts_head.append(src)
 
-    def _convert_children(self, node: DOMNode) -> list[Any]:
-        """Convert a node's children into a YAML content list."""
-        raw_items = []
+    # ── Markdown grouping ────────────────────────────────────────────
+
+    def _is_markdown_block(self, node: DOMNode) -> bool:
+        """Check if a DOM node can be represented as a markdown block."""
+        if node.is_php:
+            return False
+        if node.is_text:
+            # Whitespace-only text between block elements is fine
+            return node.text.strip() == ""
+        if node.has_php():
+            return False
+        tag = node.tag.lower()
+        if tag not in MARKDOWN_BLOCK_TAGS:
+            return False
+        if self._has_significant_attrs(node):
+            return False
+        # Children must be markdown-inline compatible
+        return self._has_markdown_inline_only(node)
+
+    def _has_markdown_inline_only(self, node: DOMNode) -> bool:
+        """Check if all children are text or markdown-compatible inline tags."""
         for child in node.children:
+            if child.is_text:
+                continue
+            if child.is_php:
+                return False
+            tag = child.tag.lower()
+            if tag == "li":
+                # li is valid inside ul/ol
+                if not self._has_markdown_inline_only(child):
+                    return False
+                continue
+            if tag not in MARKDOWN_INLINE_TAGS:
+                return False
+            if self._has_significant_attrs(child):
+                if tag == "a":
+                    # <a> with href is fine (href is not "significant")
+                    non_href = {k for k in child.attrs if k != "href"}
+                    if any(k in {"class", "id", "style", "role"} or k.startswith("data-")
+                           for k in non_href):
+                        return False
+                else:
+                    return False
+            if not self._has_markdown_inline_only(child):
+                return False
+        return True
+
+    def _inline_to_markdown(self, node: DOMNode) -> str:
+        """Convert a node's inline content to markdown text."""
+        parts = []
+        for child in node.children:
+            if child.is_text:
+                parts.append(child.text)
+                continue
+            tag = child.tag.lower()
+            if tag == "a":
+                href = child.attrs.get("href", "")
+                text = self._inline_to_markdown(child)
+                parts.append(f"[{text}]({href})")
+            elif tag in ("strong", "b"):
+                text = self._inline_to_markdown(child)
+                parts.append(f"**{text}**")
+            elif tag in ("em", "i"):
+                text = self._inline_to_markdown(child)
+                parts.append(f"*{text}*")
+            elif tag == "code":
+                text = child.text_content()
+                parts.append(f"`{text}`")
+            elif tag == "br":
+                parts.append("  \n")
+            elif tag == "span":
+                parts.append(self._inline_to_markdown(child))
+            else:
+                parts.append(child.text_content())
+        return "".join(parts)
+
+    def _node_to_markdown(self, node: DOMNode) -> str:
+        """Convert a single DOM node to a markdown string."""
+        if node.is_text:
+            return ""  # whitespace between blocks, skip
+        tag = node.tag.lower()
+        if tag in ("h1", "h2", "h3", "h4", "h5", "h6"):
+            level = int(tag[1])
+            text = self._inline_to_markdown(node).strip()
+            return "#" * level + " " + text
+        if tag == "p":
+            text = self._inline_to_markdown(node).strip()
+            return text
+        if tag == "ul":
+            lines = []
+            for li in node.children:
+                if li.is_text and not li.text.strip():
+                    continue
+                if not li.is_text and li.tag.lower() == "li":
+                    text = self._inline_to_markdown(li).strip()
+                    lines.append("- " + text)
+            return "\n".join(lines)
+        if tag == "ol":
+            lines = []
+            num = 1
+            for li in node.children:
+                if li.is_text and not li.text.strip():
+                    continue
+                if not li.is_text and li.tag.lower() == "li":
+                    text = self._inline_to_markdown(li).strip()
+                    lines.append(f"{num}. " + text)
+                    num += 1
+            return "\n".join(lines)
+        if tag == "hr":
+            return "---"
+        if tag == "br":
+            return ""
+        if tag == "pre":
+            text = node.text_content()
+            return "```\n" + text + "\n```"
+        if tag == "blockquote":
+            text = self._inline_to_markdown(node).strip()
+            lines = text.split("\n")
+            return "\n".join("> " + line for line in lines)
+        return ""
+
+    def _group_markdown(self, children: list[DOMNode]) -> list[Any]:
+        """Convert children, grouping consecutive markdown-compatible nodes.
+
+        Scans children at the DOM level. Consecutive runs of markdown-compatible
+        block elements are collapsed into a single {markdown: "..."} entry.
+        Other children are converted through the normal _convert_node path.
+        """
+        items = []
+        i = 0
+        while i < len(children):
+            child = children[i]
+            if self._is_markdown_block(child):
+                # Count the run of consecutive markdown-compatible nodes
+                j = i
+                while j < len(children) and self._is_markdown_block(children[j]):
+                    j += 1
+                run_length = j - i
+                # Only count non-whitespace nodes
+                real_nodes = [children[k] for k in range(i, j) if not children[k].is_text]
+                if len(real_nodes) >= MIN_MARKDOWN_RUN:
+                    md_parts = []
+                    for k in range(i, j):
+                        md_text = self._node_to_markdown(children[k])
+                        if md_text:
+                            md_parts.append(md_text)
+                    if md_parts:
+                        items.append({"markdown": "\n\n".join(md_parts) + "\n"})
+                    i = j
+                    continue
+            # Normal conversion
             converted = self._convert_node(child)
             if converted is not None:
                 if isinstance(converted, list):
-                    raw_items.extend(converted)
+                    items.extend(converted)
                 else:
-                    raw_items.append(converted)
+                    items.append(converted)
+            i += 1
+        return items
+
+    # ── Child conversion ──────────────────────────────────────────────
+
+    def _convert_children(self, node: DOMNode, children: list[DOMNode] | None = None) -> list[Any]:
+        """Convert a node's children into a YAML content list."""
+        raw_items = self._group_markdown(children if children is not None else node.children)
         # Post-process: merge consecutive {links: ...} dicts into one
         items = []
         for item in raw_items:
