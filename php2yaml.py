@@ -284,7 +284,7 @@ class PHPHTMLParser(HTMLParser):
 
     PHP_SENTINEL = "\x00PHP_BLOCK_%d\x00"
     PHP_RE = re.compile(
-        r"<\?(?:php)?\s(.*?)\?>|<\?=(.*?)\?>",
+        r"<\?(?:php)?\s(.*?)(?:\?>|\Z)|<\?=(.*?)\?>",
         re.DOTALL,
     )
 
