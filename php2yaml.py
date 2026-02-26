@@ -410,7 +410,7 @@ BUILTIN_FORMATS = {
 }
 
 # Block-level tags that can be converted to markdown
-MARKDOWN_BLOCK_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "hr", "br", "pre", "blockquote"}
+MARKDOWN_BLOCK_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "hr", "br", "pre", "blockquote", "img"}
 
 # Inline tags that have markdown equivalents
 MARKDOWN_INLINE_TAGS = {"a", "strong", "b", "em", "i", "code", "br", "span"}
@@ -570,7 +570,7 @@ class PageConverter:
         return self._has_markdown_inline_only(node)
 
     def _has_markdown_inline_only(self, node: DOMNode) -> bool:
-        """Check if all children are text or markdown-compatible inline tags."""
+        """Check if all children are text or markdown-compatible tags."""
         for child in node.children:
             if child.is_text:
                 continue
@@ -579,6 +579,13 @@ class PageConverter:
             tag = child.tag.lower()
             if tag == "li":
                 # li is valid inside ul/ol
+                if not self._has_markdown_inline_only(child):
+                    return False
+                continue
+            # Allow block-level markdown children (e.g. <ul> inside <p>)
+            if tag in MARKDOWN_BLOCK_TAGS:
+                if self._has_significant_attrs(child) and tag != "img":
+                    return False
                 if not self._has_markdown_inline_only(child):
                     return False
                 continue
@@ -602,8 +609,14 @@ class PageConverter:
         parts = []
         for child in node.children:
             if child.is_text:
-                # Normalize whitespace: HTML collapses whitespace to single spaces
-                parts.append(re.sub(r'\s+', ' ', child.text))
+                # Keep original line breaks; strip indentation on continuation
+                # lines but preserve the first line as-is (its leading/trailing
+                # space may be meaningful between inline elements).
+                lines = child.text.split("\n")
+                result = [lines[0]]
+                for line in lines[1:]:
+                    result.append(line.lstrip())
+                parts.append("\n".join(result))
                 continue
             tag = child.tag.lower()
             if tag == "a":
@@ -621,8 +634,17 @@ class PageConverter:
                 parts.append(f"`{text}`")
             elif tag == "br":
                 parts.append("  \n")
+            elif tag == "img":
+                src = child.attrs.get("src", "")
+                alt = child.attrs.get("alt", "")
+                parts.append(f"![{alt}]({src})")
             elif tag == "span":
                 parts.append(self._inline_to_markdown(child))
+            elif tag in MARKDOWN_BLOCK_TAGS:
+                # Block element nested inside inline context (e.g. <ul> inside <p>)
+                md = self._node_to_markdown(child)
+                if md:
+                    parts.append("\n\n" + md + "\n\n")
             else:
                 parts.append(child.text_content())
         return "".join(parts)
@@ -638,6 +660,8 @@ class PageConverter:
             return "#" * level + " " + text
         if tag == "p":
             text = self._inline_to_markdown(node).strip()
+            # Collapse triple+ newlines to double (avoid excessive blank lines)
+            text = re.sub(r'\n{3,}', '\n\n', text)
             return text
         if tag == "ul":
             lines = []
@@ -659,6 +683,10 @@ class PageConverter:
                     lines.append(f"{num}. " + text)
                     num += 1
             return "\n".join(lines)
+        if tag == "img":
+            src = node.attrs.get("src", "")
+            alt = node.attrs.get("alt", "")
+            return f"![{alt}]({src})"
         if tag == "hr":
             return "---"
         if tag == "br":
@@ -698,7 +726,10 @@ class PageConverter:
                         if md_text:
                             md_parts.append(md_text)
                     if md_parts:
-                        items.append({"markdown": "\n\n".join(md_parts) + "\n"})
+                        md_text = "\n\n".join(md_parts) + "\n"
+                        # Collapse triple+ newlines to double
+                        md_text = re.sub(r'\n{3,}', '\n\n', md_text)
+                        items.append({"markdown": md_text})
                     i = j
                     continue
             # Normal conversion
@@ -733,7 +764,10 @@ class PageConverter:
     def _convert_node(self, node: DOMNode) -> Any:
         """Convert a single DOMNode into YAML-compatible structure."""
         if node.is_text:
-            text = node.text.strip()
+            # Strip per-line leading whitespace (HTML source indentation)
+            lines = node.text.split("\n")
+            text = "\n".join(line.strip() for line in lines)
+            text = text.strip()
             return text if text else None
 
         if node.is_php:
