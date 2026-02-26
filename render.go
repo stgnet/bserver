@@ -81,6 +81,7 @@ type renderContext struct {
 	maxParentLevels int                    // how many levels above docRoot to search (-1 = unlimited)
 	defs            map[string]interface{} // content definitions (name -> yaml value)
 	formats         map[string]*formatDef  // format definitions (^name -> formatDef)
+	dataSources     map[string]*dataDef    // data source definitions ($name -> dataDef)
 	filesLoaded     map[string]bool        // yaml files already loaded (prevent re-loading)
 	yamlErrors      map[string]string      // yaml files that failed to parse (path -> error message)
 	resolving       map[string]bool        // cycle detection
@@ -99,6 +100,7 @@ func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, r 
 		maxParentLevels: maxParentLevels,
 		defs:            make(map[string]interface{}),
 		formats:         make(map[string]*formatDef),
+		dataSources:     make(map[string]*dataDef),
 		filesLoaded:     make(map[string]bool),
 		yamlErrors:      make(map[string]string),
 		resolving:       make(map[string]bool),
@@ -167,6 +169,7 @@ func renderErrorPage(docRoot string, statusCode int, message string, debug bool,
 		maxParentLevels: maxParentLevels,
 		defs:            make(map[string]interface{}),
 		formats:         make(map[string]*formatDef),
+		dataSources:     make(map[string]*dataDef),
 		filesLoaded:     make(map[string]bool),
 		yamlErrors:      make(map[string]string),
 		resolving:       make(map[string]bool),
@@ -232,6 +235,7 @@ func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int,
 		maxParentLevels: maxParentLevels,
 		defs:            make(map[string]interface{}),
 		formats:         make(map[string]*formatDef),
+		dataSources:     make(map[string]*dataDef),
 		filesLoaded:     make(map[string]bool),
 		yamlErrors:      make(map[string]string),
 		resolving:       make(map[string]bool),
@@ -322,13 +326,19 @@ func (ctx *renderContext) yamlErrorForName(name string) string {
 	return ""
 }
 
-// mergeDoc processes a parsed YAML document's keys into defs and formats.
+// mergeDoc processes a parsed YAML document's keys into defs, formats, and data sources.
 func (ctx *renderContext) mergeDoc(doc *OrderedMap) {
 	doc.Range(func(k string, v interface{}) bool {
 		if strings.HasPrefix(k, "^") {
 			// Format definition: ^name
 			name := k[1:]
 			ctx.formats[name] = parseFormatDef(v)
+		} else if strings.HasPrefix(k, "$") {
+			// Data source definition: $name
+			name := k[1:]
+			if dd := parseDataDef(v); dd != nil {
+				ctx.dataSources[name] = dd
+			}
 		} else if strings.HasPrefix(k, "+") {
 			// Merge definition: +name adds to existing
 			name := k[1:]
@@ -430,6 +440,15 @@ func (ctx *renderContext) findDefinition(name string) (interface{}, string, bool
 				// After loading, check if the name is now defined
 				if v, ok := ctx.defs[name]; ok {
 					return v, candidate, true
+				}
+				// Check if a data source was loaded for this name
+				if dd, ok := ctx.dataSources[name]; ok {
+					if result, err := ctx.executeDataSource(name, dd); err == nil {
+						ctx.defs[name] = result
+						return result, candidate, true
+					} else {
+						log.Printf("data source %q error: %v", name, err)
+					}
 				}
 			}
 		}

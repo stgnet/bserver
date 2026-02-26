@@ -1,10 +1,33 @@
-navlinks:
-  "/": Home
-  "/getting-started": Getting Started
-  "/definitions": Definitions
-  "/formats": Formats
-  "/components": Components
-  "/scripts": Scripts
-  "/error-handling": Error Handling
-  "/server-features": Server
-  "/advanced": Advanced
+$navlinks:
+  script: python
+  code: |
+    import os, json, re
+
+    docroot = os.environ.get('DOCUMENT_ROOT', '.')
+    results = []
+
+    # Always include Home first
+    results.append({"key": "/", "value": "Home"})
+
+    for f in sorted(os.listdir(docroot)):
+        name, ext = os.path.splitext(f)
+
+        # Skip hidden files, underscore-prefixed files, and index
+        if name.startswith('.') or name.startswith('_') or name == 'index':
+            continue
+
+        if ext == '.md':
+            title = name.replace('-', ' ').replace('_', ' ').title()
+            results.append({"key": "/" + name, "value": title})
+        elif ext == '.yaml':
+            path = os.path.join(docroot, f)
+            try:
+                with open(path) as fh:
+                    head = fh.read(500)
+                if re.search(r'^main:', head, re.MULTILINE):
+                    title = name.replace('-', ' ').replace('_', ' ').title()
+                    results.append({"key": "/" + name, "value": title})
+            except (IOError, OSError):
+                pass
+
+    print(json.dumps(results))
