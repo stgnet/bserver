@@ -45,7 +45,8 @@ def yaml_dump(data: Any, indent: int = 0, flow: bool = False) -> str:
         if "\n" in data:
             header = f"|"
             lines = data.rstrip("\n").split("\n")
-            body = "\n".join(f"{pad}  {l}" for l in lines)
+            # Replace tabs with spaces — tabs are illegal in YAML indentation
+            body = "\n".join(f"{pad}  {l.expandtabs(4)}" for l in lines)
             return f"{header}\n{body}"
         if _needs_quoting(data):
             return _quote(data)
@@ -74,23 +75,27 @@ def yaml_dump(data: Any, indent: int = 0, flow: bool = False) -> str:
                     val = yaml_dump(v, indent + 1)
                     lines.append(f"{pad}- {_yaml_key(k)}: {val}")
                 else:
-                    val = yaml_dump(v, indent + 1)
+                    # Generate value without padding, then indent to correct level
+                    val = yaml_dump(v, 0)
                     lines.append(f"{pad}- {_yaml_key(k)}:\n{_indent_block(val, indent + 2)}")
             elif isinstance(item, dict):
                 first = True
                 for k, v in item.items():
-                    val = yaml_dump(v, indent + 2)
                     prefix = "- " if first else "  "
                     first = False
                     if isinstance(v, (str, int, float, bool)) and "\n" not in str(v):
+                        val = yaml_dump(v, 0)
                         lines.append(f"{pad}{prefix}{_yaml_key(k)}: {val}")
                     else:
+                        # Generate value without padding, then indent to correct level
+                        val = yaml_dump(v, 0)
                         lines.append(f"{pad}{prefix}{_yaml_key(k)}:")
                         lines.append(_indent_block(val, indent + 2))
             elif isinstance(item, str):
                 lines.append(f"{pad}- {_quote(item) if _needs_quoting(item) else item}")
             elif isinstance(item, list):
-                val = yaml_dump(item, indent + 1)
+                # Generate value without padding, then indent to correct level
+                val = yaml_dump(item, 0)
                 lines.append(f"{pad}-\n{_indent_block(val, indent + 1)}")
             else:
                 lines.append(f"{pad}- {yaml_dump(item, indent + 1)}")
@@ -128,6 +133,8 @@ def _needs_quoting(s: str) -> bool:
         return True
     if ": " in s or s.endswith(":"):
         return True
+    if "\t" in s:
+        return True  # tabs cannot appear in unquoted YAML scalars
     if s.startswith("- "):
         return True
     try:
