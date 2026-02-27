@@ -6,3 +6,5 @@ body:
  - footer
 ^header:
   tag: div
+^main:
+  # main doesn't have a tag

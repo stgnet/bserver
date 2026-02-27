@@ -10,7 +10,7 @@ navbar:
 ^navbar:
   tag: nav
   params:
-    class: navbar navbar-expand-lg navbar-dark bg-primary rounded-bottom
+    class: navbar navbar-expand-lg navbar-dark bg-primary rounded-bottom mb-3
 ^navbar-cf:
   tag: div
   params:

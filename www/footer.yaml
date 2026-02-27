@@ -1,0 +1,8 @@
+footer:
+  hr:
+  muted: 
+    - p:
+      - Powered by 
+      - links:
+          https://github.com/stgnet/bserver/: bserver
+      - ' - YAML-driven web serving'

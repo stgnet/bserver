@@ -1,7 +1,7 @@
 ^card:
   tag: div
   params:
-    class: card
+    class: card shadow p-3 mb-5 bg-body rounded
   content:
     cardbody: '$*'
 ^cardbody:

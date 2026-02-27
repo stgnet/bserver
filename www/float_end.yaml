@@ -1,0 +1,5 @@
+^float-end:
+  tag: div
+  params:
+    class: float-end
+
