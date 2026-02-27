@@ -46,7 +46,7 @@ def yaml_dump(data: Any, indent: int = 0, flow: bool = False) -> str:
             header = f"|"
             lines = data.rstrip("\n").split("\n")
             # Replace tabs with spaces — tabs are illegal in YAML indentation
-            body = "\n".join(f"{pad}  {l.expandtabs(4)}" for l in lines)
+            body = "\n".join(f"{pad}{l.expandtabs(4)}" if l.strip() else "" for l in lines)
             return f"{header}\n{body}"
         if _needs_quoting(data):
             # Prefer block scalar over quotes for readability
@@ -83,15 +83,12 @@ def yaml_dump(data: Any, indent: int = 0, flow: bool = False) -> str:
                     # Multi-line string: put | on same line as key
                     body_pad = "  " * (indent + 2)
                     body_lines = v.rstrip("\n").split("\n")
-                    body = "\n".join(f"{body_pad}{l.expandtabs(4)}" for l in body_lines)
+                    body = "\n".join(f"{body_pad}{l.expandtabs(4)}" if l.strip() else "" for l in body_lines)
                     lines.append(f"{pad}- {_yaml_key(k)}: |\n{body}")
                 else:
-                    # Generate value without padding, then indent to correct level.
-                    # Lists can use YAML compact notation (same column as key);
-                    # dicts must be indented further to avoid becoming siblings.
+                    # Generate value without padding, then indent to correct level
                     val = yaml_dump(v, 0)
-                    vi = indent + 1 if isinstance(v, list) else indent + 2
-                    lines.append(f"{pad}- {_yaml_key(k)}:\n{_indent_block(val, vi)}")
+                    lines.append(f"{pad}- {_yaml_key(k)}:\n{_indent_block(val, indent + 2)}")
             elif isinstance(item, dict):
                 first = True
                 for k, v in item.items():
@@ -104,14 +101,13 @@ def yaml_dump(data: Any, indent: int = 0, flow: bool = False) -> str:
                         # Multi-line string: put | on same line as key
                         body_pad = "  " * (indent + 2)
                         body_lines = v.rstrip("\n").split("\n")
-                        body = "\n".join(f"{body_pad}{l.expandtabs(4)}" for l in body_lines)
+                        body = "\n".join(f"{body_pad}{l.expandtabs(4)}" if l.strip() else "" for l in body_lines)
                         lines.append(f"{pad}{prefix}{_yaml_key(k)}: |\n{body}")
                     else:
                         # Generate value without padding, then indent to correct level
                         val = yaml_dump(v, 0)
-                        vi = indent + 1 if isinstance(v, list) else indent + 2
                         lines.append(f"{pad}{prefix}{_yaml_key(k)}:")
-                        lines.append(_indent_block(val, vi))
+                        lines.append(_indent_block(val, indent + 2))
             elif isinstance(item, str):
                 lines.append(f"{pad}- {_quote(item) if _needs_quoting(item) else item}")
             elif isinstance(item, list):
