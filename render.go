@@ -958,7 +958,7 @@ func (ctx *renderContext) renderContent(sb *strings.Builder, val interface{}, de
 			}
 			// If key is a tag (or has a ^format), render inline with child as content
 			tag, fd := ctx.tagForName(key)
-			if tag != "" {
+			if tag != "" || fd != nil {
 				ctx.renderInlineTag(sb, key, tag, fd, child, depth+1)
 			} else {
 				// It's a name reference; store inline content if provided

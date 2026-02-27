@@ -876,6 +876,49 @@ func TestPhpContentAsCodeStripTags(t *testing.T) {
 	}
 }
 
+func TestDuplicateMarkdownInList(t *testing.T) {
+	// Regression test: when a list under a format key contains multiple
+	// items with the same key (e.g., markdown), each item must render its
+	// own content — not the first item's content repeated.
+	tmpDir := setupMinimalSite(t, map[string]string{
+		"index.yaml": `main:
+  - card:
+      - markdown: |
+          TEST1
+      - wrapper:
+          markdown: |
+            ![](img/cards.png)
+      - markdown: |
+          TEST2
+^wrapper:
+  tag: div
+  params:
+    class: wrapper
+^card:
+  tag: div
+  params:
+    class: card
+^markdown:
+  markup: markdown
+`,
+	})
+	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+
+	test1Count := strings.Count(output, "TEST1")
+	test2Count := strings.Count(output, "TEST2")
+	imgCount := strings.Count(output, "img/cards.png")
+
+	if test1Count != 1 {
+		t.Errorf("TEST1 appears %d times, want 1.\nOutput:\n%s", test1Count, output)
+	}
+	if test2Count != 1 {
+		t.Errorf("TEST2 appears %d times, want 1.\nOutput:\n%s", test2Count, output)
+	}
+	if imgCount != 1 {
+		t.Errorf("img/cards.png appears %d times, want 1.\nOutput:\n%s", imgCount, output)
+	}
+}
+
 func BenchmarkRenderMarkdownPage(b *testing.B) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "www", "default")
