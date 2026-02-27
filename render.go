@@ -306,7 +306,7 @@ func (ctx *renderContext) sourceFilesList() []string {
 }
 
 // processMarkup converts string content through a markup processor.
-// Currently supports "markdown" using goldmark.
+// Currently supports "markdown" (via goldmark) and "html" (passthrough).
 func (ctx *renderContext) processMarkup(markup, content string) string {
 	switch strings.ToLower(markup) {
 	case "markdown", "md":
@@ -315,6 +315,8 @@ func (ctx *renderContext) processMarkup(markup, content string) string {
 			return fmt.Sprintf("<!-- markup error: %v -->\n", err)
 		}
 		return buf.String()
+	case "html":
+		return content
 	default:
 		return fmt.Sprintf("<!-- unknown markup language: %s -->\n", markup)
 	}

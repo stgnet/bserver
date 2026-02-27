@@ -919,6 +919,22 @@ func TestDuplicateMarkdownInList(t *testing.T) {
 	}
 }
 
+func TestRawHTMLPassthrough(t *testing.T) {
+	tmpDir := setupMinimalSite(t, map[string]string{
+		"index.yaml": `main:
+  - raw: |
+      <div class="custom"><span>hello</span></div>
+^raw:
+  markup: html
+`,
+	})
+	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+
+	if !strings.Contains(output, `<div class="custom"><span>hello</span></div>`) {
+		t.Errorf("raw HTML not passed through verbatim.\nOutput:\n%s", output)
+	}
+}
+
 func BenchmarkRenderMarkdownPage(b *testing.B) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "www", "default")
