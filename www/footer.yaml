@@ -2,7 +2,7 @@ footer:
   hr:
   muted: 
     - p:
-      - Powered by 
+      - 'Powered by '
       - links:
           https://github.com/stgnet/bserver/: bserver
       - ' - YAML-driven web serving'

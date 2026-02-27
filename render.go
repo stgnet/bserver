@@ -581,6 +581,18 @@ func isNameRef(s string) bool {
 	return true
 }
 
+// containsInlineText returns true if a list contains at least one plain text
+// string (not a name reference). Such lists represent inline/phrasing content
+// where text and inline elements should be rendered on the same line.
+func containsInlineText(items []interface{}) bool {
+	for _, item := range items {
+		if str, ok := item.(string); ok && !isNameRef(str) {
+			return true
+		}
+	}
+	return false
+}
+
 // resolveAll recursively walks the name tree, triggering file loads
 // and +merges without producing any output. This ensures all definitions
 // are fully assembled before the render pass.
@@ -1181,6 +1193,34 @@ func (ctx *renderContext) renderInlineTag(sb *strings.Builder, name, tag string,
 			fmt.Fprintf(sb, "%s</%s>\n", indent(depth), tag)
 			return
 		}
+	}
+
+	// Inline mixed content: when a list contains plain text strings (not name
+	// references) alongside inline elements, render them on one line so that
+	// phrasing content stays together (e.g., p: ["Powered by ", {links: ...}]).
+	if items, ok := content.([]interface{}); ok && containsInlineText(items) {
+		var pieces []string
+		allSingleLine := true
+		for _, item := range items {
+			if str, ok := item.(string); ok && !isNameRef(str) {
+				pieces = append(pieces, html.EscapeString(str))
+			} else {
+				var buf strings.Builder
+				ctx.renderContent(&buf, item, 0)
+				rendered := strings.TrimSpace(buf.String())
+				if strings.Contains(rendered, "\n") {
+					allSingleLine = false
+					break
+				}
+				pieces = append(pieces, rendered)
+			}
+		}
+		if allSingleLine {
+			inlineContent := strings.Join(pieces, "")
+			fmt.Fprintf(sb, "%s<%s%s>%s</%s>\n", indent(depth), tag, attrs, inlineContent, tag)
+			return
+		}
+		// Fall through to block rendering if any item produces multi-line output.
 	}
 
 	var inner strings.Builder
