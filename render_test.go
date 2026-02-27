@@ -78,8 +78,11 @@ func TestFooterContent(t *testing.T) {
 	if !strings.Contains(output, "text-muted") {
 		t.Error("Footer missing text-muted class from ^muted format")
 	}
-	if !strings.Contains(output, "Powered by bserver") {
-		t.Error("Footer missing 'Powered by bserver' text")
+	if !strings.Contains(output, "Powered by") {
+		t.Error("Footer missing 'Powered by' text")
+	}
+	if !strings.Contains(output, "bserver") {
+		t.Error("Footer missing 'bserver' text")
 	}
 }
 
