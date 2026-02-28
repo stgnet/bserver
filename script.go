@@ -113,12 +113,9 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 	} else if om, ok := data.(*OrderedMap); ok {
 		var records []map[string]interface{}
 		om.Range(func(k string, v interface{}) bool {
-			if list, ok := v.([]interface{}); ok {
-				v = map[string]interface{}{"_html": ctx.renderListToHTML(list)}
-			}
 			records = append(records, map[string]interface{}{
 				"key":   k,
-				"value": v,
+				"value": ctx.preRenderValue(v),
 			})
 			return true
 		})
@@ -242,6 +239,26 @@ func findScriptInterpreter(lang string) string {
 		}
 	}
 	return ""
+}
+
+// preRenderValue recursively walks a value and renders any list to HTML via
+// renderListToHTML, wrapping the result as {"_html": "..."}.  Nested
+// OrderedMaps (dropdown menus) are walked so that list values inside them
+// are also rendered.
+func (ctx *renderContext) preRenderValue(v interface{}) interface{} {
+	switch val := v.(type) {
+	case []interface{}:
+		return map[string]interface{}{"_html": ctx.renderListToHTML(val)}
+	case *OrderedMap:
+		result := NewOrderedMap()
+		val.Range(func(k string, inner interface{}) bool {
+			result.Set(k, ctx.preRenderValue(inner))
+			return true
+		})
+		return result
+	default:
+		return v
+	}
 }
 
 // renderListToHTML renders a list of content elements to a single HTML string.

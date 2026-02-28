@@ -63,7 +63,8 @@ navbar:
         print(f'  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">{title}</a>')
         print(f'  <ul class="dropdown-menu dropdown-menu-end">')
         for link, text in value.items():
-            print(f'    <li><a class="dropdown-item" href="{_html.escape(str(link))}">{_html.escape(str(text))}</a></li>')
+            text_html = text['_html'] if isinstance(text, dict) and '_html' in text else _html.escape(str(text))
+            print(f'    <li><a class="dropdown-item" href="{_html.escape(str(link))}">{text_html}</a></li>')
         print(f'  </ul>')
         print(f'</li>')
     else:
@@ -88,9 +89,9 @@ navbar:
         echo "  <a class=\"nav-link dropdown-toggle\" href=\"#\" role=\"button\" data-bs-toggle=\"dropdown\" aria-expanded=\"false\">$title</a>\n";
         echo "  <ul class=\"dropdown-menu dropdown-menu-end\">\n";
         foreach ($value as $link => $text) {
-            $link = htmlspecialchars($link);
-            $text = htmlspecialchars($text);
-            echo "    <li><a class=\"dropdown-item\" href=\"$link\">$text</a></li>\n";
+            $link = htmlspecialchars(strval($link));
+            $text_html = (is_array($text) && isset($text['_html'])) ? $text['_html'] : htmlspecialchars(strval($text));
+            echo "    <li><a class=\"dropdown-item\" href=\"$link\">$text_html</a></li>\n";
         }
         echo "  </ul>\n";
         echo "</li>\n";

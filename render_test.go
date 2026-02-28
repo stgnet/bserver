@@ -986,6 +986,42 @@ func TestNavlinksrightDropdown(t *testing.T) {
 	}
 }
 
+func TestNavlinksDropdownWithListValue(t *testing.T) {
+	// List values inside a dropdown (nested OrderedMap) must also be
+	// pre-rendered to HTML via _html, not passed as raw arrays.
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n - items\n",
+		"items.yaml": "items:\n  Info:\n    /repo:\n      - Repo\n      - repo-icon\n    /about: About\n",
+	})
+	os.WriteFile(filepath.Join(dir, "html.yaml"),
+		[]byte("html:\n - body\n\n"+
+			"^repo-icon:\n  tag: i\n  params:\n    class: fa-brands fa-github\n\n"+
+			"^items:\n  script: php\n  code: |\n"+
+			"    $key = $record['key'] ?? '';\n"+
+			"    $value = $record['value'] ?? '';\n"+
+			"    if (is_array($value)) {\n"+
+			"        foreach ($value as $link => $text) {\n"+
+			"            $link = htmlspecialchars(strval($link));\n"+
+			"            $text_html = (is_array($text) && isset($text['_html'])) ? $text['_html'] : htmlspecialchars(strval($text));\n"+
+			"            echo \"<a href=\\\"$link\\\">$text_html</a>\\n\";\n"+
+			"        }\n"+
+			"    } else {\n"+
+			"        echo htmlspecialchars(strval($value)).\"\\n\";\n"+
+			"    }\n"), 0644)
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+
+	if !strings.Contains(output, `<i class="fa-brands fa-github"></i>`) {
+		t.Errorf("expected pre-rendered icon inside dropdown item, got: %s", output)
+	}
+	if !strings.Contains(output, "Repo") {
+		t.Errorf("expected text label inside dropdown item, got: %s", output)
+	}
+	if !strings.Contains(output, "About") {
+		t.Errorf("expected plain string dropdown item, got: %s", output)
+	}
+}
+
 func TestNavlinksListWithFormatRef(t *testing.T) {
 	// Navlink values can be lists: [text, format-ref, ...]
 	// Go renders the array to a single HTML string and passes it
