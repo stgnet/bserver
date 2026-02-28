@@ -938,6 +938,54 @@ func TestRawHTMLPassthrough(t *testing.T) {
 	}
 }
 
+func TestScriptNestedOrderedMapAsDict(t *testing.T) {
+	// When a YAML data value is a nested map (OrderedMap), the script should
+	// receive it as a JSON object (Python dict), not a stringified Go struct.
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n - items\n",
+		"items.yaml": "items:\n  Menu:\n    /link1: First\n    /link2: Second\n",
+	})
+	os.WriteFile(filepath.Join(dir, "html.yaml"),
+		[]byte("html:\n - body\n\n^items:\n  script: python\n  code: |\n    key = record.get('key', '')\n    value = record.get('value', '')\n    if isinstance(value, dict):\n        for link, text in value.items():\n            print(f'<a href=\"{link}\">{text}</a>')\n    else:\n        print(f'<span>{value}</span>')\n"), 0644)
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	if !strings.Contains(output, `<a href="/link1">First</a>`) {
+		t.Errorf("expected nested map rendered as dict links, got: %s", output)
+	}
+	if !strings.Contains(output, `<a href="/link2">Second</a>`) {
+		t.Errorf("expected both nested links, got: %s", output)
+	}
+	// Must NOT contain Go struct representation
+	if strings.Contains(output, "map[") {
+		t.Errorf("nested OrderedMap was stringified instead of passed as JSON object: %s", output)
+	}
+}
+
+func TestNavlinksrightDropdown(t *testing.T) {
+	// Integration test: the default site's navlinksright.yaml defines a
+	// dropdown menu. Verify it renders Bootstrap 5 dropdown markup.
+	docRoot := defaultDocRoot(t)
+	indexPath := filepath.Join(docRoot, "index.yaml")
+	output, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
+
+	if !strings.Contains(output, "nav-item dropdown") {
+		t.Errorf("expected Bootstrap dropdown in navlinksright, got output without 'nav-item dropdown'")
+	}
+	if !strings.Contains(output, "dropdown-toggle") {
+		t.Error("expected dropdown-toggle class in navlinksright")
+	}
+	if !strings.Contains(output, "dropdown-menu") {
+		t.Error("expected dropdown-menu in navlinksright")
+	}
+	if !strings.Contains(output, "dropdown-item") {
+		t.Error("expected dropdown-item entries in navlinksright")
+	}
+	// Must not contain Go struct representation
+	if strings.Contains(output, "&amp;{[") {
+		t.Error("nested OrderedMap was stringified instead of rendered as dropdown")
+	}
+}
+
 func BenchmarkRenderMarkdownPage(b *testing.B) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "www", "default")
