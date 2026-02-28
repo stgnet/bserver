@@ -263,25 +263,24 @@ func (ctx *renderContext) preRenderValue(v interface{}) interface{} {
 
 // renderListToHTML renders a list of content elements to a single HTML string.
 // Format definition references (^name) are rendered through bserver's format
-// system; plain text strings are HTML-escaped. Elements are joined with spaces
-// and their order is preserved from the YAML source.
+// system; plain text strings are HTML-escaped. Elements are concatenated
+// directly (no separator) to match renderContent's list behavior, and their
+// order is preserved from the YAML source.
 func (ctx *renderContext) renderListToHTML(list []interface{}) string {
-	var parts []string
+	var sb strings.Builder
 	for _, elem := range list {
 		if s, ok := elem.(string); ok {
 			tag, fd := ctx.tagForName(s)
 			if tag != "" && fd != nil {
-				var sb strings.Builder
 				ctx.renderInlineTag(&sb, s, tag, fd, nil, 0)
-				parts = append(parts, strings.TrimSpace(sb.String()))
 				continue
 			}
-			parts = append(parts, html.EscapeString(s))
+			sb.WriteString(html.EscapeString(s))
 			continue
 		}
-		parts = append(parts, html.EscapeString(fmt.Sprintf("%v", elem)))
+		sb.WriteString(html.EscapeString(fmt.Sprintf("%v", elem)))
 	}
-	return strings.Join(parts, " ")
+	return strings.TrimSpace(sb.String())
 }
 
 // pythonScriptWrapper wraps user code in a Python loop over JSON records.
