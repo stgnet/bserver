@@ -986,6 +986,70 @@ func TestNavlinksrightDropdown(t *testing.T) {
 	}
 }
 
+func TestNavlinksListWithFormatRef(t *testing.T) {
+	// Navlink values can be lists: [text, format-ref, ...]
+	// Format refs after the first element are pre-rendered by Go into HTML,
+	// so the script receives them ready to include without escaping.
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n - items\n",
+		"items.yaml": "items:\n  /loc:\n    - Location\n    - loc-icon\n",
+	})
+	os.WriteFile(filepath.Join(dir, "html.yaml"),
+		[]byte("html:\n - body\n\n"+
+			"^loc-icon:\n  tag: i\n  params:\n    class: fa-solid fa-location-dot\n\n"+
+			"^items:\n  script: python\n  code: |\n"+
+			"    import html as _html\n"+
+			"    key = record.get('key', '')\n"+
+			"    value = record.get('value', '')\n"+
+			"    if isinstance(value, list):\n"+
+			"        text = _html.escape(str(value[0])) if value else ''\n"+
+			"        icons = ' '.join(str(v) for v in value[1:])\n"+
+			"        label = f'{icons} {text}'.strip() if icons else text\n"+
+			"        print(f'<a href=\"{_html.escape(str(key))}\">{label}</a>')\n"+
+			"    else:\n"+
+			"        print(f'<a href=\"{_html.escape(str(key))}\">{_html.escape(str(value))}</a>')\n"), 0644)
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+
+	if !strings.Contains(output, `<i class="fa-solid fa-location-dot"></i>`) {
+		t.Errorf("expected pre-rendered icon tag in output, got: %s", output)
+	}
+	if !strings.Contains(output, "Location") {
+		t.Errorf("expected text label in output, got: %s", output)
+	}
+	// The icon should appear before the text
+	iconIdx := strings.Index(output, `<i class="fa-solid fa-location-dot">`)
+	textIdx := strings.Index(output, "Location")
+	if iconIdx < 0 || textIdx < 0 || iconIdx > textIdx {
+		t.Errorf("expected icon before text label, got: %s", output)
+	}
+}
+
+func TestNavlinksListPlainStringsUnchanged(t *testing.T) {
+	// List elements that don't match format definitions should be passed
+	// through unchanged (not pre-rendered).
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n - items\n",
+		"items.yaml": "items:\n  /loc:\n    - Location\n    - not-a-format\n",
+	})
+	os.WriteFile(filepath.Join(dir, "html.yaml"),
+		[]byte("html:\n - body\n\n"+
+			"^items:\n  script: python\n  code: |\n"+
+			"    import json\n"+
+			"    value = record.get('value', '')\n"+
+			"    print(json.dumps(value))\n"), 0644)
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+
+	// The plain string should pass through unchanged
+	if !strings.Contains(output, "not-a-format") {
+		t.Errorf("expected plain string to pass through, got: %s", output)
+	}
+	if !strings.Contains(output, "Location") {
+		t.Errorf("expected text label to pass through, got: %s", output)
+	}
+}
+
 func BenchmarkRenderMarkdownPage(b *testing.B) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "www", "default")

@@ -51,7 +51,14 @@ navbar:
     page = os.environ.get('REQUEST_URI', '/')
     key = record.get('key', '')
     value = record.get('value', '')
-    if isinstance(value, dict):
+    if isinstance(value, list):
+        # List value: first element is text label, rest are pre-rendered HTML (icons etc.)
+        text = _html.escape(str(value[0])) if value else ''
+        icons = ' '.join(str(v) for v in value[1:])
+        label = f'{icons} {text}'.strip() if icons else text
+        active = ' active bg-primary bg-opacity-10' if key == page else ''
+        print(f'<li class="nav-item"><a class="nav-link{active}" href="{_html.escape(str(key))}">{label}</a></li>')
+    elif isinstance(value, dict):
         # Bootstrap 5 dropdown menu
         title = _html.escape(str(key))
         print(f'<li class="nav-item dropdown">')
@@ -71,7 +78,15 @@ navbar:
     $page = getenv('REQUEST_URI') ?: '/';
     $key = $record['key'] ?? '';
     $value = $record['value'] ?? '';
-    if (is_array($value)) {
+    if (is_array($value) && isset($value[0])) {
+        // List value: first element is text label, rest are pre-rendered HTML (icons etc.)
+        $text = htmlspecialchars(strval($value[0]));
+        $icons = implode(' ', array_slice($value, 1));
+        $label = $icons ? "$icons $text" : $text;
+        $active = ($key === $page) ? ' active bg-primary bg-opacity-10' : '';
+        $key = htmlspecialchars(strval($key));
+        echo "<li class=\"nav-item\"><a class=\"nav-link$active\" href=\"$key\">$label</a></li>\n";
+    } elseif (is_array($value)) {
         $title = htmlspecialchars($key);
         echo "<li class=\"nav-item dropdown\">\n";
         echo "  <a class=\"nav-link dropdown-toggle\" href=\"#\" role=\"button\" data-bs-toggle=\"dropdown\" aria-expanded=\"false\">$title</a>\n";

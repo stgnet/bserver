@@ -114,7 +114,7 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 		om.Range(func(k string, v interface{}) bool {
 			records = append(records, map[string]interface{}{
 				"key":   k,
-				"value": v,
+				"value": ctx.preRenderListFormatRefs(v),
 			})
 			return true
 		})
@@ -238,6 +238,37 @@ func findScriptInterpreter(lang string) string {
 		}
 	}
 	return ""
+}
+
+// preRenderListFormatRefs resolves format definition references in list values.
+// For lists like ["Location", "location-dot"], elements after the first that
+// match known format definitions (^name) are rendered to HTML. This allows
+// script-rendered labels (e.g., navlinks) to include icons and other formatted
+// elements that are defined through bserver's YAML format system.
+func (ctx *renderContext) preRenderListFormatRefs(v interface{}) interface{} {
+	list, ok := v.([]interface{})
+	if !ok || len(list) <= 1 {
+		return v
+	}
+	changed := false
+	rendered := make([]interface{}, len(list))
+	for i, elem := range list {
+		if s, ok := elem.(string); ok && i > 0 {
+			tag, fd := ctx.tagForName(s)
+			if tag != "" && fd != nil {
+				var sb strings.Builder
+				ctx.renderInlineTag(&sb, s, tag, fd, nil, 0)
+				rendered[i] = strings.TrimSpace(sb.String())
+				changed = true
+				continue
+			}
+		}
+		rendered[i] = elem
+	}
+	if changed {
+		return rendered
+	}
+	return v
 }
 
 // pythonScriptWrapper wraps user code in a Python loop over JSON records.
