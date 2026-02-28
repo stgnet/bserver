@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html"
 	"net"
 	"net/http"
 	"os"
@@ -240,11 +241,13 @@ func findScriptInterpreter(lang string) string {
 	return ""
 }
 
-// preRenderListFormatRefs resolves format definition references in list values.
-// For lists like ["Location", "location-dot"], elements after the first that
-// match known format definitions (^name) are rendered to HTML. This allows
-// script-rendered labels (e.g., navlinks) to include icons and other formatted
-// elements that are defined through bserver's YAML format system.
+// preRenderListFormatRefs resolves format definition references in list values
+// and HTML-escapes plain text elements, producing a list of ready-to-concatenate
+// HTML fragments. For example ["Location", "location-dot"] becomes
+// ["Location", "<i class=\"fa-solid fa-location-dot\"></i>"] where format refs
+// are rendered through bserver's format system and plain strings are escaped.
+// The ordering of elements is preserved, so the YAML author controls whether
+// icons appear before or after text.
 func (ctx *renderContext) preRenderListFormatRefs(v interface{}) interface{} {
 	list, ok := v.([]interface{})
 	if !ok || len(list) <= 1 {
@@ -253,7 +256,7 @@ func (ctx *renderContext) preRenderListFormatRefs(v interface{}) interface{} {
 	changed := false
 	rendered := make([]interface{}, len(list))
 	for i, elem := range list {
-		if s, ok := elem.(string); ok && i > 0 {
+		if s, ok := elem.(string); ok {
 			tag, fd := ctx.tagForName(s)
 			if tag != "" && fd != nil {
 				var sb strings.Builder
@@ -262,6 +265,11 @@ func (ctx *renderContext) preRenderListFormatRefs(v interface{}) interface{} {
 				changed = true
 				continue
 			}
+			// Plain text: HTML-escape so the script can use all
+			// elements as pre-rendered HTML without further escaping.
+			rendered[i] = html.EscapeString(s)
+			changed = true
+			continue
 		}
 		rendered[i] = elem
 	}

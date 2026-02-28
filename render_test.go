@@ -988,8 +988,8 @@ func TestNavlinksrightDropdown(t *testing.T) {
 
 func TestNavlinksListWithFormatRef(t *testing.T) {
 	// Navlink values can be lists: [text, format-ref, ...]
-	// Format refs after the first element are pre-rendered by Go into HTML,
-	// so the script receives them ready to include without escaping.
+	// All elements are pre-rendered by Go (text escaped, format refs resolved),
+	// so the script just joins them in order.
 	dir := setupMinimalSite(t, map[string]string{
 		"index.yaml": "main:\n - items\n",
 		"items.yaml": "items:\n  /loc:\n    - Location\n    - loc-icon\n",
@@ -1002,9 +1002,7 @@ func TestNavlinksListWithFormatRef(t *testing.T) {
 			"    key = record.get('key', '')\n"+
 			"    value = record.get('value', '')\n"+
 			"    if isinstance(value, list):\n"+
-			"        text = _html.escape(str(value[0])) if value else ''\n"+
-			"        icons = ' '.join(str(v) for v in value[1:])\n"+
-			"        label = f'{text} {icons}'.strip() if icons else text\n"+
+			"        label = ' '.join(str(v) for v in value)\n"+
 			"        print(f'<a href=\"{_html.escape(str(key))}\">{label}</a>')\n"+
 			"    else:\n"+
 			"        print(f'<a href=\"{_html.escape(str(key))}\">{_html.escape(str(value))}</a>')\n"), 0644)
@@ -1017,11 +1015,40 @@ func TestNavlinksListWithFormatRef(t *testing.T) {
 	if !strings.Contains(output, "Location") {
 		t.Errorf("expected text label in output, got: %s", output)
 	}
-	// The text should appear before the icon
+	// The YAML defines text before icon — order must be preserved
 	textIdx := strings.Index(output, "Location")
 	iconIdx := strings.Index(output, `<i class="fa-solid fa-location-dot">`)
 	if textIdx < 0 || iconIdx < 0 || textIdx > iconIdx {
-		t.Errorf("expected text before icon, got: %s", output)
+		t.Errorf("expected text before icon (matching YAML order), got: %s", output)
+	}
+}
+
+func TestNavlinksListIconFirst(t *testing.T) {
+	// When the YAML puts the icon before the text, the output must match.
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n - items\n",
+		"items.yaml": "items:\n  /loc:\n    - loc-icon\n    - Location\n",
+	})
+	os.WriteFile(filepath.Join(dir, "html.yaml"),
+		[]byte("html:\n - body\n\n"+
+			"^loc-icon:\n  tag: i\n  params:\n    class: fa-solid fa-location-dot\n\n"+
+			"^items:\n  script: python\n  code: |\n"+
+			"    import html as _html\n"+
+			"    key = record.get('key', '')\n"+
+			"    value = record.get('value', '')\n"+
+			"    if isinstance(value, list):\n"+
+			"        label = ' '.join(str(v) for v in value)\n"+
+			"        print(f'<a href=\"{_html.escape(str(key))}\">{label}</a>')\n"+
+			"    else:\n"+
+			"        print(f'<a href=\"{_html.escape(str(key))}\">{_html.escape(str(value))}</a>')\n"), 0644)
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+
+	// Icon should come before text since YAML listed it first
+	iconIdx := strings.Index(output, `<i class="fa-solid fa-location-dot">`)
+	textIdx := strings.Index(output, "Location")
+	if iconIdx < 0 || textIdx < 0 || iconIdx > textIdx {
+		t.Errorf("expected icon before text (matching YAML order), got: %s", output)
 	}
 }
 

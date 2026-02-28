@@ -52,10 +52,8 @@ navbar:
     key = record.get('key', '')
     value = record.get('value', '')
     if isinstance(value, list):
-        # List value: first element is text label, rest are pre-rendered HTML (icons etc.)
-        text = _html.escape(str(value[0])) if value else ''
-        icons = ' '.join(str(v) for v in value[1:])
-        label = f'{text} {icons}'.strip() if icons else text
+        # List value: all elements are pre-rendered (text escaped, format refs resolved)
+        label = ' '.join(str(v) for v in value)
         active = ' active bg-primary bg-opacity-10' if key == page else ''
         print(f'<li class="nav-item"><a class="nav-link{active}" href="{_html.escape(str(key))}">{label}</a></li>')
     elif isinstance(value, dict):
@@ -79,10 +77,8 @@ navbar:
     $key = $record['key'] ?? '';
     $value = $record['value'] ?? '';
     if (is_array($value) && isset($value[0])) {
-        // List value: first element is text label, rest are pre-rendered HTML (icons etc.)
-        $text = htmlspecialchars(strval($value[0]));
-        $icons = implode(' ', array_slice($value, 1));
-        $label = $icons ? "$text $icons" : $text;
+        // List value: all elements are pre-rendered (text escaped, format refs resolved)
+        $label = implode(' ', $value);
         $active = ($key === $page) ? ' active bg-primary bg-opacity-10' : '';
         $key = htmlspecialchars(strval($key));
         echo "<li class=\"nav-item\"><a class=\"nav-link$active\" href=\"$key\">$label</a></li>\n";
