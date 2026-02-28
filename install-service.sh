@@ -11,6 +11,7 @@
 #   sudo ./install-service.sh restart  # restart the service
 #   sudo ./install-service.sh remove   # uninstall the service
 #   ./install-service.sh log           # follow the service log (no sudo needed)
+#   sudo ./install-service.sh update   # git pull, rebuild & restart if changed
 #
 
 set -euo pipefail
@@ -109,6 +110,63 @@ ensure_binary() {
         die "Build completed but $BINARY not found."
     fi
     info "Build successful: $BINARY"
+}
+
+# ── Update helper ──────────────────────────────────────────────────────
+
+do_update() {
+    need_root
+
+    # Verify we're in a git repo.
+    if [ ! -d "$SCRIPT_DIR/.git" ]; then
+        die "No git repository found in $SCRIPT_DIR — cannot update."
+    fi
+
+    info "Checking for updates…"
+    local before after
+    before="$(git -C "$SCRIPT_DIR" rev-parse HEAD)"
+    git -C "$SCRIPT_DIR" pull --ff-only
+    after="$(git -C "$SCRIPT_DIR" rev-parse HEAD)"
+
+    if [ "$before" = "$after" ]; then
+        info "Already up to date."
+        return 0
+    fi
+
+    info "Updated $before → $after"
+
+    # Make sure Go is available.
+    if ! command -v go >/dev/null 2>&1; then
+        for p in /usr/local/go/bin/go /usr/lib/go/bin/go /snap/bin/go; do
+            if [ -x "$p" ]; then
+                export PATH="$(dirname "$p"):$PATH"
+                break
+            fi
+        done
+    fi
+    if ! command -v go >/dev/null 2>&1; then
+        install_go
+    fi
+
+    info "Rebuilding bserver…"
+    local version
+    version="$(git -C "$SCRIPT_DIR" describe --tags --always --dirty 2>/dev/null || echo dev)"
+    (cd "$SCRIPT_DIR" && go build -ldflags "-X main.Version=${version}" -o bserver)
+
+    if [ ! -x "$BINARY" ]; then
+        die "Build failed — $BINARY not found."
+    fi
+    info "Build successful: $BINARY"
+
+    # Restart the service.
+    local platform
+    platform="$(detect_platform)"
+    case "$platform" in
+        systemd) restart_systemd ;;
+        launchd) restart_launchd ;;
+    esac
+
+    info "Update complete."
 }
 
 # ── Detect platform ─────────────────────────────────────────────────────
@@ -314,6 +372,13 @@ log_launchd() {
 # ── Main ────────────────────────────────────────────────────────────────
 
 ACTION="${1:-install}"
+
+# The update action handles its own platform detection and restart.
+if [ "$ACTION" = "update" ]; then
+    do_update
+    exit 0
+fi
+
 PLATFORM="$(detect_platform)"
 
 # For install, ensure the binary exists (build from source if necessary).
@@ -328,7 +393,7 @@ case "$PLATFORM" in
             restart) restart_systemd ;;
             remove)  remove_systemd  ;;
             log)     log_systemd     ;;
-            *)       die "Unknown action: $ACTION (use install, restart, remove, or log)" ;;
+            *)       die "Unknown action: $ACTION (use install, restart, remove, update, or log)" ;;
         esac
         ;;
     launchd)
@@ -337,7 +402,7 @@ case "$PLATFORM" in
             restart) restart_launchd ;;
             remove)  remove_launchd  ;;
             log)     log_launchd     ;;
-            *)       die "Unknown action: $ACTION (use install, restart, remove, or log)" ;;
+            *)       die "Unknown action: $ACTION (use install, restart, remove, update, or log)" ;;
         esac
         ;;
 esac
