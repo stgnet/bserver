@@ -51,9 +51,9 @@ navbar:
     page = os.environ.get('REQUEST_URI', '/')
     key = record.get('key', '')
     value = record.get('value', '')
-    if isinstance(value, list):
-        # List value: all elements are pre-rendered (text escaped, format refs resolved)
-        label = ' '.join(str(v) for v in value)
+    if isinstance(value, dict) and '_html' in value:
+        # Pre-rendered HTML (list value rendered by Go)
+        label = value['_html']
         active = ' active bg-primary bg-opacity-10' if key == page else ''
         print(f'<li class="nav-item"><a class="nav-link{active}" href="{_html.escape(str(key))}">{label}</a></li>')
     elif isinstance(value, dict):
@@ -76,9 +76,9 @@ navbar:
     $page = getenv('REQUEST_URI') ?: '/';
     $key = $record['key'] ?? '';
     $value = $record['value'] ?? '';
-    if (is_array($value) && isset($value[0])) {
-        // List value: all elements are pre-rendered (text escaped, format refs resolved)
-        $label = implode(' ', $value);
+    if (is_array($value) && isset($value['_html'])) {
+        // Pre-rendered HTML (list value rendered by Go)
+        $label = $value['_html'];
         $active = ($key === $page) ? ' active bg-primary bg-opacity-10' : '';
         $key = htmlspecialchars(strval($key));
         echo "<li class=\"nav-item\"><a class=\"nav-link$active\" href=\"$key\">$label</a></li>\n";

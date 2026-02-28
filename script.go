@@ -113,9 +113,12 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 	} else if om, ok := data.(*OrderedMap); ok {
 		var records []map[string]interface{}
 		om.Range(func(k string, v interface{}) bool {
+			if list, ok := v.([]interface{}); ok {
+				v = map[string]interface{}{"_html": ctx.renderListToHTML(list)}
+			}
 			records = append(records, map[string]interface{}{
 				"key":   k,
-				"value": ctx.preRenderListFormatRefs(v),
+				"value": v,
 			})
 			return true
 		})
@@ -241,42 +244,27 @@ func findScriptInterpreter(lang string) string {
 	return ""
 }
 
-// preRenderListFormatRefs resolves format definition references in list values
-// and HTML-escapes plain text elements, producing a list of ready-to-concatenate
-// HTML fragments. For example ["Location", "location-dot"] becomes
-// ["Location", "<i class=\"fa-solid fa-location-dot\"></i>"] where format refs
-// are rendered through bserver's format system and plain strings are escaped.
-// The ordering of elements is preserved, so the YAML author controls whether
-// icons appear before or after text.
-func (ctx *renderContext) preRenderListFormatRefs(v interface{}) interface{} {
-	list, ok := v.([]interface{})
-	if !ok || len(list) <= 1 {
-		return v
-	}
-	changed := false
-	rendered := make([]interface{}, len(list))
-	for i, elem := range list {
+// renderListToHTML renders a list of content elements to a single HTML string.
+// Format definition references (^name) are rendered through bserver's format
+// system; plain text strings are HTML-escaped. Elements are joined with spaces
+// and their order is preserved from the YAML source.
+func (ctx *renderContext) renderListToHTML(list []interface{}) string {
+	var parts []string
+	for _, elem := range list {
 		if s, ok := elem.(string); ok {
 			tag, fd := ctx.tagForName(s)
 			if tag != "" && fd != nil {
 				var sb strings.Builder
 				ctx.renderInlineTag(&sb, s, tag, fd, nil, 0)
-				rendered[i] = strings.TrimSpace(sb.String())
-				changed = true
+				parts = append(parts, strings.TrimSpace(sb.String()))
 				continue
 			}
-			// Plain text: HTML-escape so the script can use all
-			// elements as pre-rendered HTML without further escaping.
-			rendered[i] = html.EscapeString(s)
-			changed = true
+			parts = append(parts, html.EscapeString(s))
 			continue
 		}
-		rendered[i] = elem
+		parts = append(parts, html.EscapeString(fmt.Sprintf("%v", elem)))
 	}
-	if changed {
-		return rendered
-	}
-	return v
+	return strings.Join(parts, " ")
 }
 
 // pythonScriptWrapper wraps user code in a Python loop over JSON records.

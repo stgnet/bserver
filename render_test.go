@@ -988,8 +988,8 @@ func TestNavlinksrightDropdown(t *testing.T) {
 
 func TestNavlinksListWithFormatRef(t *testing.T) {
 	// Navlink values can be lists: [text, format-ref, ...]
-	// All elements are pre-rendered by Go (text escaped, format refs resolved),
-	// so the script just joins them in order.
+	// Go renders the array to a single HTML string and passes it
+	// as {"_html": "..."} so the script can use it directly.
 	dir := setupMinimalSite(t, map[string]string{
 		"index.yaml": "main:\n - items\n",
 		"items.yaml": "items:\n  /loc:\n    - Location\n    - loc-icon\n",
@@ -1001,9 +1001,8 @@ func TestNavlinksListWithFormatRef(t *testing.T) {
 			"    import html as _html\n"+
 			"    key = record.get('key', '')\n"+
 			"    value = record.get('value', '')\n"+
-			"    if isinstance(value, list):\n"+
-			"        label = ' '.join(str(v) for v in value)\n"+
-			"        print(f'<a href=\"{_html.escape(str(key))}\">{label}</a>')\n"+
+			"    if isinstance(value, dict) and '_html' in value:\n"+
+			"        print(f'<a href=\"{_html.escape(str(key))}\">{value[\"_html\"]}</a>')\n"+
 			"    else:\n"+
 			"        print(f'<a href=\"{_html.escape(str(key))}\">{_html.escape(str(value))}</a>')\n"), 0644)
 
@@ -1036,9 +1035,8 @@ func TestNavlinksListIconFirst(t *testing.T) {
 			"    import html as _html\n"+
 			"    key = record.get('key', '')\n"+
 			"    value = record.get('value', '')\n"+
-			"    if isinstance(value, list):\n"+
-			"        label = ' '.join(str(v) for v in value)\n"+
-			"        print(f'<a href=\"{_html.escape(str(key))}\">{label}</a>')\n"+
+			"    if isinstance(value, dict) and '_html' in value:\n"+
+			"        print(f'<a href=\"{_html.escape(str(key))}\">{value[\"_html\"]}</a>')\n"+
 			"    else:\n"+
 			"        print(f'<a href=\"{_html.escape(str(key))}\">{_html.escape(str(value))}</a>')\n"), 0644)
 
@@ -1052,9 +1050,9 @@ func TestNavlinksListIconFirst(t *testing.T) {
 	}
 }
 
-func TestNavlinksListPlainStringsUnchanged(t *testing.T) {
-	// List elements that don't match format definitions should be passed
-	// through unchanged (not pre-rendered).
+func TestNavlinksListPlainStringsRendered(t *testing.T) {
+	// List elements that don't match format definitions are HTML-escaped
+	// and included in the rendered HTML string passed via _html.
 	dir := setupMinimalSite(t, map[string]string{
 		"index.yaml": "main:\n - items\n",
 		"items.yaml": "items:\n  /loc:\n    - Location\n    - not-a-format\n",
@@ -1062,18 +1060,20 @@ func TestNavlinksListPlainStringsUnchanged(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "html.yaml"),
 		[]byte("html:\n - body\n\n"+
 			"^items:\n  script: python\n  code: |\n"+
-			"    import json\n"+
 			"    value = record.get('value', '')\n"+
-			"    print(json.dumps(value))\n"), 0644)
+			"    if isinstance(value, dict) and '_html' in value:\n"+
+			"        print(value['_html'])\n"+
+			"    else:\n"+
+			"        print(str(value))\n"), 0644)
 
 	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 
-	// The plain string should pass through unchanged
+	// Both plain strings should appear in the rendered HTML
 	if !strings.Contains(output, "not-a-format") {
-		t.Errorf("expected plain string to pass through, got: %s", output)
+		t.Errorf("expected plain string in rendered HTML, got: %s", output)
 	}
 	if !strings.Contains(output, "Location") {
-		t.Errorf("expected text label to pass through, got: %s", output)
+		t.Errorf("expected text label in rendered HTML, got: %s", output)
 	}
 }
 
