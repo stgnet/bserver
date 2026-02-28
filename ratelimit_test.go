@@ -31,7 +31,7 @@ func TestRateLimiterNotBlockedInitially(t *testing.T) {
 	rl := newRateLimiter()
 	defer rl.Close()
 
-	if rl.isBlocked("1.2.3.4") {
+	if blocked, _ := rl.isBlocked("1.2.3.4"); blocked {
 		t.Error("new IP should not be blocked")
 	}
 }
@@ -48,7 +48,7 @@ func TestRateLimiterBlocksAfterConsecutiveErrors(t *testing.T) {
 			t.Fatalf("blocked after only %d errors", i+1)
 		}
 	}
-	if rl.isBlocked(ip) {
+	if blocked, _ := rl.isBlocked(ip); blocked {
 		t.Fatal("should not be blocked after 9 errors")
 	}
 
@@ -60,7 +60,7 @@ func TestRateLimiterBlocksAfterConsecutiveErrors(t *testing.T) {
 	if penalty != basePenaltyDuration {
 		t.Errorf("first penalty = %s, want %s", penalty, basePenaltyDuration)
 	}
-	if !rl.isBlocked(ip) {
+	if blocked, _ := rl.isBlocked(ip); !blocked {
 		t.Fatal("isBlocked should return true after block is triggered")
 	}
 }
@@ -83,7 +83,7 @@ func TestRateLimiterResetsOnSuccess(t *testing.T) {
 			t.Fatalf("blocked after reset + %d errors", i+1)
 		}
 	}
-	if rl.isBlocked(ip) {
+	if blocked, _ := rl.isBlocked(ip); blocked {
 		t.Fatal("should not be blocked: count was reset by successful response")
 	}
 }
@@ -151,10 +151,10 @@ func TestRateLimiterDifferentIPsIndependent(t *testing.T) {
 	for i := 0; i < maxConsecutiveErrors; i++ {
 		rl.recordResult("10.0.0.1", http.StatusNotFound)
 	}
-	if !rl.isBlocked("10.0.0.1") {
+	if blocked, _ := rl.isBlocked("10.0.0.1"); !blocked {
 		t.Fatal("10.0.0.1 should be blocked")
 	}
-	if rl.isBlocked("10.0.0.2") {
+	if blocked, _ := rl.isBlocked("10.0.0.2"); blocked {
 		t.Fatal("10.0.0.2 should not be blocked")
 	}
 }
@@ -172,7 +172,7 @@ func TestRateLimiterVariousErrorCodes(t *testing.T) {
 		rl.recordResult(ip, code)
 	}
 
-	if !rl.isBlocked(ip) {
+	if blocked, _ := rl.isBlocked(ip); !blocked {
 		t.Fatal("should be blocked after mixed error codes")
 	}
 }
@@ -216,8 +216,36 @@ func TestRateLimiterCleanupPreservesBlocked(t *testing.T) {
 
 	rl.cleanup()
 
-	if !rl.isBlocked(ip) {
+	if blocked, _ := rl.isBlocked(ip); !blocked {
 		t.Error("blocked entry should not be cleaned up while block is active")
+	}
+}
+
+func TestRateLimiterFirstDropFlag(t *testing.T) {
+	rl := newRateLimiter()
+	defer rl.Close()
+
+	ip := "10.0.0.9"
+	for i := 0; i < maxConsecutiveErrors; i++ {
+		rl.recordResult(ip, http.StatusNotFound)
+	}
+
+	// First call to isBlocked should report firstDrop=true
+	blocked, firstDrop := rl.isBlocked(ip)
+	if !blocked {
+		t.Fatal("should be blocked")
+	}
+	if !firstDrop {
+		t.Error("first blocked check should return firstDrop=true")
+	}
+
+	// Subsequent calls should return firstDrop=false
+	blocked, firstDrop = rl.isBlocked(ip)
+	if !blocked {
+		t.Fatal("should still be blocked")
+	}
+	if firstDrop {
+		t.Error("second blocked check should return firstDrop=false")
 	}
 }
 
@@ -276,7 +304,7 @@ func TestRateLimitMiddlewareAllowsNormalTraffic(t *testing.T) {
 		}
 	}
 
-	if rl.isBlocked("10.0.0.8") {
+	if blocked, _ := rl.isBlocked("10.0.0.8"); blocked {
 		t.Error("IP with only successful requests should not be blocked")
 	}
 }

@@ -24,6 +24,7 @@ type ipEntry struct {
 	blockedUntil      time.Time
 	penaltyCount      int // number of times blocked; used for escalating penalty
 	lastSeen          time.Time
+	dropLogged        bool // true after the first dropped request has been logged
 }
 
 // rateLimiter tracks per-IP consecutive error counts and blocks IPs that
@@ -85,18 +86,22 @@ func (rl *rateLimiter) cleanup() {
 
 // isBlocked checks if the given IP is currently rate-limited.
 // It updates lastSeen on blocked IPs to track ongoing attack activity.
-func (rl *rateLimiter) isBlocked(ip string) bool {
+// Returns (blocked, firstDrop) where firstDrop is true only on the
+// first blocked request (for logging the drop once without flooding).
+func (rl *rateLimiter) isBlocked(ip string) (blocked, firstDrop bool) {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 	entry, ok := rl.entries[ip]
 	if !ok {
-		return false
+		return false, false
 	}
 	if time.Now().Before(entry.blockedUntil) {
 		entry.lastSeen = time.Now()
-		return true
+		first := !entry.dropLogged
+		entry.dropLogged = true
+		return true, first
 	}
-	return false
+	return false, false
 }
 
 // recordResult records a response status code for the given IP.
@@ -123,6 +128,7 @@ func (rl *rateLimiter) recordResult(ip string, statusCode int) time.Duration {
 			entry.blockedUntil = now.Add(penalty)
 			entry.penaltyCount++
 			entry.consecutiveErrors = 0
+			entry.dropLogged = false
 			return penalty
 		}
 	} else {
@@ -187,8 +193,10 @@ func rateLimitMiddleware(rl *rateLimiter, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip := clientIP(r)
 
-		if rl.isBlocked(ip) {
-			log.Printf("%s %s %s %s dropped", ip, r.Host, r.Method, r.URL.Path)
+		if blocked, firstDrop := rl.isBlocked(ip); blocked {
+			if firstDrop {
+				log.Printf("%s %s %s %s dropped", ip, r.Host, r.Method, r.URL.Path)
+			}
 			dropResponse(w, r)
 			return
 		}

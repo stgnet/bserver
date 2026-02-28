@@ -179,8 +179,8 @@ minimal drop response using one of several randomized strategies:
 
 The randomized responses are designed to confuse automated scanners and
 make it difficult for attackers to distinguish between a block and a
-genuine server issue. Blocked requests are logged with "dropped" in
-place of the status code.
+genuine server issue. Only the first blocked request is logged (with
+"dropped" in place of the status code) to avoid flooding the log.
 
 ### Escalating Penalties
 
@@ -209,8 +209,10 @@ A typical scanning attack in the logs:
 ...
 198.51.100.7 rate-limited after 10 consecutive errors (penalty: 10m0s)
 198.51.100.7 bogus.example.com POST /webhook/batch dropped
-198.51.100.7 bogus.example.com POST /webhook/import dropped
 ```
+
+Only the first dropped request is logged; subsequent drops from the same
+IP during the same penalty period are silently discarded.
 
 ## Graceful Shutdown
 
