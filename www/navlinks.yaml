@@ -1,3 +1,16 @@
+# navlinks is included by navbar and gives the list of links: which will be common across all pages
+# 
+# This script automatically creates navlinks from eligible targets
+#
+# The automatic version can be replaced with a manually created
+# version by substituting a definition like this:
+#
+# navlinks:
+#   /urlone: First
+#   /urltwo: Second
+#
+#   etc...
+#
 $navlinks:
   script: python
   code: |

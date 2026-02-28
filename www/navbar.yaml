@@ -7,6 +7,8 @@ navbar:
     navbar-collapse:
       navbar-nav:
         - navlinks
+      navbar-nav-right:
+        - navlinksright
 ^navbar:
   tag: nav
   params:
@@ -38,6 +40,10 @@ navbar:
   tag: ul
   params:
     class: navbar-nav
+^navbar-nav-right:
+  tag: ul
+  params:
+    class: navbar-nav ms-auto
 ^navlinks:
   script: python
   code: |
@@ -47,4 +53,12 @@ navbar:
     text = record.get('value', '')
     active = ' active bg-primary bg-opacity-10' if link == page else ''
     print(f'<li class="nav-item"><a class="nav-link{active}" href="{_html.escape(link)}">{text}</a></li>')
-
+^navlinksright:
+  script: python
+  code: |
+    import os, html as _html
+    page = os.environ.get('REQUEST_URI', '/')
+    link = record.get('key', '')
+    text = record.get('value', '')
+    active = ' active bg-primary bg-opacity-10' if link == page else ''
+    print(f'<li class="nav-item"><a class="nav-link{active}" href="{_html.escape(link)}">{text}</a></li>')

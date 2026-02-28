@@ -1,6 +1,6 @@
 style:
   body:
-    max-width: 1000px
+    max-width: 1200px
     margin: 0px auto
   pre:
     background-color: lightgray
