@@ -110,11 +110,11 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 		// instead of crashing on a null record.
 		scriptData = []interface{}{}
 	} else if om, ok := data.(*OrderedMap); ok {
-		var records []map[string]string
+		var records []map[string]interface{}
 		om.Range(func(k string, v interface{}) bool {
-			records = append(records, map[string]string{
+			records = append(records, map[string]interface{}{
 				"key":   k,
-				"value": fmt.Sprintf("%v", v),
+				"value": v,
 			})
 			return true
 		})

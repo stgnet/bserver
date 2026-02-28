@@ -58,7 +58,19 @@ navbar:
   code: |
     import os, html as _html
     page = os.environ.get('REQUEST_URI', '/')
-    link = record.get('key', '')
-    text = record.get('value', '')
-    active = ' active bg-primary bg-opacity-10' if link == page else ''
-    print(f'<li class="nav-item"><a class="nav-link{active}" href="{_html.escape(link)}">{text}</a></li>')
+    key = record.get('key', '')
+    value = record.get('value', '')
+    if isinstance(value, dict):
+        # Bootstrap 5 dropdown menu
+        title = _html.escape(str(key))
+        print(f'<li class="nav-item dropdown">')
+        print(f'  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">{title}</a>')
+        print(f'  <ul class="dropdown-menu dropdown-menu-end">')
+        for link, text in value.items():
+            print(f'    <li><a class="dropdown-item" href="{_html.escape(str(link))}">{_html.escape(str(text))}</a></li>')
+        print(f'  </ul>')
+        print(f'</li>')
+    else:
+        # Simple nav link
+        active = ' active bg-primary bg-opacity-10' if key == page else ''
+        print(f'<li class="nav-item"><a class="nav-link{active}" href="{_html.escape(str(key))}">{_html.escape(str(value))}</a></li>')

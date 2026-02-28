@@ -134,15 +134,18 @@ navbar:
     navbar-collapse:
       navbar-nav:
         - navlinks
+      navbar-nav-right:
+        - navlinksright
 ```
 
 The key formats:
 
-- `^navbar` → `<nav class="navbar navbar-expand-lg navbar-light">`
+- `^navbar` → `<nav class="navbar navbar-expand-lg navbar-dark bg-primary">`
 - `^navbar-cf` → `<div class="container-fluid">`
 - `^navbar-toggler` → hamburger button for mobile
 - `^navbar-collapse` → collapsible menu wrapper
-- `^navbar-nav` → `<ul class="navbar-nav">`
+- `^navbar-nav` → `<ul class="navbar-nav">` (left-aligned links)
+- `^navbar-nav-right` → `<ul class="navbar-nav ms-auto">` (right-aligned links)
 
 ### navlinks (script-based)
 
@@ -171,6 +174,24 @@ navlinks:
   "/about": About
   "/contact": Contact
 ```
+
+### navlinksright (with dropdown support)
+
+The `^navlinksright` format renders right-side navigation items and supports
+Bootstrap 5 dropdown menus. When a YAML value is a nested map, it renders
+as a dropdown; simple key-value pairs render as regular links:
+
+```yaml
+navlinksright:
+  Info:
+    https://github.com/example/repo: Repo
+    "mailto:user@example.com": Author
+  "/settings": Settings
+```
+
+The nested map under `Info` produces a Bootstrap 5 dropdown menu with the
+toggle label "Info" and the child entries as dropdown items. The flat
+`/settings` entry renders as a regular nav link.
 
 ## Content Elements
 
