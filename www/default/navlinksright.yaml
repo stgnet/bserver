@@ -1,5 +1,11 @@
 navlinksright:
   Info:
-    https://github.com/stgnet/bserver/: Repo
-    'mailto:scott@stg.net': Author
-    https://claude.ai/: Assistant
+    https://github.com/stgnet/bserver/:
+      - fa-brands-github
+      - Repo
+    'mailto:scott@stg.net':
+      - fa-regular-envelope
+      - Author
+    https://claude.ai/:
+      - fa-solid-robot
+      - Assistant
