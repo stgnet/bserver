@@ -1004,7 +1004,7 @@ func TestNavlinksListWithFormatRef(t *testing.T) {
 			"    if isinstance(value, list):\n"+
 			"        text = _html.escape(str(value[0])) if value else ''\n"+
 			"        icons = ' '.join(str(v) for v in value[1:])\n"+
-			"        label = f'{icons} {text}'.strip() if icons else text\n"+
+			"        label = f'{text} {icons}'.strip() if icons else text\n"+
 			"        print(f'<a href=\"{_html.escape(str(key))}\">{label}</a>')\n"+
 			"    else:\n"+
 			"        print(f'<a href=\"{_html.escape(str(key))}\">{_html.escape(str(value))}</a>')\n"), 0644)
@@ -1017,11 +1017,11 @@ func TestNavlinksListWithFormatRef(t *testing.T) {
 	if !strings.Contains(output, "Location") {
 		t.Errorf("expected text label in output, got: %s", output)
 	}
-	// The icon should appear before the text
-	iconIdx := strings.Index(output, `<i class="fa-solid fa-location-dot">`)
+	// The text should appear before the icon
 	textIdx := strings.Index(output, "Location")
-	if iconIdx < 0 || textIdx < 0 || iconIdx > textIdx {
-		t.Errorf("expected icon before text label, got: %s", output)
+	iconIdx := strings.Index(output, `<i class="fa-solid fa-location-dot">`)
+	if textIdx < 0 || iconIdx < 0 || textIdx > iconIdx {
+		t.Errorf("expected text before icon, got: %s", output)
 	}
 }
 
