@@ -607,11 +607,13 @@ func main() {
 	}
 
 	mux := &virtualHostMux{cfg: cfg}
+	rl := newRateLimiter()
 
-	// Wrap mux with logging and security headers
+	// Wrap mux with logging, security headers, and rate limiting
 	var handler http.Handler = mux
 	handler = securityHeadersMiddleware(handler)
 	handler = loggingMiddleware(handler)
+	handler = rateLimitMiddleware(rl, handler)
 
 	m := &autocert.Manager{
 		Cache:  autocert.DirCache(cfg.CacheDir),
@@ -732,6 +734,7 @@ func main() {
 	if cache != nil {
 		cache.Close()
 	}
+	rl.Close()
 	log.Printf("Server stopped")
 }
 
@@ -841,13 +844,13 @@ func (lrw *loggingResponseWriter) WriteHeader(code int) {
 	lrw.ResponseWriter.WriteHeader(code)
 }
 
-// loggingMiddleware logs each request with method, path, status, and duration.
+// loggingMiddleware logs each request with client IP, method, path, status, and duration.
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		lrw := &loggingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 		next.ServeHTTP(lrw, r)
-		log.Printf("%s %s %s %d %s", r.Host, r.Method, r.URL.Path, lrw.statusCode, time.Since(start).Round(time.Millisecond))
+		log.Printf("%s %s %s %s %d %s", clientIP(r), r.Host, r.Method, r.URL.Path, lrw.statusCode, time.Since(start).Round(time.Millisecond))
 	})
 }
 

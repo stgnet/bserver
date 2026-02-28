@@ -97,17 +97,84 @@ files, rendered pages, error pages, and PHP output.
 
 ## Request Logging
 
-Every HTTP request is logged with the hostname, method, path, response status
-code, and duration:
+Every HTTP request is logged with the client IP address, hostname, method,
+path, response status code, and duration:
 
 ```
-example.com GET / 200 12ms
-example.com GET /about 200 3ms
-example.com GET /missing 404 1ms
+203.0.113.42 example.com GET / 200 12ms
+203.0.113.42 example.com GET /about 200 3ms
+198.51.100.7 example.com GET /missing 404 1ms
 ```
+
+The IP address is extracted from the TCP connection source (`RemoteAddr`).
+This makes it easy to identify repeated requests from the same source,
+spot scanning patterns, and correlate with rate limiting events.
 
 Cached responses are typically much faster than first renders, making it easy
 to spot cache misses in the logs.
+
+## Rate Limiting
+
+bserver automatically rate-limits IP addresses that make too many consecutive
+failed requests (status 400 or higher). This protects against scanning,
+fishing, and brute-force attacks without affecting normal traffic.
+
+### How It Works
+
+1. Every response is tracked per client IP address.
+2. Each error response (4xx or 5xx) increments a consecutive error counter
+   for that IP.
+3. Any successful response (2xx or 3xx) resets the counter to zero.
+4. When an IP accumulates **10 consecutive errors**, it is blocked.
+
+This means legitimate users who occasionally hit a 404 are unaffected — a
+single successful page view resets the counter entirely.
+
+### Blocked Requests
+
+When a blocked IP sends a request, the server skips all normal request
+processing (no routing, no rendering, no file I/O) and responds with a
+minimal drop response using one of several randomized strategies:
+
+- Close the connection immediately
+- Return a bare `429 Too Many Requests`
+- Return a bare `503 Service Unavailable`
+- Delay briefly then close the connection
+
+The randomized responses are designed to confuse automated scanners and
+make it difficult for attackers to distinguish between a block and a
+genuine server issue. Blocked requests are logged with "dropped" in
+place of the status code.
+
+### Escalating Penalties
+
+Each time an IP is blocked, the penalty duration doubles:
+
+| Offense | Block Duration |
+|---------|---------------|
+| 1st     | 10 minutes    |
+| 2nd     | 20 minutes    |
+| 3rd     | 40 minutes    |
+| 4th     | 80 minutes    |
+| ...     | ...           |
+| 9th+    | ~42 hours (cap) |
+
+The penalty level is preserved across blocks, so a persistent attacker
+faces increasingly long timeouts. The penalty history is cleared when
+the IP has been idle for at least 1 hour after its block expires.
+
+### Example Log Output
+
+A typical scanning attack in the logs:
+
+```
+198.51.100.7 bogus.example.com POST /webhook/upload 404 106ms
+198.51.100.7 bogus.example.com POST /webhook/files 404 109ms
+...
+198.51.100.7 rate-limited after 10 consecutive errors (penalty: 10m0s)
+198.51.100.7 bogus.example.com POST /webhook/batch dropped
+198.51.100.7 bogus.example.com POST /webhook/import dropped
+```
 
 ## Graceful Shutdown
 
