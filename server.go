@@ -888,7 +888,7 @@ func (lrw *loggingResponseWriter) WriteHeader(code int) {
 	lrw.ResponseWriter.WriteHeader(code)
 }
 
-// loggingMiddleware logs each request with client IP, method, path, status, and duration.
+// loggingMiddleware logs each request with client IP, hostname, method, path, status, and duration.
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

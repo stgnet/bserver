@@ -3,6 +3,43 @@
 bserver includes several production-oriented features that work automatically
 without configuration.
 
+## Virtual Host Resolution
+
+bserver uses the HTTP `Host` header to resolve requests to virtual host
+directories under the `www/` base directory. Each directory name corresponds
+to a domain.
+
+### Resolution Order
+
+1. **Direct match** — if `www/<hostname>` exists as a directory (or symlink),
+   the request is served from there.
+2. **Known vhost fallback** — if the hostname is one subdomain deeper than a
+   known vhost directory (e.g., `www.example.com` when `www/example.com`
+   exists), the request is served from `www/default`.
+3. **Unknown domain rejection** — if the hostname doesn't match any vhost
+   directory and isn't one subdomain deeper than one, the server responds
+   with `421 Misdirected Request`. The request is not served.
+
+This means `www.example.com` and `api.example.com` automatically work when
+you create `www/example.com`, but deeply nested bogus domains like
+`update.update.update.m.example.com` are rejected immediately.
+
+For domains that need more than one level of subdomains, create a symlink:
+```
+cd www && ln -s example.com deep.sub.example.com
+```
+
+### The `default` Directory
+
+The `www/default` directory serves as a fallback for known vhosts that don't
+have their own directory. For example, if `www/example.com` exists and
+someone visits `www.example.com`, the request is served from `www/default`
+(since `www/www.example.com` doesn't exist, but `www.example.com` is one
+level deeper than the known `example.com` vhost).
+
+If the `default` directory doesn't exist, requests that would fall back to
+it receive a `404 Not Found`.
+
 ## Render Cache
 
 bserver caches rendered YAML and markdown pages in memory. When the same page
@@ -90,27 +127,25 @@ restricted to known virtual hosts.
 
 ### Which Domains Get Let's Encrypt Certificates
 
-A domain qualifies for a Let's Encrypt certificate only if:
+A domain qualifies for a Let's Encrypt certificate only if it passes the
+same known-vhost check used for request routing:
 
 1. **Direct match** — a directory exists at `www/<domain>` (e.g., `www/example.com`)
 2. **One subdomain deeper** — the parent domain has a directory (e.g.,
    `www.example.com` works when `www/example.com` exists)
 
-This means `www.example.com` and `api.example.com` automatically work when
-you create `www/example.com`. But deeply nested bogus domains like
-`a.b.c.d.example.com` are rejected without contacting Let's Encrypt.
-
-For domains that need more than one level of subdomains, create a symlink:
-```
-cd www && ln -s example.com deep.sub.example.com
-```
+Deeply nested bogus domains like `a.b.c.d.example.com` are rejected without
+contacting Let's Encrypt.
 
 ### Domains Without a Virtual Host
 
-Requests to domains that don't match any virtual host directory get a
-self-signed certificate (no Let's Encrypt request is made). The request
-still reaches the server and is served from the `default` virtual host,
-so the rate limiter can track and block scanning attempts.
+Requests to unknown domains are rejected at two levels:
+
+1. **TLS layer** — a self-signed certificate is returned (no Let's Encrypt
+   request is made), preventing bogus domains from exhausting LE rate limits.
+2. **HTTP layer** — the server responds with `421 Misdirected Request`
+   without serving any content. This 421 counts as an error for the rate
+   limiter, so persistent scanners are blocked after 10 attempts.
 
 ### Private and Non-Public Domains
 
@@ -133,8 +168,8 @@ files, rendered pages, error pages, and PHP output.
 
 ## Request Logging
 
-Every HTTP request is logged with the client IP address, hostname, method,
-path, response status code, and duration:
+Every HTTP request is logged with the client IP address, hostname, HTTP
+method, path, response status code, and duration:
 
 ```
 203.0.113.42 example.com GET / 200 12ms
@@ -201,18 +236,69 @@ the IP has been idle for at least 1 hour after its block expires.
 
 ### Example Log Output
 
-A typical scanning attack in the logs:
+A scanning attack against a known vhost (error paths on a valid domain):
 
 ```
-198.51.100.7 bogus.example.com POST /webhook/upload 404 106ms
-198.51.100.7 bogus.example.com POST /webhook/files 404 109ms
+198.51.100.7 example.com POST /webhook/upload 404 106ms
+198.51.100.7 example.com POST /webhook/files 404 109ms
 ...
 198.51.100.7 rate-limited after 10 consecutive errors (penalty: 10m0s)
-198.51.100.7 bogus.example.com POST /webhook/batch dropped
+198.51.100.7 example.com POST /webhook/batch dropped
+```
+
+A scanning attack using bogus domains (rejected at the vhost level):
+
+```
+198.51.100.7 bogus.update.m.example.com GET / 421 0s
+198.51.100.7 bogus.update.m.example.com GET /admin 421 0s
+...
+198.51.100.7 rate-limited after 10 consecutive errors (penalty: 10m0s)
+198.51.100.7 bogus.update.m.example.com GET / dropped
 ```
 
 Only the first dropped request is logged; subsequent drops from the same
 IP during the same penalty period are silently discarded.
+
+## HTTP to HTTPS Redirect
+
+When HTTPS is active (port 443 is available), all HTTP requests are
+automatically redirected to HTTPS with a `308 Permanent Redirect` status.
+The only exception is ACME HTTP-01 challenge requests from Let's Encrypt,
+which are handled on port 80 to complete certificate issuance.
+
+When HTTPS is not available (port 443 cannot be bound), HTTP serves
+requests directly with the full middleware chain (logging, security
+headers, rate limiting).
+
+## Privilege Dropping
+
+After binding to privileged ports (80 and 443), bserver drops privileges
+to the `nobody` user. This limits the impact of any potential security
+vulnerability — even if the server process is compromised, it runs with
+minimal filesystem and system permissions.
+
+Privilege dropping is automatic and logged at startup:
+```
+Dropped privileges to nobody (UID=65534 GID=65534)
+```
+
+If the `nobody` user doesn't exist or privilege dropping fails for any
+reason, the server continues as the current user and logs a warning.
+
+## Port Fallback
+
+If port 80 is unavailable (e.g., another process is using it, or the
+server is running without root privileges), bserver automatically tries
+alternative ports 8000 through 8099 and uses the first available one.
+
+This makes it easy to run bserver in development without `sudo`:
+```
+Warning: cannot listen on :80 (trying alternative ports)
+Using alternative HTTP port: :8000
+```
+
+If port 443 is unavailable, HTTPS is disabled and the server runs
+HTTP-only. A warning is logged but the server continues normally.
 
 ## Graceful Shutdown
 
@@ -240,4 +326,3 @@ Override the version at build time with:
 ```
 go build -ldflags "-X main.Version=1.0.0"
 ```
-
