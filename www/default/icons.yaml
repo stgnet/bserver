@@ -1,0 +1,86 @@
+title: FontAwesome Icons
+
++meta:
+  - description: Browse all free FontAwesome 7.0.1 icons
+
+fontawesome:
+
++style:
+  .icon-card:
+    text-align: center
+    padding: 8px 4px
+    border-radius: 6px
+    transition: background-color 0.15s
+  .icon-card:hover:
+    background-color: '#e9ecef'
+  .icon-card i:
+    font-size: 2em
+    display: block
+    margin-bottom: 6px
+  .icon-card .icon-name:
+    font-size: 0.7em
+    color: '#6c757d'
+    word-break: break-all
+    line-height: 1.2
+
+main:
+  - h1: "FontAwesome Icons"
+  - p: "All free icons from FontAwesome 7.0.1, available as YAML shorthand definitions."
+  - h2: "Usage"
+  - p: "Reference any icon by its name in your YAML content:"
+  - pre: "main:\n  - fa-solid-location-dot:"
+  - p: "This renders as:"
+  - raw: '<p><i class="fa-solid fa-location-dot fa-2x"></i></p>'
+  - raw: '<input type="text" id="icon-filter" class="form-control mb-4" placeholder="Filter icons by name...">'
+  - icon-grid: generate
+  - raw: |
+      <script>
+      document.getElementById('icon-filter').addEventListener('input', function() {
+        var q = this.value.toLowerCase();
+        document.querySelectorAll('.icon-card').forEach(function(card) {
+          card.style.display = card.getAttribute('data-name').includes(q) ? '' : 'none';
+        });
+        document.querySelectorAll('.icon-section').forEach(function(sec) {
+          var visible = sec.querySelectorAll('.icon-card:not([style*="display: none"])').length;
+          sec.style.display = visible ? '' : 'none';
+        });
+      });
+      </script>
+
+^icon-grid:
+  script: python
+  code: |
+    import os, re, html as _html
+    doc_root = os.environ.get('DOCUMENT_ROOT', '.')
+    yaml_path = os.path.join(doc_root, '..', 'fontawesome.yaml')
+    icons = {}
+    current_name = None
+    with open(yaml_path) as f:
+        for line in f:
+            m = re.match(r'^\^(fa-\S+):\s*$', line)
+            if m:
+                current_name = m.group(1)
+            elif current_name and line.strip().startswith('class:'):
+                css_class = line.split('class:', 1)[1].strip()
+                style = current_name.split('-')[1]
+                if style not in icons:
+                    icons[style] = []
+                icons[style].append((current_name, css_class))
+                current_name = None
+    style_labels = {'brands': 'Brand Icons', 'regular': 'Regular Icons', 'solid': 'Solid Icons'}
+    for style in ['solid', 'regular', 'brands']:
+        if style not in icons:
+            continue
+        label = style_labels.get(style, style)
+        count = len(icons[style])
+        print(f'<div class="icon-section">')
+        print(f'<h3>{_html.escape(label)} <small class="text-muted">({count})</small></h3>')
+        print(f'<div class="row row-cols-3 row-cols-sm-4 row-cols-md-6 row-cols-lg-8 g-2 mb-4">')
+        for name, css_class in icons[style]:
+            ename = _html.escape(name)
+            eclass = _html.escape(css_class)
+            print(f'<div class="col"><div class="icon-card" data-name="{ename}">')
+            print(f'<i class="{eclass}"></i>')
+            print(f'<div class="icon-name">{ename}</div>')
+            print(f'</div></div>')
+        print(f'</div></div>')
