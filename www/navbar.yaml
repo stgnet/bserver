@@ -45,14 +45,29 @@ navbar:
   params:
     class: navbar-nav ms-auto
 ^navlinks:
-  script: python
+  script: php
   code: |
-    import os, html as _html
-    page = os.environ.get('REQUEST_URI', '/')
-    link = record.get('key', '')
-    text = record.get('value', '')
-    active = ' active bg-primary bg-opacity-10' if link == page else ''
-    print(f'<li class="nav-item"><a class="nav-link{active}" href="{_html.escape(link)}">{text}</a></li>')
+    $page = getenv('REQUEST_URI') ?: '/';
+    $key = $record['key'] ?? '';
+    $value = $record['value'] ?? '';
+    if (is_array($value)) {
+        $title = htmlspecialchars($key);
+        echo "<li class=\"nav-item dropdown\">\n";
+        echo "  <a class=\"nav-link dropdown-toggle\" href=\"#\" role=\"button\" data-bs-toggle=\"dropdown\" aria-expanded=\"false\">$title</a>\n";
+        echo "  <ul class=\"dropdown-menu dropdown-menu-end\">\n";
+        foreach ($value as $link => $text) {
+            $link = htmlspecialchars($link);
+            $text = htmlspecialchars($text);
+            echo "    <li><a class=\"dropdown-item\" href=\"$link\">$text</a></li>\n";
+        }
+        echo "  </ul>\n";
+        echo "</li>\n";
+    } else {
+        $active = ($key === $page) ? ' active bg-primary bg-opacity-10' : '';
+        $key = htmlspecialchars($key);
+        $value = htmlspecialchars($value);
+        echo "<li class=\"nav-item\"><a class=\"nav-link$active\" href=\"$key\">$value</a></li>\n";
+    }
 ^navlinksright:
   script: python
   code: |
