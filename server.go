@@ -619,6 +619,12 @@ func main() {
 		Cache:  autocert.DirCache(cfg.CacheDir),
 		Prompt: autocert.AcceptTOS,
 		Email:  cfg.LEEmail,
+		HostPolicy: func(ctx context.Context, host string) error {
+			if isKnownVhost(host, cfg.Base) {
+				return nil
+			}
+			return fmt.Errorf("host %q not configured as a virtual host", host)
+		},
 	}
 
 	// Try to start HTTPS server
@@ -629,6 +635,9 @@ func main() {
 		TLSConfig: &tls.Config{
 			GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 				if !isPublicDomain(hello.ServerName) {
+					return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
+				}
+				if !isKnownVhost(hello.ServerName, cfg.Base) {
 					return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
 				}
 				cert, err := m.GetCertificate(hello)
@@ -797,6 +806,35 @@ func isPublicDomain(host string) bool {
 	}
 
 	return true
+}
+
+// isKnownVhost returns true if the domain has a matching virtual host
+// directory under the base www path, or is exactly one subdomain level
+// deeper than a known vhost. This allows, for example, www.example.com
+// and api.example.com to work when only www/example.com exists, while
+// rejecting deeply nested bogus domains like a.b.c.d.example.com.
+func isKnownVhost(serverName, base string) bool {
+	host := strings.ToLower(serverName)
+
+	// Direct match: www/<host> exists as a directory
+	dir := filepath.Join(base, host)
+	if st, err := os.Stat(dir); err == nil && st.IsDir() {
+		return true
+	}
+
+	// One level up: strip the first label and check the parent domain.
+	// This allows www.example.com when www/example.com exists.
+	if dot := strings.IndexByte(host, '.'); dot >= 0 {
+		parent := host[dot+1:]
+		if parent != "" {
+			dir = filepath.Join(base, parent)
+			if st, err := os.Stat(dir); err == nil && st.IsDir() {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // dropPrivileges attempts to drop to the 'nobody' user after binding

@@ -82,6 +82,42 @@ A logo image unchanged for 30 days gets `max-age=86400` (24 hours, the cap).
 This approach means frequently-updated files are re-checked sooner, while
 stable files are cached longer.
 
+## TLS Certificate Management
+
+bserver automatically manages TLS certificates for HTTPS. To protect against
+bogus domains exhausting Let's Encrypt rate limits, certificate requests are
+restricted to known virtual hosts.
+
+### Which Domains Get Let's Encrypt Certificates
+
+A domain qualifies for a Let's Encrypt certificate only if:
+
+1. **Direct match** — a directory exists at `www/<domain>` (e.g., `www/example.com`)
+2. **One subdomain deeper** — the parent domain has a directory (e.g.,
+   `www.example.com` works when `www/example.com` exists)
+
+This means `www.example.com` and `api.example.com` automatically work when
+you create `www/example.com`. But deeply nested bogus domains like
+`a.b.c.d.example.com` are rejected without contacting Let's Encrypt.
+
+For domains that need more than one level of subdomains, create a symlink:
+```
+cd www && ln -s example.com deep.sub.example.com
+```
+
+### Domains Without a Virtual Host
+
+Requests to domains that don't match any virtual host directory get a
+self-signed certificate (no Let's Encrypt request is made). The request
+still reaches the server and is served from the `default` virtual host,
+so the rate limiter can track and block scanning attempts.
+
+### Private and Non-Public Domains
+
+IP addresses and domains with non-public suffixes (`.local`, `.test`,
+`.internal`, etc.) always get self-signed certificates without contacting
+Let's Encrypt.
+
 ## Security Headers
 
 Every response includes these security headers automatically:

@@ -238,6 +238,59 @@ func TestIsPublicDomain(t *testing.T) {
 	}
 }
 
+func TestIsKnownVhost(t *testing.T) {
+	tmpDir := t.TempDir()
+	// Create vhost directories
+	os.MkdirAll(filepath.Join(tmpDir, "example.com"), 0755)
+	os.MkdirAll(filepath.Join(tmpDir, "bar.org"), 0755)
+
+	tests := []struct {
+		host string
+		want bool
+		desc string
+	}{
+		// Direct matches
+		{"example.com", true, "exact vhost match"},
+		{"bar.org", true, "exact vhost match"},
+		{"Example.COM", true, "case insensitive match"},
+
+		// One level deeper (allowed)
+		{"www.example.com", true, "www prefix"},
+		{"api.example.com", true, "subdomain of vhost"},
+		{"m.bar.org", true, "subdomain of vhost"},
+
+		// Two or more levels deeper (rejected)
+		{"a.b.example.com", false, "two levels deep"},
+		{"x.y.z.example.com", false, "three levels deep"},
+		{"update.update.update.m.example.com", false, "many levels deep"},
+
+		// No matching vhost at all
+		{"unknown.com", false, "no matching vhost"},
+		{"www.unknown.com", false, "subdomain of non-existent vhost"},
+		{"a.b.c.d.e.f.bserver.info", false, "deeply nested bogus domain"},
+	}
+
+	for _, tt := range tests {
+		if got := isKnownVhost(tt.host, tmpDir); got != tt.want {
+			t.Errorf("isKnownVhost(%q) = %v, want %v (%s)", tt.host, got, tt.want, tt.desc)
+		}
+	}
+}
+
+func TestIsKnownVhostSymlink(t *testing.T) {
+	tmpDir := t.TempDir()
+	// Create a real directory and a symlink to it
+	os.MkdirAll(filepath.Join(tmpDir, "default"), 0755)
+	os.Symlink(filepath.Join(tmpDir, "default"), filepath.Join(tmpDir, "mysite.com"))
+
+	if !isKnownVhost("mysite.com", tmpDir) {
+		t.Error("isKnownVhost should follow symlinks")
+	}
+	if !isKnownVhost("www.mysite.com", tmpDir) {
+		t.Error("isKnownVhost should allow one level above symlinked vhost")
+	}
+}
+
 func TestHostOnly(t *testing.T) {
 	tests := map[string]string{
 		"example.com":      "example.com",
