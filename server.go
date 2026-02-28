@@ -64,10 +64,16 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	root := filepath.Join(m.cfg.Base, host)
 	if st, err := os.Stat(root); err != nil || !st.IsDir() {
-		// Fall back to "default" directory if the virtual host isn't found
+		// Only fall back to "default" for known vhosts (direct match or
+		// one subdomain deeper). Reject unknown domains so that bogus
+		// deeply-nested domains don't get served real content.
+		// 421 Misdirected Request: server is not configured for this host.
+		if !isKnownVhost(host, m.cfg.Base) {
+			http.Error(w, "Misdirected Request", http.StatusMisdirectedRequest)
+			return
+		}
 		defaultRoot := filepath.Join(m.cfg.Base, "default")
 		if st, err := os.Stat(defaultRoot); err != nil || !st.IsDir() {
-			// Log detailed path info server-side; return generic 404 to client
 			log.Printf("404: host %q not found, default also unavailable (base=%s)", host, m.cfg.Base)
 			http.Error(w, "Not Found", http.StatusNotFound)
 			return

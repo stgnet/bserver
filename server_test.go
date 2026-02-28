@@ -68,19 +68,52 @@ func TestHandleMarkdownRendersHTML(t *testing.T) {
 	}
 }
 
-func TestVirtualHostFallsBackToDefault(t *testing.T) {
+func TestKnownVhostFallsBackToDefault(t *testing.T) {
 	base, _ := os.Getwd()
 	mux := newTestMux(t, filepath.Join(base, "www"))
 
-	// Request with a host that doesn't have a directory
+	// "www.default" is one subdomain deeper than the "default" vhost
+	// directory, so it's a known vhost and should fall back to default/
+	req := httptest.NewRequest("GET", "/", nil)
+	req.Host = "www.default"
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want %d (known vhost should fall back to default/)", resp.StatusCode, http.StatusOK)
+	}
+}
+
+func TestUnknownVhostRejects(t *testing.T) {
+	base, _ := os.Getwd()
+	mux := newTestMux(t, filepath.Join(base, "www"))
+
+	// A completely unknown domain should get 421, not fall back to default
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Host = "nonexistent.example.com"
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
 	resp := w.Result()
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("status = %d, want %d (should fall back to default/)", resp.StatusCode, http.StatusOK)
+	if resp.StatusCode != http.StatusMisdirectedRequest {
+		t.Errorf("status = %d, want %d (unknown vhost should not be served)", resp.StatusCode, http.StatusMisdirectedRequest)
+	}
+}
+
+func TestDeeplyNestedVhostRejects(t *testing.T) {
+	base, _ := os.Getwd()
+	mux := newTestMux(t, filepath.Join(base, "www"))
+
+	// Deeply nested subdomain of a known vhost should be rejected
+	req := httptest.NewRequest("GET", "/", nil)
+	req.Host = "update.update.update.m.default"
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusMisdirectedRequest {
+		t.Errorf("status = %d, want %d (deeply nested domain should not be served)", resp.StatusCode, http.StatusMisdirectedRequest)
 	}
 }
 
