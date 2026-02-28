@@ -5,3 +5,8365 @@ fontawesome:
     integrity: sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==
     crossorigin: anonymous
     referrerpolicy: no-referrer
+
+# brands icons
+^fa-brands-42-group:
+  tag: i
+  params:
+    class: fa-brands fa-42-group
+^fa-brands-500px:
+  tag: i
+  params:
+    class: fa-brands fa-500px
+^fa-brands-accessible-icon:
+  tag: i
+  params:
+    class: fa-brands fa-accessible-icon
+^fa-brands-accusoft:
+  tag: i
+  params:
+    class: fa-brands fa-accusoft
+^fa-brands-adn:
+  tag: i
+  params:
+    class: fa-brands fa-adn
+^fa-brands-adversal:
+  tag: i
+  params:
+    class: fa-brands fa-adversal
+^fa-brands-affiliatetheme:
+  tag: i
+  params:
+    class: fa-brands fa-affiliatetheme
+^fa-brands-airbnb:
+  tag: i
+  params:
+    class: fa-brands fa-airbnb
+^fa-brands-algolia:
+  tag: i
+  params:
+    class: fa-brands fa-algolia
+^fa-brands-alipay:
+  tag: i
+  params:
+    class: fa-brands fa-alipay
+^fa-brands-amazon:
+  tag: i
+  params:
+    class: fa-brands fa-amazon
+^fa-brands-amazon-pay:
+  tag: i
+  params:
+    class: fa-brands fa-amazon-pay
+^fa-brands-amilia:
+  tag: i
+  params:
+    class: fa-brands fa-amilia
+^fa-brands-android:
+  tag: i
+  params:
+    class: fa-brands fa-android
+^fa-brands-angellist:
+  tag: i
+  params:
+    class: fa-brands fa-angellist
+^fa-brands-angrycreative:
+  tag: i
+  params:
+    class: fa-brands fa-angrycreative
+^fa-brands-angular:
+  tag: i
+  params:
+    class: fa-brands fa-angular
+^fa-brands-app-store:
+  tag: i
+  params:
+    class: fa-brands fa-app-store
+^fa-brands-app-store-ios:
+  tag: i
+  params:
+    class: fa-brands fa-app-store-ios
+^fa-brands-apper:
+  tag: i
+  params:
+    class: fa-brands fa-apper
+^fa-brands-apple:
+  tag: i
+  params:
+    class: fa-brands fa-apple
+^fa-brands-apple-pay:
+  tag: i
+  params:
+    class: fa-brands fa-apple-pay
+^fa-brands-artstation:
+  tag: i
+  params:
+    class: fa-brands fa-artstation
+^fa-brands-asymmetrik:
+  tag: i
+  params:
+    class: fa-brands fa-asymmetrik
+^fa-brands-atlassian:
+  tag: i
+  params:
+    class: fa-brands fa-atlassian
+^fa-brands-audible:
+  tag: i
+  params:
+    class: fa-brands fa-audible
+^fa-brands-autoprefixer:
+  tag: i
+  params:
+    class: fa-brands fa-autoprefixer
+^fa-brands-avianex:
+  tag: i
+  params:
+    class: fa-brands fa-avianex
+^fa-brands-aviato:
+  tag: i
+  params:
+    class: fa-brands fa-aviato
+^fa-brands-aws:
+  tag: i
+  params:
+    class: fa-brands fa-aws
+^fa-brands-bandcamp:
+  tag: i
+  params:
+    class: fa-brands fa-bandcamp
+^fa-brands-battle-net:
+  tag: i
+  params:
+    class: fa-brands fa-battle-net
+^fa-brands-behance:
+  tag: i
+  params:
+    class: fa-brands fa-behance
+^fa-brands-bilibili:
+  tag: i
+  params:
+    class: fa-brands fa-bilibili
+^fa-brands-bimobject:
+  tag: i
+  params:
+    class: fa-brands fa-bimobject
+^fa-brands-bitbucket:
+  tag: i
+  params:
+    class: fa-brands fa-bitbucket
+^fa-brands-bitcoin:
+  tag: i
+  params:
+    class: fa-brands fa-bitcoin
+^fa-brands-bity:
+  tag: i
+  params:
+    class: fa-brands fa-bity
+^fa-brands-black-tie:
+  tag: i
+  params:
+    class: fa-brands fa-black-tie
+^fa-brands-blackberry:
+  tag: i
+  params:
+    class: fa-brands fa-blackberry
+^fa-brands-blogger:
+  tag: i
+  params:
+    class: fa-brands fa-blogger
+^fa-brands-blogger-b:
+  tag: i
+  params:
+    class: fa-brands fa-blogger-b
+^fa-brands-bluesky:
+  tag: i
+  params:
+    class: fa-brands fa-bluesky
+^fa-brands-bluetooth:
+  tag: i
+  params:
+    class: fa-brands fa-bluetooth
+^fa-brands-bluetooth-b:
+  tag: i
+  params:
+    class: fa-brands fa-bluetooth-b
+^fa-brands-bootstrap:
+  tag: i
+  params:
+    class: fa-brands fa-bootstrap
+^fa-brands-bots:
+  tag: i
+  params:
+    class: fa-brands fa-bots
+^fa-brands-brave:
+  tag: i
+  params:
+    class: fa-brands fa-brave
+^fa-brands-brave-reverse:
+  tag: i
+  params:
+    class: fa-brands fa-brave-reverse
+^fa-brands-btc:
+  tag: i
+  params:
+    class: fa-brands fa-btc
+^fa-brands-buffer:
+  tag: i
+  params:
+    class: fa-brands fa-buffer
+^fa-brands-buromobelexperte:
+  tag: i
+  params:
+    class: fa-brands fa-buromobelexperte
+^fa-brands-buy-n-large:
+  tag: i
+  params:
+    class: fa-brands fa-buy-n-large
+^fa-brands-buysellads:
+  tag: i
+  params:
+    class: fa-brands fa-buysellads
+^fa-brands-canadian-maple-leaf:
+  tag: i
+  params:
+    class: fa-brands fa-canadian-maple-leaf
+^fa-brands-cash-app:
+  tag: i
+  params:
+    class: fa-brands fa-cash-app
+^fa-brands-cc-amazon-pay:
+  tag: i
+  params:
+    class: fa-brands fa-cc-amazon-pay
+^fa-brands-cc-amex:
+  tag: i
+  params:
+    class: fa-brands fa-cc-amex
+^fa-brands-cc-apple-pay:
+  tag: i
+  params:
+    class: fa-brands fa-cc-apple-pay
+^fa-brands-cc-diners-club:
+  tag: i
+  params:
+    class: fa-brands fa-cc-diners-club
+^fa-brands-cc-discover:
+  tag: i
+  params:
+    class: fa-brands fa-cc-discover
+^fa-brands-cc-jcb:
+  tag: i
+  params:
+    class: fa-brands fa-cc-jcb
+^fa-brands-cc-mastercard:
+  tag: i
+  params:
+    class: fa-brands fa-cc-mastercard
+^fa-brands-cc-paypal:
+  tag: i
+  params:
+    class: fa-brands fa-cc-paypal
+^fa-brands-cc-stripe:
+  tag: i
+  params:
+    class: fa-brands fa-cc-stripe
+^fa-brands-cc-visa:
+  tag: i
+  params:
+    class: fa-brands fa-cc-visa
+^fa-brands-centercode:
+  tag: i
+  params:
+    class: fa-brands fa-centercode
+^fa-brands-centos:
+  tag: i
+  params:
+    class: fa-brands fa-centos
+^fa-brands-chrome:
+  tag: i
+  params:
+    class: fa-brands fa-chrome
+^fa-brands-chromecast:
+  tag: i
+  params:
+    class: fa-brands fa-chromecast
+^fa-brands-cloudflare:
+  tag: i
+  params:
+    class: fa-brands fa-cloudflare
+^fa-brands-cloudscale:
+  tag: i
+  params:
+    class: fa-brands fa-cloudscale
+^fa-brands-cloudsmith:
+  tag: i
+  params:
+    class: fa-brands fa-cloudsmith
+^fa-brands-cloudversify:
+  tag: i
+  params:
+    class: fa-brands fa-cloudversify
+^fa-brands-cmplid:
+  tag: i
+  params:
+    class: fa-brands fa-cmplid
+^fa-brands-codepen:
+  tag: i
+  params:
+    class: fa-brands fa-codepen
+^fa-brands-codiepie:
+  tag: i
+  params:
+    class: fa-brands fa-codiepie
+^fa-brands-confluence:
+  tag: i
+  params:
+    class: fa-brands fa-confluence
+^fa-brands-connectdevelop:
+  tag: i
+  params:
+    class: fa-brands fa-connectdevelop
+^fa-brands-contao:
+  tag: i
+  params:
+    class: fa-brands fa-contao
+^fa-brands-cotton-bureau:
+  tag: i
+  params:
+    class: fa-brands fa-cotton-bureau
+^fa-brands-cpanel:
+  tag: i
+  params:
+    class: fa-brands fa-cpanel
+^fa-brands-creative-commons:
+  tag: i
+  params:
+    class: fa-brands fa-creative-commons
+^fa-brands-creative-commons-by:
+  tag: i
+  params:
+    class: fa-brands fa-creative-commons-by
+^fa-brands-creative-commons-nc:
+  tag: i
+  params:
+    class: fa-brands fa-creative-commons-nc
+^fa-brands-creative-commons-nc-eu:
+  tag: i
+  params:
+    class: fa-brands fa-creative-commons-nc-eu
+^fa-brands-creative-commons-nc-jp:
+  tag: i
+  params:
+    class: fa-brands fa-creative-commons-nc-jp
+^fa-brands-creative-commons-nd:
+  tag: i
+  params:
+    class: fa-brands fa-creative-commons-nd
+^fa-brands-creative-commons-pd:
+  tag: i
+  params:
+    class: fa-brands fa-creative-commons-pd
+^fa-brands-creative-commons-pd-alt:
+  tag: i
+  params:
+    class: fa-brands fa-creative-commons-pd-alt
+^fa-brands-creative-commons-remix:
+  tag: i
+  params:
+    class: fa-brands fa-creative-commons-remix
+^fa-brands-creative-commons-sa:
+  tag: i
+  params:
+    class: fa-brands fa-creative-commons-sa
+^fa-brands-creative-commons-sampling:
+  tag: i
+  params:
+    class: fa-brands fa-creative-commons-sampling
+^fa-brands-creative-commons-sampling-plus:
+  tag: i
+  params:
+    class: fa-brands fa-creative-commons-sampling-plus
+^fa-brands-creative-commons-share:
+  tag: i
+  params:
+    class: fa-brands fa-creative-commons-share
+^fa-brands-creative-commons-zero:
+  tag: i
+  params:
+    class: fa-brands fa-creative-commons-zero
+^fa-brands-critical-role:
+  tag: i
+  params:
+    class: fa-brands fa-critical-role
+^fa-brands-css:
+  tag: i
+  params:
+    class: fa-brands fa-css
+^fa-brands-css3:
+  tag: i
+  params:
+    class: fa-brands fa-css3
+^fa-brands-css3-alt:
+  tag: i
+  params:
+    class: fa-brands fa-css3-alt
+^fa-brands-cuttlefish:
+  tag: i
+  params:
+    class: fa-brands fa-cuttlefish
+^fa-brands-d-and-d:
+  tag: i
+  params:
+    class: fa-brands fa-d-and-d
+^fa-brands-d-and-d-beyond:
+  tag: i
+  params:
+    class: fa-brands fa-d-and-d-beyond
+^fa-brands-dailymotion:
+  tag: i
+  params:
+    class: fa-brands fa-dailymotion
+^fa-brands-dart-lang:
+  tag: i
+  params:
+    class: fa-brands fa-dart-lang
+^fa-brands-dashcube:
+  tag: i
+  params:
+    class: fa-brands fa-dashcube
+^fa-brands-debian:
+  tag: i
+  params:
+    class: fa-brands fa-debian
+^fa-brands-deezer:
+  tag: i
+  params:
+    class: fa-brands fa-deezer
+^fa-brands-delicious:
+  tag: i
+  params:
+    class: fa-brands fa-delicious
+^fa-brands-deploydog:
+  tag: i
+  params:
+    class: fa-brands fa-deploydog
+^fa-brands-deskpro:
+  tag: i
+  params:
+    class: fa-brands fa-deskpro
+^fa-brands-dev:
+  tag: i
+  params:
+    class: fa-brands fa-dev
+^fa-brands-deviantart:
+  tag: i
+  params:
+    class: fa-brands fa-deviantart
+^fa-brands-dhl:
+  tag: i
+  params:
+    class: fa-brands fa-dhl
+^fa-brands-diaspora:
+  tag: i
+  params:
+    class: fa-brands fa-diaspora
+^fa-brands-digg:
+  tag: i
+  params:
+    class: fa-brands fa-digg
+^fa-brands-digital-ocean:
+  tag: i
+  params:
+    class: fa-brands fa-digital-ocean
+^fa-brands-discord:
+  tag: i
+  params:
+    class: fa-brands fa-discord
+^fa-brands-discourse:
+  tag: i
+  params:
+    class: fa-brands fa-discourse
+^fa-brands-disqus:
+  tag: i
+  params:
+    class: fa-brands fa-disqus
+^fa-brands-dochub:
+  tag: i
+  params:
+    class: fa-brands fa-dochub
+^fa-brands-docker:
+  tag: i
+  params:
+    class: fa-brands fa-docker
+^fa-brands-draft2digital:
+  tag: i
+  params:
+    class: fa-brands fa-draft2digital
+^fa-brands-dribbble:
+  tag: i
+  params:
+    class: fa-brands fa-dribbble
+^fa-brands-dropbox:
+  tag: i
+  params:
+    class: fa-brands fa-dropbox
+^fa-brands-drupal:
+  tag: i
+  params:
+    class: fa-brands fa-drupal
+^fa-brands-duolingo:
+  tag: i
+  params:
+    class: fa-brands fa-duolingo
+^fa-brands-dyalog:
+  tag: i
+  params:
+    class: fa-brands fa-dyalog
+^fa-brands-earlybirds:
+  tag: i
+  params:
+    class: fa-brands fa-earlybirds
+^fa-brands-ebay:
+  tag: i
+  params:
+    class: fa-brands fa-ebay
+^fa-brands-edge:
+  tag: i
+  params:
+    class: fa-brands fa-edge
+^fa-brands-edge-legacy:
+  tag: i
+  params:
+    class: fa-brands fa-edge-legacy
+^fa-brands-elementor:
+  tag: i
+  params:
+    class: fa-brands fa-elementor
+^fa-brands-eleventy:
+  tag: i
+  params:
+    class: fa-brands fa-eleventy
+^fa-brands-ello:
+  tag: i
+  params:
+    class: fa-brands fa-ello
+^fa-brands-ember:
+  tag: i
+  params:
+    class: fa-brands fa-ember
+^fa-brands-empire:
+  tag: i
+  params:
+    class: fa-brands fa-empire
+^fa-brands-envira:
+  tag: i
+  params:
+    class: fa-brands fa-envira
+^fa-brands-erlang:
+  tag: i
+  params:
+    class: fa-brands fa-erlang
+^fa-brands-ethereum:
+  tag: i
+  params:
+    class: fa-brands fa-ethereum
+^fa-brands-etsy:
+  tag: i
+  params:
+    class: fa-brands fa-etsy
+^fa-brands-evernote:
+  tag: i
+  params:
+    class: fa-brands fa-evernote
+^fa-brands-expeditedssl:
+  tag: i
+  params:
+    class: fa-brands fa-expeditedssl
+^fa-brands-facebook:
+  tag: i
+  params:
+    class: fa-brands fa-facebook
+^fa-brands-facebook-f:
+  tag: i
+  params:
+    class: fa-brands fa-facebook-f
+^fa-brands-facebook-messenger:
+  tag: i
+  params:
+    class: fa-brands fa-facebook-messenger
+^fa-brands-fantasy-flight-games:
+  tag: i
+  params:
+    class: fa-brands fa-fantasy-flight-games
+^fa-brands-fedex:
+  tag: i
+  params:
+    class: fa-brands fa-fedex
+^fa-brands-fedora:
+  tag: i
+  params:
+    class: fa-brands fa-fedora
+^fa-brands-figma:
+  tag: i
+  params:
+    class: fa-brands fa-figma
+^fa-brands-files-pinwheel:
+  tag: i
+  params:
+    class: fa-brands fa-files-pinwheel
+^fa-brands-firefox:
+  tag: i
+  params:
+    class: fa-brands fa-firefox
+^fa-brands-firefox-browser:
+  tag: i
+  params:
+    class: fa-brands fa-firefox-browser
+^fa-brands-first-order:
+  tag: i
+  params:
+    class: fa-brands fa-first-order
+^fa-brands-first-order-alt:
+  tag: i
+  params:
+    class: fa-brands fa-first-order-alt
+^fa-brands-firstdraft:
+  tag: i
+  params:
+    class: fa-brands fa-firstdraft
+^fa-brands-flickr:
+  tag: i
+  params:
+    class: fa-brands fa-flickr
+^fa-brands-flipboard:
+  tag: i
+  params:
+    class: fa-brands fa-flipboard
+^fa-brands-flutter:
+  tag: i
+  params:
+    class: fa-brands fa-flutter
+^fa-brands-fly:
+  tag: i
+  params:
+    class: fa-brands fa-fly
+^fa-brands-font-awesome:
+  tag: i
+  params:
+    class: fa-brands fa-font-awesome
+^fa-brands-fonticons:
+  tag: i
+  params:
+    class: fa-brands fa-fonticons
+^fa-brands-fonticons-fi:
+  tag: i
+  params:
+    class: fa-brands fa-fonticons-fi
+^fa-brands-fort-awesome:
+  tag: i
+  params:
+    class: fa-brands fa-fort-awesome
+^fa-brands-fort-awesome-alt:
+  tag: i
+  params:
+    class: fa-brands fa-fort-awesome-alt
+^fa-brands-forumbee:
+  tag: i
+  params:
+    class: fa-brands fa-forumbee
+^fa-brands-foursquare:
+  tag: i
+  params:
+    class: fa-brands fa-foursquare
+^fa-brands-free-code-camp:
+  tag: i
+  params:
+    class: fa-brands fa-free-code-camp
+^fa-brands-freebsd:
+  tag: i
+  params:
+    class: fa-brands fa-freebsd
+^fa-brands-fulcrum:
+  tag: i
+  params:
+    class: fa-brands fa-fulcrum
+^fa-brands-galactic-republic:
+  tag: i
+  params:
+    class: fa-brands fa-galactic-republic
+^fa-brands-galactic-senate:
+  tag: i
+  params:
+    class: fa-brands fa-galactic-senate
+^fa-brands-get-pocket:
+  tag: i
+  params:
+    class: fa-brands fa-get-pocket
+^fa-brands-gg:
+  tag: i
+  params:
+    class: fa-brands fa-gg
+^fa-brands-gg-circle:
+  tag: i
+  params:
+    class: fa-brands fa-gg-circle
+^fa-brands-git:
+  tag: i
+  params:
+    class: fa-brands fa-git
+^fa-brands-git-alt:
+  tag: i
+  params:
+    class: fa-brands fa-git-alt
+^fa-brands-github:
+  tag: i
+  params:
+    class: fa-brands fa-github
+^fa-brands-github-alt:
+  tag: i
+  params:
+    class: fa-brands fa-github-alt
+^fa-brands-gitkraken:
+  tag: i
+  params:
+    class: fa-brands fa-gitkraken
+^fa-brands-gitlab:
+  tag: i
+  params:
+    class: fa-brands fa-gitlab
+^fa-brands-gitter:
+  tag: i
+  params:
+    class: fa-brands fa-gitter
+^fa-brands-glide:
+  tag: i
+  params:
+    class: fa-brands fa-glide
+^fa-brands-glide-g:
+  tag: i
+  params:
+    class: fa-brands fa-glide-g
+^fa-brands-gofore:
+  tag: i
+  params:
+    class: fa-brands fa-gofore
+^fa-brands-golang:
+  tag: i
+  params:
+    class: fa-brands fa-golang
+^fa-brands-goodreads:
+  tag: i
+  params:
+    class: fa-brands fa-goodreads
+^fa-brands-goodreads-g:
+  tag: i
+  params:
+    class: fa-brands fa-goodreads-g
+^fa-brands-google:
+  tag: i
+  params:
+    class: fa-brands fa-google
+^fa-brands-google-drive:
+  tag: i
+  params:
+    class: fa-brands fa-google-drive
+^fa-brands-google-pay:
+  tag: i
+  params:
+    class: fa-brands fa-google-pay
+^fa-brands-google-play:
+  tag: i
+  params:
+    class: fa-brands fa-google-play
+^fa-brands-google-plus:
+  tag: i
+  params:
+    class: fa-brands fa-google-plus
+^fa-brands-google-plus-g:
+  tag: i
+  params:
+    class: fa-brands fa-google-plus-g
+^fa-brands-google-scholar:
+  tag: i
+  params:
+    class: fa-brands fa-google-scholar
+^fa-brands-google-wallet:
+  tag: i
+  params:
+    class: fa-brands fa-google-wallet
+^fa-brands-gratipay:
+  tag: i
+  params:
+    class: fa-brands fa-gratipay
+^fa-brands-grav:
+  tag: i
+  params:
+    class: fa-brands fa-grav
+^fa-brands-gripfire:
+  tag: i
+  params:
+    class: fa-brands fa-gripfire
+^fa-brands-grunt:
+  tag: i
+  params:
+    class: fa-brands fa-grunt
+^fa-brands-guilded:
+  tag: i
+  params:
+    class: fa-brands fa-guilded
+^fa-brands-gulp:
+  tag: i
+  params:
+    class: fa-brands fa-gulp
+^fa-brands-hacker-news:
+  tag: i
+  params:
+    class: fa-brands fa-hacker-news
+^fa-brands-hackerrank:
+  tag: i
+  params:
+    class: fa-brands fa-hackerrank
+^fa-brands-hashnode:
+  tag: i
+  params:
+    class: fa-brands fa-hashnode
+^fa-brands-hips:
+  tag: i
+  params:
+    class: fa-brands fa-hips
+^fa-brands-hire-a-helper:
+  tag: i
+  params:
+    class: fa-brands fa-hire-a-helper
+^fa-brands-hive:
+  tag: i
+  params:
+    class: fa-brands fa-hive
+^fa-brands-hooli:
+  tag: i
+  params:
+    class: fa-brands fa-hooli
+^fa-brands-hornbill:
+  tag: i
+  params:
+    class: fa-brands fa-hornbill
+^fa-brands-hotjar:
+  tag: i
+  params:
+    class: fa-brands fa-hotjar
+^fa-brands-houzz:
+  tag: i
+  params:
+    class: fa-brands fa-houzz
+^fa-brands-html5:
+  tag: i
+  params:
+    class: fa-brands fa-html5
+^fa-brands-hubspot:
+  tag: i
+  params:
+    class: fa-brands fa-hubspot
+^fa-brands-ideal:
+  tag: i
+  params:
+    class: fa-brands fa-ideal
+^fa-brands-imdb:
+  tag: i
+  params:
+    class: fa-brands fa-imdb
+^fa-brands-instagram:
+  tag: i
+  params:
+    class: fa-brands fa-instagram
+^fa-brands-instalod:
+  tag: i
+  params:
+    class: fa-brands fa-instalod
+^fa-brands-intercom:
+  tag: i
+  params:
+    class: fa-brands fa-intercom
+^fa-brands-internet-explorer:
+  tag: i
+  params:
+    class: fa-brands fa-internet-explorer
+^fa-brands-invision:
+  tag: i
+  params:
+    class: fa-brands fa-invision
+^fa-brands-ioxhost:
+  tag: i
+  params:
+    class: fa-brands fa-ioxhost
+^fa-brands-itch-io:
+  tag: i
+  params:
+    class: fa-brands fa-itch-io
+^fa-brands-itunes:
+  tag: i
+  params:
+    class: fa-brands fa-itunes
+^fa-brands-itunes-note:
+  tag: i
+  params:
+    class: fa-brands fa-itunes-note
+^fa-brands-java:
+  tag: i
+  params:
+    class: fa-brands fa-java
+^fa-brands-jedi-order:
+  tag: i
+  params:
+    class: fa-brands fa-jedi-order
+^fa-brands-jenkins:
+  tag: i
+  params:
+    class: fa-brands fa-jenkins
+^fa-brands-jira:
+  tag: i
+  params:
+    class: fa-brands fa-jira
+^fa-brands-joget:
+  tag: i
+  params:
+    class: fa-brands fa-joget
+^fa-brands-joomla:
+  tag: i
+  params:
+    class: fa-brands fa-joomla
+^fa-brands-js:
+  tag: i
+  params:
+    class: fa-brands fa-js
+^fa-brands-jsfiddle:
+  tag: i
+  params:
+    class: fa-brands fa-jsfiddle
+^fa-brands-jxl:
+  tag: i
+  params:
+    class: fa-brands fa-jxl
+^fa-brands-kaggle:
+  tag: i
+  params:
+    class: fa-brands fa-kaggle
+^fa-brands-kakao-talk:
+  tag: i
+  params:
+    class: fa-brands fa-kakao-talk
+^fa-brands-keybase:
+  tag: i
+  params:
+    class: fa-brands fa-keybase
+^fa-brands-keycdn:
+  tag: i
+  params:
+    class: fa-brands fa-keycdn
+^fa-brands-kickstarter:
+  tag: i
+  params:
+    class: fa-brands fa-kickstarter
+^fa-brands-kickstarter-k:
+  tag: i
+  params:
+    class: fa-brands fa-kickstarter-k
+^fa-brands-korvue:
+  tag: i
+  params:
+    class: fa-brands fa-korvue
+^fa-brands-laravel:
+  tag: i
+  params:
+    class: fa-brands fa-laravel
+^fa-brands-lastfm:
+  tag: i
+  params:
+    class: fa-brands fa-lastfm
+^fa-brands-leanpub:
+  tag: i
+  params:
+    class: fa-brands fa-leanpub
+^fa-brands-less:
+  tag: i
+  params:
+    class: fa-brands fa-less
+^fa-brands-letterboxd:
+  tag: i
+  params:
+    class: fa-brands fa-letterboxd
+^fa-brands-line:
+  tag: i
+  params:
+    class: fa-brands fa-line
+^fa-brands-linkedin:
+  tag: i
+  params:
+    class: fa-brands fa-linkedin
+^fa-brands-linkedin-in:
+  tag: i
+  params:
+    class: fa-brands fa-linkedin-in
+^fa-brands-linktree:
+  tag: i
+  params:
+    class: fa-brands fa-linktree
+^fa-brands-linode:
+  tag: i
+  params:
+    class: fa-brands fa-linode
+^fa-brands-linux:
+  tag: i
+  params:
+    class: fa-brands fa-linux
+^fa-brands-lumon:
+  tag: i
+  params:
+    class: fa-brands fa-lumon
+^fa-brands-lumon-drop:
+  tag: i
+  params:
+    class: fa-brands fa-lumon-drop
+^fa-brands-lyft:
+  tag: i
+  params:
+    class: fa-brands fa-lyft
+^fa-brands-magento:
+  tag: i
+  params:
+    class: fa-brands fa-magento
+^fa-brands-mailchimp:
+  tag: i
+  params:
+    class: fa-brands fa-mailchimp
+^fa-brands-mandalorian:
+  tag: i
+  params:
+    class: fa-brands fa-mandalorian
+^fa-brands-markdown:
+  tag: i
+  params:
+    class: fa-brands fa-markdown
+^fa-brands-mastodon:
+  tag: i
+  params:
+    class: fa-brands fa-mastodon
+^fa-brands-maxcdn:
+  tag: i
+  params:
+    class: fa-brands fa-maxcdn
+^fa-brands-mdb:
+  tag: i
+  params:
+    class: fa-brands fa-mdb
+^fa-brands-medapps:
+  tag: i
+  params:
+    class: fa-brands fa-medapps
+^fa-brands-medium:
+  tag: i
+  params:
+    class: fa-brands fa-medium
+^fa-brands-medrt:
+  tag: i
+  params:
+    class: fa-brands fa-medrt
+^fa-brands-meetup:
+  tag: i
+  params:
+    class: fa-brands fa-meetup
+^fa-brands-megaport:
+  tag: i
+  params:
+    class: fa-brands fa-megaport
+^fa-brands-mendeley:
+  tag: i
+  params:
+    class: fa-brands fa-mendeley
+^fa-brands-meta:
+  tag: i
+  params:
+    class: fa-brands fa-meta
+^fa-brands-microblog:
+  tag: i
+  params:
+    class: fa-brands fa-microblog
+^fa-brands-microsoft:
+  tag: i
+  params:
+    class: fa-brands fa-microsoft
+^fa-brands-mintbit:
+  tag: i
+  params:
+    class: fa-brands fa-mintbit
+^fa-brands-mix:
+  tag: i
+  params:
+    class: fa-brands fa-mix
+^fa-brands-mixcloud:
+  tag: i
+  params:
+    class: fa-brands fa-mixcloud
+^fa-brands-mixer:
+  tag: i
+  params:
+    class: fa-brands fa-mixer
+^fa-brands-mizuni:
+  tag: i
+  params:
+    class: fa-brands fa-mizuni
+^fa-brands-modx:
+  tag: i
+  params:
+    class: fa-brands fa-modx
+^fa-brands-monero:
+  tag: i
+  params:
+    class: fa-brands fa-monero
+^fa-brands-napster:
+  tag: i
+  params:
+    class: fa-brands fa-napster
+^fa-brands-neos:
+  tag: i
+  params:
+    class: fa-brands fa-neos
+^fa-brands-nfc-directional:
+  tag: i
+  params:
+    class: fa-brands fa-nfc-directional
+^fa-brands-nfc-symbol:
+  tag: i
+  params:
+    class: fa-brands fa-nfc-symbol
+^fa-brands-nimblr:
+  tag: i
+  params:
+    class: fa-brands fa-nimblr
+^fa-brands-node:
+  tag: i
+  params:
+    class: fa-brands fa-node
+^fa-brands-node-js:
+  tag: i
+  params:
+    class: fa-brands fa-node-js
+^fa-brands-notion:
+  tag: i
+  params:
+    class: fa-brands fa-notion
+^fa-brands-npm:
+  tag: i
+  params:
+    class: fa-brands fa-npm
+^fa-brands-ns8:
+  tag: i
+  params:
+    class: fa-brands fa-ns8
+^fa-brands-nutritionix:
+  tag: i
+  params:
+    class: fa-brands fa-nutritionix
+^fa-brands-octopus-deploy:
+  tag: i
+  params:
+    class: fa-brands fa-octopus-deploy
+^fa-brands-odnoklassniki:
+  tag: i
+  params:
+    class: fa-brands fa-odnoklassniki
+^fa-brands-odysee:
+  tag: i
+  params:
+    class: fa-brands fa-odysee
+^fa-brands-old-republic:
+  tag: i
+  params:
+    class: fa-brands fa-old-republic
+^fa-brands-openai:
+  tag: i
+  params:
+    class: fa-brands fa-openai
+^fa-brands-opencart:
+  tag: i
+  params:
+    class: fa-brands fa-opencart
+^fa-brands-openid:
+  tag: i
+  params:
+    class: fa-brands fa-openid
+^fa-brands-opensuse:
+  tag: i
+  params:
+    class: fa-brands fa-opensuse
+^fa-brands-opera:
+  tag: i
+  params:
+    class: fa-brands fa-opera
+^fa-brands-optin-monster:
+  tag: i
+  params:
+    class: fa-brands fa-optin-monster
+^fa-brands-orcid:
+  tag: i
+  params:
+    class: fa-brands fa-orcid
+^fa-brands-osi:
+  tag: i
+  params:
+    class: fa-brands fa-osi
+^fa-brands-padlet:
+  tag: i
+  params:
+    class: fa-brands fa-padlet
+^fa-brands-page4:
+  tag: i
+  params:
+    class: fa-brands fa-page4
+^fa-brands-pagelines:
+  tag: i
+  params:
+    class: fa-brands fa-pagelines
+^fa-brands-palfed:
+  tag: i
+  params:
+    class: fa-brands fa-palfed
+^fa-brands-pandora:
+  tag: i
+  params:
+    class: fa-brands fa-pandora
+^fa-brands-patreon:
+  tag: i
+  params:
+    class: fa-brands fa-patreon
+^fa-brands-paypal:
+  tag: i
+  params:
+    class: fa-brands fa-paypal
+^fa-brands-perbyte:
+  tag: i
+  params:
+    class: fa-brands fa-perbyte
+^fa-brands-periscope:
+  tag: i
+  params:
+    class: fa-brands fa-periscope
+^fa-brands-phabricator:
+  tag: i
+  params:
+    class: fa-brands fa-phabricator
+^fa-brands-phoenix-framework:
+  tag: i
+  params:
+    class: fa-brands fa-phoenix-framework
+^fa-brands-phoenix-squadron:
+  tag: i
+  params:
+    class: fa-brands fa-phoenix-squadron
+^fa-brands-php:
+  tag: i
+  params:
+    class: fa-brands fa-php
+^fa-brands-pied-piper:
+  tag: i
+  params:
+    class: fa-brands fa-pied-piper
+^fa-brands-pied-piper-alt:
+  tag: i
+  params:
+    class: fa-brands fa-pied-piper-alt
+^fa-brands-pied-piper-hat:
+  tag: i
+  params:
+    class: fa-brands fa-pied-piper-hat
+^fa-brands-pied-piper-pp:
+  tag: i
+  params:
+    class: fa-brands fa-pied-piper-pp
+^fa-brands-pinterest:
+  tag: i
+  params:
+    class: fa-brands fa-pinterest
+^fa-brands-pinterest-p:
+  tag: i
+  params:
+    class: fa-brands fa-pinterest-p
+^fa-brands-pix:
+  tag: i
+  params:
+    class: fa-brands fa-pix
+^fa-brands-pixelfed:
+  tag: i
+  params:
+    class: fa-brands fa-pixelfed
+^fa-brands-pixiv:
+  tag: i
+  params:
+    class: fa-brands fa-pixiv
+^fa-brands-playstation:
+  tag: i
+  params:
+    class: fa-brands fa-playstation
+^fa-brands-product-hunt:
+  tag: i
+  params:
+    class: fa-brands fa-product-hunt
+^fa-brands-pushed:
+  tag: i
+  params:
+    class: fa-brands fa-pushed
+^fa-brands-python:
+  tag: i
+  params:
+    class: fa-brands fa-python
+^fa-brands-qq:
+  tag: i
+  params:
+    class: fa-brands fa-qq
+^fa-brands-quinscape:
+  tag: i
+  params:
+    class: fa-brands fa-quinscape
+^fa-brands-quora:
+  tag: i
+  params:
+    class: fa-brands fa-quora
+^fa-brands-r-project:
+  tag: i
+  params:
+    class: fa-brands fa-r-project
+^fa-brands-raspberry-pi:
+  tag: i
+  params:
+    class: fa-brands fa-raspberry-pi
+^fa-brands-ravelry:
+  tag: i
+  params:
+    class: fa-brands fa-ravelry
+^fa-brands-react:
+  tag: i
+  params:
+    class: fa-brands fa-react
+^fa-brands-reacteurope:
+  tag: i
+  params:
+    class: fa-brands fa-reacteurope
+^fa-brands-readme:
+  tag: i
+  params:
+    class: fa-brands fa-readme
+^fa-brands-rebel:
+  tag: i
+  params:
+    class: fa-brands fa-rebel
+^fa-brands-red-river:
+  tag: i
+  params:
+    class: fa-brands fa-red-river
+^fa-brands-reddit:
+  tag: i
+  params:
+    class: fa-brands fa-reddit
+^fa-brands-reddit-alien:
+  tag: i
+  params:
+    class: fa-brands fa-reddit-alien
+^fa-brands-redhat:
+  tag: i
+  params:
+    class: fa-brands fa-redhat
+^fa-brands-renren:
+  tag: i
+  params:
+    class: fa-brands fa-renren
+^fa-brands-replyd:
+  tag: i
+  params:
+    class: fa-brands fa-replyd
+^fa-brands-researchgate:
+  tag: i
+  params:
+    class: fa-brands fa-researchgate
+^fa-brands-resolving:
+  tag: i
+  params:
+    class: fa-brands fa-resolving
+^fa-brands-rev:
+  tag: i
+  params:
+    class: fa-brands fa-rev
+^fa-brands-rocketchat:
+  tag: i
+  params:
+    class: fa-brands fa-rocketchat
+^fa-brands-rockrms:
+  tag: i
+  params:
+    class: fa-brands fa-rockrms
+^fa-brands-rust:
+  tag: i
+  params:
+    class: fa-brands fa-rust
+^fa-brands-safari:
+  tag: i
+  params:
+    class: fa-brands fa-safari
+^fa-brands-salesforce:
+  tag: i
+  params:
+    class: fa-brands fa-salesforce
+^fa-brands-sass:
+  tag: i
+  params:
+    class: fa-brands fa-sass
+^fa-brands-schlix:
+  tag: i
+  params:
+    class: fa-brands fa-schlix
+^fa-brands-screenpal:
+  tag: i
+  params:
+    class: fa-brands fa-screenpal
+^fa-brands-scribd:
+  tag: i
+  params:
+    class: fa-brands fa-scribd
+^fa-brands-searchengin:
+  tag: i
+  params:
+    class: fa-brands fa-searchengin
+^fa-brands-sellcast:
+  tag: i
+  params:
+    class: fa-brands fa-sellcast
+^fa-brands-sellsy:
+  tag: i
+  params:
+    class: fa-brands fa-sellsy
+^fa-brands-servicestack:
+  tag: i
+  params:
+    class: fa-brands fa-servicestack
+^fa-brands-shirtsinbulk:
+  tag: i
+  params:
+    class: fa-brands fa-shirtsinbulk
+^fa-brands-shoelace:
+  tag: i
+  params:
+    class: fa-brands fa-shoelace
+^fa-brands-shopify:
+  tag: i
+  params:
+    class: fa-brands fa-shopify
+^fa-brands-shopware:
+  tag: i
+  params:
+    class: fa-brands fa-shopware
+^fa-brands-signal-messenger:
+  tag: i
+  params:
+    class: fa-brands fa-signal-messenger
+^fa-brands-simplybuilt:
+  tag: i
+  params:
+    class: fa-brands fa-simplybuilt
+^fa-brands-sistrix:
+  tag: i
+  params:
+    class: fa-brands fa-sistrix
+^fa-brands-sith:
+  tag: i
+  params:
+    class: fa-brands fa-sith
+^fa-brands-sitrox:
+  tag: i
+  params:
+    class: fa-brands fa-sitrox
+^fa-brands-sketch:
+  tag: i
+  params:
+    class: fa-brands fa-sketch
+^fa-brands-skyatlas:
+  tag: i
+  params:
+    class: fa-brands fa-skyatlas
+^fa-brands-skype:
+  tag: i
+  params:
+    class: fa-brands fa-skype
+^fa-brands-slack:
+  tag: i
+  params:
+    class: fa-brands fa-slack
+^fa-brands-slideshare:
+  tag: i
+  params:
+    class: fa-brands fa-slideshare
+^fa-brands-snapchat:
+  tag: i
+  params:
+    class: fa-brands fa-snapchat
+^fa-brands-soundcloud:
+  tag: i
+  params:
+    class: fa-brands fa-soundcloud
+^fa-brands-sourcetree:
+  tag: i
+  params:
+    class: fa-brands fa-sourcetree
+^fa-brands-space-awesome:
+  tag: i
+  params:
+    class: fa-brands fa-space-awesome
+^fa-brands-speakap:
+  tag: i
+  params:
+    class: fa-brands fa-speakap
+^fa-brands-speaker-deck:
+  tag: i
+  params:
+    class: fa-brands fa-speaker-deck
+^fa-brands-spotify:
+  tag: i
+  params:
+    class: fa-brands fa-spotify
+^fa-brands-square-behance:
+  tag: i
+  params:
+    class: fa-brands fa-square-behance
+^fa-brands-square-bluesky:
+  tag: i
+  params:
+    class: fa-brands fa-square-bluesky
+^fa-brands-square-dribbble:
+  tag: i
+  params:
+    class: fa-brands fa-square-dribbble
+^fa-brands-square-facebook:
+  tag: i
+  params:
+    class: fa-brands fa-square-facebook
+^fa-brands-square-figma:
+  tag: i
+  params:
+    class: fa-brands fa-square-figma
+^fa-brands-square-font-awesome:
+  tag: i
+  params:
+    class: fa-brands fa-square-font-awesome
+^fa-brands-square-font-awesome-stroke:
+  tag: i
+  params:
+    class: fa-brands fa-square-font-awesome-stroke
+^fa-brands-square-git:
+  tag: i
+  params:
+    class: fa-brands fa-square-git
+^fa-brands-square-github:
+  tag: i
+  params:
+    class: fa-brands fa-square-github
+^fa-brands-square-gitlab:
+  tag: i
+  params:
+    class: fa-brands fa-square-gitlab
+^fa-brands-square-google-plus:
+  tag: i
+  params:
+    class: fa-brands fa-square-google-plus
+^fa-brands-square-hacker-news:
+  tag: i
+  params:
+    class: fa-brands fa-square-hacker-news
+^fa-brands-square-instagram:
+  tag: i
+  params:
+    class: fa-brands fa-square-instagram
+^fa-brands-square-js:
+  tag: i
+  params:
+    class: fa-brands fa-square-js
+^fa-brands-square-lastfm:
+  tag: i
+  params:
+    class: fa-brands fa-square-lastfm
+^fa-brands-square-letterboxd:
+  tag: i
+  params:
+    class: fa-brands fa-square-letterboxd
+^fa-brands-square-linkedin:
+  tag: i
+  params:
+    class: fa-brands fa-square-linkedin
+^fa-brands-square-odnoklassniki:
+  tag: i
+  params:
+    class: fa-brands fa-square-odnoklassniki
+^fa-brands-square-pied-piper:
+  tag: i
+  params:
+    class: fa-brands fa-square-pied-piper
+^fa-brands-square-pinterest:
+  tag: i
+  params:
+    class: fa-brands fa-square-pinterest
+^fa-brands-square-reddit:
+  tag: i
+  params:
+    class: fa-brands fa-square-reddit
+^fa-brands-square-snapchat:
+  tag: i
+  params:
+    class: fa-brands fa-square-snapchat
+^fa-brands-square-steam:
+  tag: i
+  params:
+    class: fa-brands fa-square-steam
+^fa-brands-square-threads:
+  tag: i
+  params:
+    class: fa-brands fa-square-threads
+^fa-brands-square-tumblr:
+  tag: i
+  params:
+    class: fa-brands fa-square-tumblr
+^fa-brands-square-twitter:
+  tag: i
+  params:
+    class: fa-brands fa-square-twitter
+^fa-brands-square-upwork:
+  tag: i
+  params:
+    class: fa-brands fa-square-upwork
+^fa-brands-square-viadeo:
+  tag: i
+  params:
+    class: fa-brands fa-square-viadeo
+^fa-brands-square-vimeo:
+  tag: i
+  params:
+    class: fa-brands fa-square-vimeo
+^fa-brands-square-web-awesome:
+  tag: i
+  params:
+    class: fa-brands fa-square-web-awesome
+^fa-brands-square-web-awesome-stroke:
+  tag: i
+  params:
+    class: fa-brands fa-square-web-awesome-stroke
+^fa-brands-square-whatsapp:
+  tag: i
+  params:
+    class: fa-brands fa-square-whatsapp
+^fa-brands-square-x-twitter:
+  tag: i
+  params:
+    class: fa-brands fa-square-x-twitter
+^fa-brands-square-xing:
+  tag: i
+  params:
+    class: fa-brands fa-square-xing
+^fa-brands-square-youtube:
+  tag: i
+  params:
+    class: fa-brands fa-square-youtube
+^fa-brands-squarespace:
+  tag: i
+  params:
+    class: fa-brands fa-squarespace
+^fa-brands-stack-exchange:
+  tag: i
+  params:
+    class: fa-brands fa-stack-exchange
+^fa-brands-stack-overflow:
+  tag: i
+  params:
+    class: fa-brands fa-stack-overflow
+^fa-brands-stackpath:
+  tag: i
+  params:
+    class: fa-brands fa-stackpath
+^fa-brands-staylinked:
+  tag: i
+  params:
+    class: fa-brands fa-staylinked
+^fa-brands-steam:
+  tag: i
+  params:
+    class: fa-brands fa-steam
+^fa-brands-steam-symbol:
+  tag: i
+  params:
+    class: fa-brands fa-steam-symbol
+^fa-brands-sticker-mule:
+  tag: i
+  params:
+    class: fa-brands fa-sticker-mule
+^fa-brands-strava:
+  tag: i
+  params:
+    class: fa-brands fa-strava
+^fa-brands-stripe:
+  tag: i
+  params:
+    class: fa-brands fa-stripe
+^fa-brands-stripe-s:
+  tag: i
+  params:
+    class: fa-brands fa-stripe-s
+^fa-brands-stubber:
+  tag: i
+  params:
+    class: fa-brands fa-stubber
+^fa-brands-studiovinari:
+  tag: i
+  params:
+    class: fa-brands fa-studiovinari
+^fa-brands-stumbleupon:
+  tag: i
+  params:
+    class: fa-brands fa-stumbleupon
+^fa-brands-stumbleupon-circle:
+  tag: i
+  params:
+    class: fa-brands fa-stumbleupon-circle
+^fa-brands-superpowers:
+  tag: i
+  params:
+    class: fa-brands fa-superpowers
+^fa-brands-supple:
+  tag: i
+  params:
+    class: fa-brands fa-supple
+^fa-brands-suse:
+  tag: i
+  params:
+    class: fa-brands fa-suse
+^fa-brands-swift:
+  tag: i
+  params:
+    class: fa-brands fa-swift
+^fa-brands-symfony:
+  tag: i
+  params:
+    class: fa-brands fa-symfony
+^fa-brands-teamspeak:
+  tag: i
+  params:
+    class: fa-brands fa-teamspeak
+^fa-brands-telegram:
+  tag: i
+  params:
+    class: fa-brands fa-telegram
+^fa-brands-tencent-weibo:
+  tag: i
+  params:
+    class: fa-brands fa-tencent-weibo
+^fa-brands-tex:
+  tag: i
+  params:
+    class: fa-brands fa-tex
+^fa-brands-the-red-yeti:
+  tag: i
+  params:
+    class: fa-brands fa-the-red-yeti
+^fa-brands-themeco:
+  tag: i
+  params:
+    class: fa-brands fa-themeco
+^fa-brands-themeisle:
+  tag: i
+  params:
+    class: fa-brands fa-themeisle
+^fa-brands-think-peaks:
+  tag: i
+  params:
+    class: fa-brands fa-think-peaks
+^fa-brands-threads:
+  tag: i
+  params:
+    class: fa-brands fa-threads
+^fa-brands-tidal:
+  tag: i
+  params:
+    class: fa-brands fa-tidal
+^fa-brands-tiktok:
+  tag: i
+  params:
+    class: fa-brands fa-tiktok
+^fa-brands-trade-federation:
+  tag: i
+  params:
+    class: fa-brands fa-trade-federation
+^fa-brands-trello:
+  tag: i
+  params:
+    class: fa-brands fa-trello
+^fa-brands-tumblr:
+  tag: i
+  params:
+    class: fa-brands fa-tumblr
+^fa-brands-twitch:
+  tag: i
+  params:
+    class: fa-brands fa-twitch
+^fa-brands-twitter:
+  tag: i
+  params:
+    class: fa-brands fa-twitter
+^fa-brands-typo3:
+  tag: i
+  params:
+    class: fa-brands fa-typo3
+^fa-brands-uber:
+  tag: i
+  params:
+    class: fa-brands fa-uber
+^fa-brands-ubuntu:
+  tag: i
+  params:
+    class: fa-brands fa-ubuntu
+^fa-brands-uikit:
+  tag: i
+  params:
+    class: fa-brands fa-uikit
+^fa-brands-umbraco:
+  tag: i
+  params:
+    class: fa-brands fa-umbraco
+^fa-brands-uncharted:
+  tag: i
+  params:
+    class: fa-brands fa-uncharted
+^fa-brands-uniregistry:
+  tag: i
+  params:
+    class: fa-brands fa-uniregistry
+^fa-brands-unity:
+  tag: i
+  params:
+    class: fa-brands fa-unity
+^fa-brands-unsplash:
+  tag: i
+  params:
+    class: fa-brands fa-unsplash
+^fa-brands-untappd:
+  tag: i
+  params:
+    class: fa-brands fa-untappd
+^fa-brands-ups:
+  tag: i
+  params:
+    class: fa-brands fa-ups
+^fa-brands-upwork:
+  tag: i
+  params:
+    class: fa-brands fa-upwork
+^fa-brands-usb:
+  tag: i
+  params:
+    class: fa-brands fa-usb
+^fa-brands-usps:
+  tag: i
+  params:
+    class: fa-brands fa-usps
+^fa-brands-ussunnah:
+  tag: i
+  params:
+    class: fa-brands fa-ussunnah
+^fa-brands-vaadin:
+  tag: i
+  params:
+    class: fa-brands fa-vaadin
+^fa-brands-viacoin:
+  tag: i
+  params:
+    class: fa-brands fa-viacoin
+^fa-brands-viadeo:
+  tag: i
+  params:
+    class: fa-brands fa-viadeo
+^fa-brands-viber:
+  tag: i
+  params:
+    class: fa-brands fa-viber
+^fa-brands-vimeo:
+  tag: i
+  params:
+    class: fa-brands fa-vimeo
+^fa-brands-vimeo-v:
+  tag: i
+  params:
+    class: fa-brands fa-vimeo-v
+^fa-brands-vine:
+  tag: i
+  params:
+    class: fa-brands fa-vine
+^fa-brands-vk:
+  tag: i
+  params:
+    class: fa-brands fa-vk
+^fa-brands-vnv:
+  tag: i
+  params:
+    class: fa-brands fa-vnv
+^fa-brands-vsco:
+  tag: i
+  params:
+    class: fa-brands fa-vsco
+^fa-brands-vuejs:
+  tag: i
+  params:
+    class: fa-brands fa-vuejs
+^fa-brands-w3c:
+  tag: i
+  params:
+    class: fa-brands fa-w3c
+^fa-brands-watchman-monitoring:
+  tag: i
+  params:
+    class: fa-brands fa-watchman-monitoring
+^fa-brands-waze:
+  tag: i
+  params:
+    class: fa-brands fa-waze
+^fa-brands-web-awesome:
+  tag: i
+  params:
+    class: fa-brands fa-web-awesome
+^fa-brands-webflow:
+  tag: i
+  params:
+    class: fa-brands fa-webflow
+^fa-brands-weebly:
+  tag: i
+  params:
+    class: fa-brands fa-weebly
+^fa-brands-weibo:
+  tag: i
+  params:
+    class: fa-brands fa-weibo
+^fa-brands-weixin:
+  tag: i
+  params:
+    class: fa-brands fa-weixin
+^fa-brands-whatsapp:
+  tag: i
+  params:
+    class: fa-brands fa-whatsapp
+^fa-brands-whmcs:
+  tag: i
+  params:
+    class: fa-brands fa-whmcs
+^fa-brands-wikipedia-w:
+  tag: i
+  params:
+    class: fa-brands fa-wikipedia-w
+^fa-brands-windows:
+  tag: i
+  params:
+    class: fa-brands fa-windows
+^fa-brands-wirsindhandwerk:
+  tag: i
+  params:
+    class: fa-brands fa-wirsindhandwerk
+^fa-brands-wix:
+  tag: i
+  params:
+    class: fa-brands fa-wix
+^fa-brands-wizards-of-the-coast:
+  tag: i
+  params:
+    class: fa-brands fa-wizards-of-the-coast
+^fa-brands-wodu:
+  tag: i
+  params:
+    class: fa-brands fa-wodu
+^fa-brands-wolf-pack-battalion:
+  tag: i
+  params:
+    class: fa-brands fa-wolf-pack-battalion
+^fa-brands-wordpress:
+  tag: i
+  params:
+    class: fa-brands fa-wordpress
+^fa-brands-wordpress-simple:
+  tag: i
+  params:
+    class: fa-brands fa-wordpress-simple
+^fa-brands-wpbeginner:
+  tag: i
+  params:
+    class: fa-brands fa-wpbeginner
+^fa-brands-wpexplorer:
+  tag: i
+  params:
+    class: fa-brands fa-wpexplorer
+^fa-brands-wpforms:
+  tag: i
+  params:
+    class: fa-brands fa-wpforms
+^fa-brands-wpressr:
+  tag: i
+  params:
+    class: fa-brands fa-wpressr
+^fa-brands-x-twitter:
+  tag: i
+  params:
+    class: fa-brands fa-x-twitter
+^fa-brands-xbox:
+  tag: i
+  params:
+    class: fa-brands fa-xbox
+^fa-brands-xing:
+  tag: i
+  params:
+    class: fa-brands fa-xing
+^fa-brands-y-combinator:
+  tag: i
+  params:
+    class: fa-brands fa-y-combinator
+^fa-brands-yahoo:
+  tag: i
+  params:
+    class: fa-brands fa-yahoo
+^fa-brands-yammer:
+  tag: i
+  params:
+    class: fa-brands fa-yammer
+^fa-brands-yandex:
+  tag: i
+  params:
+    class: fa-brands fa-yandex
+^fa-brands-yandex-international:
+  tag: i
+  params:
+    class: fa-brands fa-yandex-international
+^fa-brands-yarn:
+  tag: i
+  params:
+    class: fa-brands fa-yarn
+^fa-brands-yelp:
+  tag: i
+  params:
+    class: fa-brands fa-yelp
+^fa-brands-yoast:
+  tag: i
+  params:
+    class: fa-brands fa-yoast
+^fa-brands-youtube:
+  tag: i
+  params:
+    class: fa-brands fa-youtube
+^fa-brands-zhihu:
+  tag: i
+  params:
+    class: fa-brands fa-zhihu
+
+# regular icons
+^fa-regular-address-book:
+  tag: i
+  params:
+    class: fa-regular fa-address-book
+^fa-regular-address-card:
+  tag: i
+  params:
+    class: fa-regular fa-address-card
+^fa-regular-alarm-clock:
+  tag: i
+  params:
+    class: fa-regular fa-alarm-clock
+^fa-regular-bell:
+  tag: i
+  params:
+    class: fa-regular fa-bell
+^fa-regular-bell-slash:
+  tag: i
+  params:
+    class: fa-regular fa-bell-slash
+^fa-regular-bookmark:
+  tag: i
+  params:
+    class: fa-regular fa-bookmark
+^fa-regular-building:
+  tag: i
+  params:
+    class: fa-regular fa-building
+^fa-regular-calendar:
+  tag: i
+  params:
+    class: fa-regular fa-calendar
+^fa-regular-calendar-check:
+  tag: i
+  params:
+    class: fa-regular fa-calendar-check
+^fa-regular-calendar-days:
+  tag: i
+  params:
+    class: fa-regular fa-calendar-days
+^fa-regular-calendar-minus:
+  tag: i
+  params:
+    class: fa-regular fa-calendar-minus
+^fa-regular-calendar-plus:
+  tag: i
+  params:
+    class: fa-regular fa-calendar-plus
+^fa-regular-calendar-xmark:
+  tag: i
+  params:
+    class: fa-regular fa-calendar-xmark
+^fa-regular-camera:
+  tag: i
+  params:
+    class: fa-regular fa-camera
+^fa-regular-chart-bar:
+  tag: i
+  params:
+    class: fa-regular fa-chart-bar
+^fa-regular-chess-bishop:
+  tag: i
+  params:
+    class: fa-regular fa-chess-bishop
+^fa-regular-chess-king:
+  tag: i
+  params:
+    class: fa-regular fa-chess-king
+^fa-regular-chess-knight:
+  tag: i
+  params:
+    class: fa-regular fa-chess-knight
+^fa-regular-chess-pawn:
+  tag: i
+  params:
+    class: fa-regular fa-chess-pawn
+^fa-regular-chess-queen:
+  tag: i
+  params:
+    class: fa-regular fa-chess-queen
+^fa-regular-chess-rook:
+  tag: i
+  params:
+    class: fa-regular fa-chess-rook
+^fa-regular-circle:
+  tag: i
+  params:
+    class: fa-regular fa-circle
+^fa-regular-circle-check:
+  tag: i
+  params:
+    class: fa-regular fa-circle-check
+^fa-regular-circle-dot:
+  tag: i
+  params:
+    class: fa-regular fa-circle-dot
+^fa-regular-circle-down:
+  tag: i
+  params:
+    class: fa-regular fa-circle-down
+^fa-regular-circle-left:
+  tag: i
+  params:
+    class: fa-regular fa-circle-left
+^fa-regular-circle-pause:
+  tag: i
+  params:
+    class: fa-regular fa-circle-pause
+^fa-regular-circle-play:
+  tag: i
+  params:
+    class: fa-regular fa-circle-play
+^fa-regular-circle-question:
+  tag: i
+  params:
+    class: fa-regular fa-circle-question
+^fa-regular-circle-right:
+  tag: i
+  params:
+    class: fa-regular fa-circle-right
+^fa-regular-circle-stop:
+  tag: i
+  params:
+    class: fa-regular fa-circle-stop
+^fa-regular-circle-up:
+  tag: i
+  params:
+    class: fa-regular fa-circle-up
+^fa-regular-circle-user:
+  tag: i
+  params:
+    class: fa-regular fa-circle-user
+^fa-regular-circle-xmark:
+  tag: i
+  params:
+    class: fa-regular fa-circle-xmark
+^fa-regular-clipboard:
+  tag: i
+  params:
+    class: fa-regular fa-clipboard
+^fa-regular-clock:
+  tag: i
+  params:
+    class: fa-regular fa-clock
+^fa-regular-clone:
+  tag: i
+  params:
+    class: fa-regular fa-clone
+^fa-regular-closed-captioning:
+  tag: i
+  params:
+    class: fa-regular fa-closed-captioning
+^fa-regular-cloud:
+  tag: i
+  params:
+    class: fa-regular fa-cloud
+^fa-regular-comment:
+  tag: i
+  params:
+    class: fa-regular fa-comment
+^fa-regular-comment-dots:
+  tag: i
+  params:
+    class: fa-regular fa-comment-dots
+^fa-regular-comments:
+  tag: i
+  params:
+    class: fa-regular fa-comments
+^fa-regular-compass:
+  tag: i
+  params:
+    class: fa-regular fa-compass
+^fa-regular-copy:
+  tag: i
+  params:
+    class: fa-regular fa-copy
+^fa-regular-copyright:
+  tag: i
+  params:
+    class: fa-regular fa-copyright
+^fa-regular-credit-card:
+  tag: i
+  params:
+    class: fa-regular fa-credit-card
+^fa-regular-envelope:
+  tag: i
+  params:
+    class: fa-regular fa-envelope
+^fa-regular-envelope-open:
+  tag: i
+  params:
+    class: fa-regular fa-envelope-open
+^fa-regular-eye:
+  tag: i
+  params:
+    class: fa-regular fa-eye
+^fa-regular-eye-slash:
+  tag: i
+  params:
+    class: fa-regular fa-eye-slash
+^fa-regular-face-angry:
+  tag: i
+  params:
+    class: fa-regular fa-face-angry
+^fa-regular-face-dizzy:
+  tag: i
+  params:
+    class: fa-regular fa-face-dizzy
+^fa-regular-face-flushed:
+  tag: i
+  params:
+    class: fa-regular fa-face-flushed
+^fa-regular-face-frown:
+  tag: i
+  params:
+    class: fa-regular fa-face-frown
+^fa-regular-face-frown-open:
+  tag: i
+  params:
+    class: fa-regular fa-face-frown-open
+^fa-regular-face-grimace:
+  tag: i
+  params:
+    class: fa-regular fa-face-grimace
+^fa-regular-face-grin:
+  tag: i
+  params:
+    class: fa-regular fa-face-grin
+^fa-regular-face-grin-beam:
+  tag: i
+  params:
+    class: fa-regular fa-face-grin-beam
+^fa-regular-face-grin-beam-sweat:
+  tag: i
+  params:
+    class: fa-regular fa-face-grin-beam-sweat
+^fa-regular-face-grin-hearts:
+  tag: i
+  params:
+    class: fa-regular fa-face-grin-hearts
+^fa-regular-face-grin-squint:
+  tag: i
+  params:
+    class: fa-regular fa-face-grin-squint
+^fa-regular-face-grin-squint-tears:
+  tag: i
+  params:
+    class: fa-regular fa-face-grin-squint-tears
+^fa-regular-face-grin-stars:
+  tag: i
+  params:
+    class: fa-regular fa-face-grin-stars
+^fa-regular-face-grin-tears:
+  tag: i
+  params:
+    class: fa-regular fa-face-grin-tears
+^fa-regular-face-grin-tongue:
+  tag: i
+  params:
+    class: fa-regular fa-face-grin-tongue
+^fa-regular-face-grin-tongue-squint:
+  tag: i
+  params:
+    class: fa-regular fa-face-grin-tongue-squint
+^fa-regular-face-grin-tongue-wink:
+  tag: i
+  params:
+    class: fa-regular fa-face-grin-tongue-wink
+^fa-regular-face-grin-wide:
+  tag: i
+  params:
+    class: fa-regular fa-face-grin-wide
+^fa-regular-face-grin-wink:
+  tag: i
+  params:
+    class: fa-regular fa-face-grin-wink
+^fa-regular-face-kiss:
+  tag: i
+  params:
+    class: fa-regular fa-face-kiss
+^fa-regular-face-kiss-beam:
+  tag: i
+  params:
+    class: fa-regular fa-face-kiss-beam
+^fa-regular-face-kiss-wink-heart:
+  tag: i
+  params:
+    class: fa-regular fa-face-kiss-wink-heart
+^fa-regular-face-laugh:
+  tag: i
+  params:
+    class: fa-regular fa-face-laugh
+^fa-regular-face-laugh-beam:
+  tag: i
+  params:
+    class: fa-regular fa-face-laugh-beam
+^fa-regular-face-laugh-squint:
+  tag: i
+  params:
+    class: fa-regular fa-face-laugh-squint
+^fa-regular-face-laugh-wink:
+  tag: i
+  params:
+    class: fa-regular fa-face-laugh-wink
+^fa-regular-face-meh:
+  tag: i
+  params:
+    class: fa-regular fa-face-meh
+^fa-regular-face-meh-blank:
+  tag: i
+  params:
+    class: fa-regular fa-face-meh-blank
+^fa-regular-face-rolling-eyes:
+  tag: i
+  params:
+    class: fa-regular fa-face-rolling-eyes
+^fa-regular-face-sad-cry:
+  tag: i
+  params:
+    class: fa-regular fa-face-sad-cry
+^fa-regular-face-sad-tear:
+  tag: i
+  params:
+    class: fa-regular fa-face-sad-tear
+^fa-regular-face-smile:
+  tag: i
+  params:
+    class: fa-regular fa-face-smile
+^fa-regular-face-smile-beam:
+  tag: i
+  params:
+    class: fa-regular fa-face-smile-beam
+^fa-regular-face-smile-wink:
+  tag: i
+  params:
+    class: fa-regular fa-face-smile-wink
+^fa-regular-face-surprise:
+  tag: i
+  params:
+    class: fa-regular fa-face-surprise
+^fa-regular-face-tired:
+  tag: i
+  params:
+    class: fa-regular fa-face-tired
+^fa-regular-file:
+  tag: i
+  params:
+    class: fa-regular fa-file
+^fa-regular-file-audio:
+  tag: i
+  params:
+    class: fa-regular fa-file-audio
+^fa-regular-file-code:
+  tag: i
+  params:
+    class: fa-regular fa-file-code
+^fa-regular-file-excel:
+  tag: i
+  params:
+    class: fa-regular fa-file-excel
+^fa-regular-file-image:
+  tag: i
+  params:
+    class: fa-regular fa-file-image
+^fa-regular-file-lines:
+  tag: i
+  params:
+    class: fa-regular fa-file-lines
+^fa-regular-file-pdf:
+  tag: i
+  params:
+    class: fa-regular fa-file-pdf
+^fa-regular-file-powerpoint:
+  tag: i
+  params:
+    class: fa-regular fa-file-powerpoint
+^fa-regular-file-video:
+  tag: i
+  params:
+    class: fa-regular fa-file-video
+^fa-regular-file-word:
+  tag: i
+  params:
+    class: fa-regular fa-file-word
+^fa-regular-file-zipper:
+  tag: i
+  params:
+    class: fa-regular fa-file-zipper
+^fa-regular-flag:
+  tag: i
+  params:
+    class: fa-regular fa-flag
+^fa-regular-floppy-disk:
+  tag: i
+  params:
+    class: fa-regular fa-floppy-disk
+^fa-regular-folder:
+  tag: i
+  params:
+    class: fa-regular fa-folder
+^fa-regular-folder-closed:
+  tag: i
+  params:
+    class: fa-regular fa-folder-closed
+^fa-regular-folder-open:
+  tag: i
+  params:
+    class: fa-regular fa-folder-open
+^fa-regular-font-awesome:
+  tag: i
+  params:
+    class: fa-regular fa-font-awesome
+^fa-regular-futbol:
+  tag: i
+  params:
+    class: fa-regular fa-futbol
+^fa-regular-gem:
+  tag: i
+  params:
+    class: fa-regular fa-gem
+^fa-regular-hand:
+  tag: i
+  params:
+    class: fa-regular fa-hand
+^fa-regular-hand-back-fist:
+  tag: i
+  params:
+    class: fa-regular fa-hand-back-fist
+^fa-regular-hand-lizard:
+  tag: i
+  params:
+    class: fa-regular fa-hand-lizard
+^fa-regular-hand-peace:
+  tag: i
+  params:
+    class: fa-regular fa-hand-peace
+^fa-regular-hand-point-down:
+  tag: i
+  params:
+    class: fa-regular fa-hand-point-down
+^fa-regular-hand-point-left:
+  tag: i
+  params:
+    class: fa-regular fa-hand-point-left
+^fa-regular-hand-point-right:
+  tag: i
+  params:
+    class: fa-regular fa-hand-point-right
+^fa-regular-hand-point-up:
+  tag: i
+  params:
+    class: fa-regular fa-hand-point-up
+^fa-regular-hand-pointer:
+  tag: i
+  params:
+    class: fa-regular fa-hand-pointer
+^fa-regular-hand-scissors:
+  tag: i
+  params:
+    class: fa-regular fa-hand-scissors
+^fa-regular-hand-spock:
+  tag: i
+  params:
+    class: fa-regular fa-hand-spock
+^fa-regular-handshake:
+  tag: i
+  params:
+    class: fa-regular fa-handshake
+^fa-regular-hard-drive:
+  tag: i
+  params:
+    class: fa-regular fa-hard-drive
+^fa-regular-headphones:
+  tag: i
+  params:
+    class: fa-regular fa-headphones
+^fa-regular-heart:
+  tag: i
+  params:
+    class: fa-regular fa-heart
+^fa-regular-hospital:
+  tag: i
+  params:
+    class: fa-regular fa-hospital
+^fa-regular-hourglass:
+  tag: i
+  params:
+    class: fa-regular fa-hourglass
+^fa-regular-hourglass-half:
+  tag: i
+  params:
+    class: fa-regular fa-hourglass-half
+^fa-regular-house:
+  tag: i
+  params:
+    class: fa-regular fa-house
+^fa-regular-id-badge:
+  tag: i
+  params:
+    class: fa-regular fa-id-badge
+^fa-regular-id-card:
+  tag: i
+  params:
+    class: fa-regular fa-id-card
+^fa-regular-image:
+  tag: i
+  params:
+    class: fa-regular fa-image
+^fa-regular-images:
+  tag: i
+  params:
+    class: fa-regular fa-images
+^fa-regular-keyboard:
+  tag: i
+  params:
+    class: fa-regular fa-keyboard
+^fa-regular-lemon:
+  tag: i
+  params:
+    class: fa-regular fa-lemon
+^fa-regular-life-ring:
+  tag: i
+  params:
+    class: fa-regular fa-life-ring
+^fa-regular-lightbulb:
+  tag: i
+  params:
+    class: fa-regular fa-lightbulb
+^fa-regular-map:
+  tag: i
+  params:
+    class: fa-regular fa-map
+^fa-regular-message:
+  tag: i
+  params:
+    class: fa-regular fa-message
+^fa-regular-money-bill-1:
+  tag: i
+  params:
+    class: fa-regular fa-money-bill-1
+^fa-regular-moon:
+  tag: i
+  params:
+    class: fa-regular fa-moon
+^fa-regular-newspaper:
+  tag: i
+  params:
+    class: fa-regular fa-newspaper
+^fa-regular-note-sticky:
+  tag: i
+  params:
+    class: fa-regular fa-note-sticky
+^fa-regular-object-group:
+  tag: i
+  params:
+    class: fa-regular fa-object-group
+^fa-regular-object-ungroup:
+  tag: i
+  params:
+    class: fa-regular fa-object-ungroup
+^fa-regular-paper-plane:
+  tag: i
+  params:
+    class: fa-regular fa-paper-plane
+^fa-regular-paste:
+  tag: i
+  params:
+    class: fa-regular fa-paste
+^fa-regular-pen-to-square:
+  tag: i
+  params:
+    class: fa-regular fa-pen-to-square
+^fa-regular-rectangle-list:
+  tag: i
+  params:
+    class: fa-regular fa-rectangle-list
+^fa-regular-rectangle-xmark:
+  tag: i
+  params:
+    class: fa-regular fa-rectangle-xmark
+^fa-regular-registered:
+  tag: i
+  params:
+    class: fa-regular fa-registered
+^fa-regular-share-from-square:
+  tag: i
+  params:
+    class: fa-regular fa-share-from-square
+^fa-regular-snowflake:
+  tag: i
+  params:
+    class: fa-regular fa-snowflake
+^fa-regular-square:
+  tag: i
+  params:
+    class: fa-regular fa-square
+^fa-regular-square-caret-down:
+  tag: i
+  params:
+    class: fa-regular fa-square-caret-down
+^fa-regular-square-caret-left:
+  tag: i
+  params:
+    class: fa-regular fa-square-caret-left
+^fa-regular-square-caret-right:
+  tag: i
+  params:
+    class: fa-regular fa-square-caret-right
+^fa-regular-square-caret-up:
+  tag: i
+  params:
+    class: fa-regular fa-square-caret-up
+^fa-regular-square-check:
+  tag: i
+  params:
+    class: fa-regular fa-square-check
+^fa-regular-square-full:
+  tag: i
+  params:
+    class: fa-regular fa-square-full
+^fa-regular-square-minus:
+  tag: i
+  params:
+    class: fa-regular fa-square-minus
+^fa-regular-square-plus:
+  tag: i
+  params:
+    class: fa-regular fa-square-plus
+^fa-regular-star:
+  tag: i
+  params:
+    class: fa-regular fa-star
+^fa-regular-star-half:
+  tag: i
+  params:
+    class: fa-regular fa-star-half
+^fa-regular-star-half-stroke:
+  tag: i
+  params:
+    class: fa-regular fa-star-half-stroke
+^fa-regular-sun:
+  tag: i
+  params:
+    class: fa-regular fa-sun
+^fa-regular-thumbs-down:
+  tag: i
+  params:
+    class: fa-regular fa-thumbs-down
+^fa-regular-thumbs-up:
+  tag: i
+  params:
+    class: fa-regular fa-thumbs-up
+^fa-regular-trash-can:
+  tag: i
+  params:
+    class: fa-regular fa-trash-can
+^fa-regular-truck:
+  tag: i
+  params:
+    class: fa-regular fa-truck
+^fa-regular-user:
+  tag: i
+  params:
+    class: fa-regular fa-user
+^fa-regular-window-maximize:
+  tag: i
+  params:
+    class: fa-regular fa-window-maximize
+^fa-regular-window-minimize:
+  tag: i
+  params:
+    class: fa-regular fa-window-minimize
+^fa-regular-window-restore:
+  tag: i
+  params:
+    class: fa-regular fa-window-restore
+
+# solid icons
+^fa-solid-0:
+  tag: i
+  params:
+    class: fa-solid fa-0
+^fa-solid-1:
+  tag: i
+  params:
+    class: fa-solid fa-1
+^fa-solid-2:
+  tag: i
+  params:
+    class: fa-solid fa-2
+^fa-solid-3:
+  tag: i
+  params:
+    class: fa-solid fa-3
+^fa-solid-4:
+  tag: i
+  params:
+    class: fa-solid fa-4
+^fa-solid-5:
+  tag: i
+  params:
+    class: fa-solid fa-5
+^fa-solid-6:
+  tag: i
+  params:
+    class: fa-solid fa-6
+^fa-solid-7:
+  tag: i
+  params:
+    class: fa-solid fa-7
+^fa-solid-8:
+  tag: i
+  params:
+    class: fa-solid fa-8
+^fa-solid-9:
+  tag: i
+  params:
+    class: fa-solid fa-9
+^fa-solid-a:
+  tag: i
+  params:
+    class: fa-solid fa-a
+^fa-solid-address-book:
+  tag: i
+  params:
+    class: fa-solid fa-address-book
+^fa-solid-address-card:
+  tag: i
+  params:
+    class: fa-solid fa-address-card
+^fa-solid-alarm-clock:
+  tag: i
+  params:
+    class: fa-solid fa-alarm-clock
+^fa-solid-align-center:
+  tag: i
+  params:
+    class: fa-solid fa-align-center
+^fa-solid-align-justify:
+  tag: i
+  params:
+    class: fa-solid fa-align-justify
+^fa-solid-align-left:
+  tag: i
+  params:
+    class: fa-solid fa-align-left
+^fa-solid-align-right:
+  tag: i
+  params:
+    class: fa-solid fa-align-right
+^fa-solid-anchor:
+  tag: i
+  params:
+    class: fa-solid fa-anchor
+^fa-solid-anchor-circle-check:
+  tag: i
+  params:
+    class: fa-solid fa-anchor-circle-check
+^fa-solid-anchor-circle-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-anchor-circle-exclamation
+^fa-solid-anchor-circle-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-anchor-circle-xmark
+^fa-solid-anchor-lock:
+  tag: i
+  params:
+    class: fa-solid fa-anchor-lock
+^fa-solid-angle-down:
+  tag: i
+  params:
+    class: fa-solid fa-angle-down
+^fa-solid-angle-left:
+  tag: i
+  params:
+    class: fa-solid fa-angle-left
+^fa-solid-angle-right:
+  tag: i
+  params:
+    class: fa-solid fa-angle-right
+^fa-solid-angle-up:
+  tag: i
+  params:
+    class: fa-solid fa-angle-up
+^fa-solid-angles-down:
+  tag: i
+  params:
+    class: fa-solid fa-angles-down
+^fa-solid-angles-left:
+  tag: i
+  params:
+    class: fa-solid fa-angles-left
+^fa-solid-angles-right:
+  tag: i
+  params:
+    class: fa-solid fa-angles-right
+^fa-solid-angles-up:
+  tag: i
+  params:
+    class: fa-solid fa-angles-up
+^fa-solid-ankh:
+  tag: i
+  params:
+    class: fa-solid fa-ankh
+^fa-solid-apple-whole:
+  tag: i
+  params:
+    class: fa-solid fa-apple-whole
+^fa-solid-archway:
+  tag: i
+  params:
+    class: fa-solid fa-archway
+^fa-solid-arrow-down:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-down
+^fa-solid-arrow-down-1-9:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-down-1-9
+^fa-solid-arrow-down-9-1:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-down-9-1
+^fa-solid-arrow-down-a-z:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-down-a-z
+^fa-solid-arrow-down-long:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-down-long
+^fa-solid-arrow-down-short-wide:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-down-short-wide
+^fa-solid-arrow-down-up-across-line:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-down-up-across-line
+^fa-solid-arrow-down-up-lock:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-down-up-lock
+^fa-solid-arrow-down-wide-short:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-down-wide-short
+^fa-solid-arrow-down-z-a:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-down-z-a
+^fa-solid-arrow-left:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-left
+^fa-solid-arrow-left-long:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-left-long
+^fa-solid-arrow-pointer:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-pointer
+^fa-solid-arrow-right:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-right
+^fa-solid-arrow-right-arrow-left:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-right-arrow-left
+^fa-solid-arrow-right-from-bracket:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-right-from-bracket
+^fa-solid-arrow-right-long:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-right-long
+^fa-solid-arrow-right-to-bracket:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-right-to-bracket
+^fa-solid-arrow-right-to-city:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-right-to-city
+^fa-solid-arrow-rotate-left:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-rotate-left
+^fa-solid-arrow-rotate-right:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-rotate-right
+^fa-solid-arrow-trend-down:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-trend-down
+^fa-solid-arrow-trend-up:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-trend-up
+^fa-solid-arrow-turn-down:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-turn-down
+^fa-solid-arrow-turn-up:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-turn-up
+^fa-solid-arrow-up:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-up
+^fa-solid-arrow-up-1-9:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-up-1-9
+^fa-solid-arrow-up-9-1:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-up-9-1
+^fa-solid-arrow-up-a-z:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-up-a-z
+^fa-solid-arrow-up-from-bracket:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-up-from-bracket
+^fa-solid-arrow-up-from-ground-water:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-up-from-ground-water
+^fa-solid-arrow-up-from-water-pump:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-up-from-water-pump
+^fa-solid-arrow-up-long:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-up-long
+^fa-solid-arrow-up-right-dots:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-up-right-dots
+^fa-solid-arrow-up-right-from-square:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-up-right-from-square
+^fa-solid-arrow-up-short-wide:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-up-short-wide
+^fa-solid-arrow-up-wide-short:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-up-wide-short
+^fa-solid-arrow-up-z-a:
+  tag: i
+  params:
+    class: fa-solid fa-arrow-up-z-a
+^fa-solid-arrows-down-to-line:
+  tag: i
+  params:
+    class: fa-solid fa-arrows-down-to-line
+^fa-solid-arrows-down-to-people:
+  tag: i
+  params:
+    class: fa-solid fa-arrows-down-to-people
+^fa-solid-arrows-left-right:
+  tag: i
+  params:
+    class: fa-solid fa-arrows-left-right
+^fa-solid-arrows-left-right-to-line:
+  tag: i
+  params:
+    class: fa-solid fa-arrows-left-right-to-line
+^fa-solid-arrows-rotate:
+  tag: i
+  params:
+    class: fa-solid fa-arrows-rotate
+^fa-solid-arrows-spin:
+  tag: i
+  params:
+    class: fa-solid fa-arrows-spin
+^fa-solid-arrows-split-up-and-left:
+  tag: i
+  params:
+    class: fa-solid fa-arrows-split-up-and-left
+^fa-solid-arrows-to-circle:
+  tag: i
+  params:
+    class: fa-solid fa-arrows-to-circle
+^fa-solid-arrows-to-dot:
+  tag: i
+  params:
+    class: fa-solid fa-arrows-to-dot
+^fa-solid-arrows-to-eye:
+  tag: i
+  params:
+    class: fa-solid fa-arrows-to-eye
+^fa-solid-arrows-turn-right:
+  tag: i
+  params:
+    class: fa-solid fa-arrows-turn-right
+^fa-solid-arrows-turn-to-dots:
+  tag: i
+  params:
+    class: fa-solid fa-arrows-turn-to-dots
+^fa-solid-arrows-up-down:
+  tag: i
+  params:
+    class: fa-solid fa-arrows-up-down
+^fa-solid-arrows-up-down-left-right:
+  tag: i
+  params:
+    class: fa-solid fa-arrows-up-down-left-right
+^fa-solid-arrows-up-to-line:
+  tag: i
+  params:
+    class: fa-solid fa-arrows-up-to-line
+^fa-solid-asterisk:
+  tag: i
+  params:
+    class: fa-solid fa-asterisk
+^fa-solid-at:
+  tag: i
+  params:
+    class: fa-solid fa-at
+^fa-solid-atom:
+  tag: i
+  params:
+    class: fa-solid fa-atom
+^fa-solid-audio-description:
+  tag: i
+  params:
+    class: fa-solid fa-audio-description
+^fa-solid-austral-sign:
+  tag: i
+  params:
+    class: fa-solid fa-austral-sign
+^fa-solid-award:
+  tag: i
+  params:
+    class: fa-solid fa-award
+^fa-solid-b:
+  tag: i
+  params:
+    class: fa-solid fa-b
+^fa-solid-baby:
+  tag: i
+  params:
+    class: fa-solid fa-baby
+^fa-solid-baby-carriage:
+  tag: i
+  params:
+    class: fa-solid fa-baby-carriage
+^fa-solid-backward:
+  tag: i
+  params:
+    class: fa-solid fa-backward
+^fa-solid-backward-fast:
+  tag: i
+  params:
+    class: fa-solid fa-backward-fast
+^fa-solid-backward-step:
+  tag: i
+  params:
+    class: fa-solid fa-backward-step
+^fa-solid-bacon:
+  tag: i
+  params:
+    class: fa-solid fa-bacon
+^fa-solid-bacteria:
+  tag: i
+  params:
+    class: fa-solid fa-bacteria
+^fa-solid-bacterium:
+  tag: i
+  params:
+    class: fa-solid fa-bacterium
+^fa-solid-bag-shopping:
+  tag: i
+  params:
+    class: fa-solid fa-bag-shopping
+^fa-solid-bahai:
+  tag: i
+  params:
+    class: fa-solid fa-bahai
+^fa-solid-baht-sign:
+  tag: i
+  params:
+    class: fa-solid fa-baht-sign
+^fa-solid-ban:
+  tag: i
+  params:
+    class: fa-solid fa-ban
+^fa-solid-ban-smoking:
+  tag: i
+  params:
+    class: fa-solid fa-ban-smoking
+^fa-solid-bandage:
+  tag: i
+  params:
+    class: fa-solid fa-bandage
+^fa-solid-bangladeshi-taka-sign:
+  tag: i
+  params:
+    class: fa-solid fa-bangladeshi-taka-sign
+^fa-solid-barcode:
+  tag: i
+  params:
+    class: fa-solid fa-barcode
+^fa-solid-bars:
+  tag: i
+  params:
+    class: fa-solid fa-bars
+^fa-solid-bars-progress:
+  tag: i
+  params:
+    class: fa-solid fa-bars-progress
+^fa-solid-bars-staggered:
+  tag: i
+  params:
+    class: fa-solid fa-bars-staggered
+^fa-solid-baseball:
+  tag: i
+  params:
+    class: fa-solid fa-baseball
+^fa-solid-baseball-bat-ball:
+  tag: i
+  params:
+    class: fa-solid fa-baseball-bat-ball
+^fa-solid-basket-shopping:
+  tag: i
+  params:
+    class: fa-solid fa-basket-shopping
+^fa-solid-basketball:
+  tag: i
+  params:
+    class: fa-solid fa-basketball
+^fa-solid-bath:
+  tag: i
+  params:
+    class: fa-solid fa-bath
+^fa-solid-battery-empty:
+  tag: i
+  params:
+    class: fa-solid fa-battery-empty
+^fa-solid-battery-full:
+  tag: i
+  params:
+    class: fa-solid fa-battery-full
+^fa-solid-battery-half:
+  tag: i
+  params:
+    class: fa-solid fa-battery-half
+^fa-solid-battery-quarter:
+  tag: i
+  params:
+    class: fa-solid fa-battery-quarter
+^fa-solid-battery-three-quarters:
+  tag: i
+  params:
+    class: fa-solid fa-battery-three-quarters
+^fa-solid-bed:
+  tag: i
+  params:
+    class: fa-solid fa-bed
+^fa-solid-bed-pulse:
+  tag: i
+  params:
+    class: fa-solid fa-bed-pulse
+^fa-solid-beer-mug-empty:
+  tag: i
+  params:
+    class: fa-solid fa-beer-mug-empty
+^fa-solid-bell:
+  tag: i
+  params:
+    class: fa-solid fa-bell
+^fa-solid-bell-concierge:
+  tag: i
+  params:
+    class: fa-solid fa-bell-concierge
+^fa-solid-bell-slash:
+  tag: i
+  params:
+    class: fa-solid fa-bell-slash
+^fa-solid-bezier-curve:
+  tag: i
+  params:
+    class: fa-solid fa-bezier-curve
+^fa-solid-bicycle:
+  tag: i
+  params:
+    class: fa-solid fa-bicycle
+^fa-solid-binoculars:
+  tag: i
+  params:
+    class: fa-solid fa-binoculars
+^fa-solid-biohazard:
+  tag: i
+  params:
+    class: fa-solid fa-biohazard
+^fa-solid-bitcoin-sign:
+  tag: i
+  params:
+    class: fa-solid fa-bitcoin-sign
+^fa-solid-blender:
+  tag: i
+  params:
+    class: fa-solid fa-blender
+^fa-solid-blender-phone:
+  tag: i
+  params:
+    class: fa-solid fa-blender-phone
+^fa-solid-blog:
+  tag: i
+  params:
+    class: fa-solid fa-blog
+^fa-solid-bold:
+  tag: i
+  params:
+    class: fa-solid fa-bold
+^fa-solid-bolt:
+  tag: i
+  params:
+    class: fa-solid fa-bolt
+^fa-solid-bolt-lightning:
+  tag: i
+  params:
+    class: fa-solid fa-bolt-lightning
+^fa-solid-bomb:
+  tag: i
+  params:
+    class: fa-solid fa-bomb
+^fa-solid-bone:
+  tag: i
+  params:
+    class: fa-solid fa-bone
+^fa-solid-bong:
+  tag: i
+  params:
+    class: fa-solid fa-bong
+^fa-solid-book:
+  tag: i
+  params:
+    class: fa-solid fa-book
+^fa-solid-book-atlas:
+  tag: i
+  params:
+    class: fa-solid fa-book-atlas
+^fa-solid-book-bible:
+  tag: i
+  params:
+    class: fa-solid fa-book-bible
+^fa-solid-book-bookmark:
+  tag: i
+  params:
+    class: fa-solid fa-book-bookmark
+^fa-solid-book-journal-whills:
+  tag: i
+  params:
+    class: fa-solid fa-book-journal-whills
+^fa-solid-book-medical:
+  tag: i
+  params:
+    class: fa-solid fa-book-medical
+^fa-solid-book-open:
+  tag: i
+  params:
+    class: fa-solid fa-book-open
+^fa-solid-book-open-reader:
+  tag: i
+  params:
+    class: fa-solid fa-book-open-reader
+^fa-solid-book-quran:
+  tag: i
+  params:
+    class: fa-solid fa-book-quran
+^fa-solid-book-skull:
+  tag: i
+  params:
+    class: fa-solid fa-book-skull
+^fa-solid-book-tanakh:
+  tag: i
+  params:
+    class: fa-solid fa-book-tanakh
+^fa-solid-bookmark:
+  tag: i
+  params:
+    class: fa-solid fa-bookmark
+^fa-solid-border-all:
+  tag: i
+  params:
+    class: fa-solid fa-border-all
+^fa-solid-border-none:
+  tag: i
+  params:
+    class: fa-solid fa-border-none
+^fa-solid-border-top-left:
+  tag: i
+  params:
+    class: fa-solid fa-border-top-left
+^fa-solid-bore-hole:
+  tag: i
+  params:
+    class: fa-solid fa-bore-hole
+^fa-solid-bottle-droplet:
+  tag: i
+  params:
+    class: fa-solid fa-bottle-droplet
+^fa-solid-bottle-water:
+  tag: i
+  params:
+    class: fa-solid fa-bottle-water
+^fa-solid-bowl-food:
+  tag: i
+  params:
+    class: fa-solid fa-bowl-food
+^fa-solid-bowl-rice:
+  tag: i
+  params:
+    class: fa-solid fa-bowl-rice
+^fa-solid-bowling-ball:
+  tag: i
+  params:
+    class: fa-solid fa-bowling-ball
+^fa-solid-box:
+  tag: i
+  params:
+    class: fa-solid fa-box
+^fa-solid-box-archive:
+  tag: i
+  params:
+    class: fa-solid fa-box-archive
+^fa-solid-box-open:
+  tag: i
+  params:
+    class: fa-solid fa-box-open
+^fa-solid-box-tissue:
+  tag: i
+  params:
+    class: fa-solid fa-box-tissue
+^fa-solid-boxes-packing:
+  tag: i
+  params:
+    class: fa-solid fa-boxes-packing
+^fa-solid-boxes-stacked:
+  tag: i
+  params:
+    class: fa-solid fa-boxes-stacked
+^fa-solid-braille:
+  tag: i
+  params:
+    class: fa-solid fa-braille
+^fa-solid-brain:
+  tag: i
+  params:
+    class: fa-solid fa-brain
+^fa-solid-brazilian-real-sign:
+  tag: i
+  params:
+    class: fa-solid fa-brazilian-real-sign
+^fa-solid-bread-slice:
+  tag: i
+  params:
+    class: fa-solid fa-bread-slice
+^fa-solid-bridge:
+  tag: i
+  params:
+    class: fa-solid fa-bridge
+^fa-solid-bridge-circle-check:
+  tag: i
+  params:
+    class: fa-solid fa-bridge-circle-check
+^fa-solid-bridge-circle-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-bridge-circle-exclamation
+^fa-solid-bridge-circle-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-bridge-circle-xmark
+^fa-solid-bridge-lock:
+  tag: i
+  params:
+    class: fa-solid fa-bridge-lock
+^fa-solid-bridge-water:
+  tag: i
+  params:
+    class: fa-solid fa-bridge-water
+^fa-solid-briefcase:
+  tag: i
+  params:
+    class: fa-solid fa-briefcase
+^fa-solid-briefcase-medical:
+  tag: i
+  params:
+    class: fa-solid fa-briefcase-medical
+^fa-solid-broom:
+  tag: i
+  params:
+    class: fa-solid fa-broom
+^fa-solid-broom-ball:
+  tag: i
+  params:
+    class: fa-solid fa-broom-ball
+^fa-solid-brush:
+  tag: i
+  params:
+    class: fa-solid fa-brush
+^fa-solid-bucket:
+  tag: i
+  params:
+    class: fa-solid fa-bucket
+^fa-solid-bug:
+  tag: i
+  params:
+    class: fa-solid fa-bug
+^fa-solid-bug-slash:
+  tag: i
+  params:
+    class: fa-solid fa-bug-slash
+^fa-solid-bugs:
+  tag: i
+  params:
+    class: fa-solid fa-bugs
+^fa-solid-building:
+  tag: i
+  params:
+    class: fa-solid fa-building
+^fa-solid-building-circle-arrow-right:
+  tag: i
+  params:
+    class: fa-solid fa-building-circle-arrow-right
+^fa-solid-building-circle-check:
+  tag: i
+  params:
+    class: fa-solid fa-building-circle-check
+^fa-solid-building-circle-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-building-circle-exclamation
+^fa-solid-building-circle-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-building-circle-xmark
+^fa-solid-building-columns:
+  tag: i
+  params:
+    class: fa-solid fa-building-columns
+^fa-solid-building-flag:
+  tag: i
+  params:
+    class: fa-solid fa-building-flag
+^fa-solid-building-lock:
+  tag: i
+  params:
+    class: fa-solid fa-building-lock
+^fa-solid-building-ngo:
+  tag: i
+  params:
+    class: fa-solid fa-building-ngo
+^fa-solid-building-shield:
+  tag: i
+  params:
+    class: fa-solid fa-building-shield
+^fa-solid-building-un:
+  tag: i
+  params:
+    class: fa-solid fa-building-un
+^fa-solid-building-user:
+  tag: i
+  params:
+    class: fa-solid fa-building-user
+^fa-solid-building-wheat:
+  tag: i
+  params:
+    class: fa-solid fa-building-wheat
+^fa-solid-bullhorn:
+  tag: i
+  params:
+    class: fa-solid fa-bullhorn
+^fa-solid-bullseye:
+  tag: i
+  params:
+    class: fa-solid fa-bullseye
+^fa-solid-burger:
+  tag: i
+  params:
+    class: fa-solid fa-burger
+^fa-solid-burst:
+  tag: i
+  params:
+    class: fa-solid fa-burst
+^fa-solid-bus:
+  tag: i
+  params:
+    class: fa-solid fa-bus
+^fa-solid-bus-side:
+  tag: i
+  params:
+    class: fa-solid fa-bus-side
+^fa-solid-bus-simple:
+  tag: i
+  params:
+    class: fa-solid fa-bus-simple
+^fa-solid-business-time:
+  tag: i
+  params:
+    class: fa-solid fa-business-time
+^fa-solid-c:
+  tag: i
+  params:
+    class: fa-solid fa-c
+^fa-solid-cable-car:
+  tag: i
+  params:
+    class: fa-solid fa-cable-car
+^fa-solid-cake-candles:
+  tag: i
+  params:
+    class: fa-solid fa-cake-candles
+^fa-solid-calculator:
+  tag: i
+  params:
+    class: fa-solid fa-calculator
+^fa-solid-calendar:
+  tag: i
+  params:
+    class: fa-solid fa-calendar
+^fa-solid-calendar-check:
+  tag: i
+  params:
+    class: fa-solid fa-calendar-check
+^fa-solid-calendar-day:
+  tag: i
+  params:
+    class: fa-solid fa-calendar-day
+^fa-solid-calendar-days:
+  tag: i
+  params:
+    class: fa-solid fa-calendar-days
+^fa-solid-calendar-minus:
+  tag: i
+  params:
+    class: fa-solid fa-calendar-minus
+^fa-solid-calendar-plus:
+  tag: i
+  params:
+    class: fa-solid fa-calendar-plus
+^fa-solid-calendar-week:
+  tag: i
+  params:
+    class: fa-solid fa-calendar-week
+^fa-solid-calendar-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-calendar-xmark
+^fa-solid-camera:
+  tag: i
+  params:
+    class: fa-solid fa-camera
+^fa-solid-camera-retro:
+  tag: i
+  params:
+    class: fa-solid fa-camera-retro
+^fa-solid-camera-rotate:
+  tag: i
+  params:
+    class: fa-solid fa-camera-rotate
+^fa-solid-campground:
+  tag: i
+  params:
+    class: fa-solid fa-campground
+^fa-solid-candy-cane:
+  tag: i
+  params:
+    class: fa-solid fa-candy-cane
+^fa-solid-cannabis:
+  tag: i
+  params:
+    class: fa-solid fa-cannabis
+^fa-solid-capsules:
+  tag: i
+  params:
+    class: fa-solid fa-capsules
+^fa-solid-car:
+  tag: i
+  params:
+    class: fa-solid fa-car
+^fa-solid-car-battery:
+  tag: i
+  params:
+    class: fa-solid fa-car-battery
+^fa-solid-car-burst:
+  tag: i
+  params:
+    class: fa-solid fa-car-burst
+^fa-solid-car-on:
+  tag: i
+  params:
+    class: fa-solid fa-car-on
+^fa-solid-car-rear:
+  tag: i
+  params:
+    class: fa-solid fa-car-rear
+^fa-solid-car-side:
+  tag: i
+  params:
+    class: fa-solid fa-car-side
+^fa-solid-car-tunnel:
+  tag: i
+  params:
+    class: fa-solid fa-car-tunnel
+^fa-solid-caravan:
+  tag: i
+  params:
+    class: fa-solid fa-caravan
+^fa-solid-caret-down:
+  tag: i
+  params:
+    class: fa-solid fa-caret-down
+^fa-solid-caret-left:
+  tag: i
+  params:
+    class: fa-solid fa-caret-left
+^fa-solid-caret-right:
+  tag: i
+  params:
+    class: fa-solid fa-caret-right
+^fa-solid-caret-up:
+  tag: i
+  params:
+    class: fa-solid fa-caret-up
+^fa-solid-carrot:
+  tag: i
+  params:
+    class: fa-solid fa-carrot
+^fa-solid-cart-arrow-down:
+  tag: i
+  params:
+    class: fa-solid fa-cart-arrow-down
+^fa-solid-cart-flatbed:
+  tag: i
+  params:
+    class: fa-solid fa-cart-flatbed
+^fa-solid-cart-flatbed-suitcase:
+  tag: i
+  params:
+    class: fa-solid fa-cart-flatbed-suitcase
+^fa-solid-cart-plus:
+  tag: i
+  params:
+    class: fa-solid fa-cart-plus
+^fa-solid-cart-shopping:
+  tag: i
+  params:
+    class: fa-solid fa-cart-shopping
+^fa-solid-cash-register:
+  tag: i
+  params:
+    class: fa-solid fa-cash-register
+^fa-solid-cat:
+  tag: i
+  params:
+    class: fa-solid fa-cat
+^fa-solid-cedi-sign:
+  tag: i
+  params:
+    class: fa-solid fa-cedi-sign
+^fa-solid-cent-sign:
+  tag: i
+  params:
+    class: fa-solid fa-cent-sign
+^fa-solid-certificate:
+  tag: i
+  params:
+    class: fa-solid fa-certificate
+^fa-solid-chair:
+  tag: i
+  params:
+    class: fa-solid fa-chair
+^fa-solid-chalkboard:
+  tag: i
+  params:
+    class: fa-solid fa-chalkboard
+^fa-solid-chalkboard-user:
+  tag: i
+  params:
+    class: fa-solid fa-chalkboard-user
+^fa-solid-champagne-glasses:
+  tag: i
+  params:
+    class: fa-solid fa-champagne-glasses
+^fa-solid-charging-station:
+  tag: i
+  params:
+    class: fa-solid fa-charging-station
+^fa-solid-chart-area:
+  tag: i
+  params:
+    class: fa-solid fa-chart-area
+^fa-solid-chart-bar:
+  tag: i
+  params:
+    class: fa-solid fa-chart-bar
+^fa-solid-chart-column:
+  tag: i
+  params:
+    class: fa-solid fa-chart-column
+^fa-solid-chart-diagram:
+  tag: i
+  params:
+    class: fa-solid fa-chart-diagram
+^fa-solid-chart-gantt:
+  tag: i
+  params:
+    class: fa-solid fa-chart-gantt
+^fa-solid-chart-line:
+  tag: i
+  params:
+    class: fa-solid fa-chart-line
+^fa-solid-chart-pie:
+  tag: i
+  params:
+    class: fa-solid fa-chart-pie
+^fa-solid-chart-simple:
+  tag: i
+  params:
+    class: fa-solid fa-chart-simple
+^fa-solid-check:
+  tag: i
+  params:
+    class: fa-solid fa-check
+^fa-solid-check-double:
+  tag: i
+  params:
+    class: fa-solid fa-check-double
+^fa-solid-check-to-slot:
+  tag: i
+  params:
+    class: fa-solid fa-check-to-slot
+^fa-solid-cheese:
+  tag: i
+  params:
+    class: fa-solid fa-cheese
+^fa-solid-chess:
+  tag: i
+  params:
+    class: fa-solid fa-chess
+^fa-solid-chess-bishop:
+  tag: i
+  params:
+    class: fa-solid fa-chess-bishop
+^fa-solid-chess-board:
+  tag: i
+  params:
+    class: fa-solid fa-chess-board
+^fa-solid-chess-king:
+  tag: i
+  params:
+    class: fa-solid fa-chess-king
+^fa-solid-chess-knight:
+  tag: i
+  params:
+    class: fa-solid fa-chess-knight
+^fa-solid-chess-pawn:
+  tag: i
+  params:
+    class: fa-solid fa-chess-pawn
+^fa-solid-chess-queen:
+  tag: i
+  params:
+    class: fa-solid fa-chess-queen
+^fa-solid-chess-rook:
+  tag: i
+  params:
+    class: fa-solid fa-chess-rook
+^fa-solid-chevron-down:
+  tag: i
+  params:
+    class: fa-solid fa-chevron-down
+^fa-solid-chevron-left:
+  tag: i
+  params:
+    class: fa-solid fa-chevron-left
+^fa-solid-chevron-right:
+  tag: i
+  params:
+    class: fa-solid fa-chevron-right
+^fa-solid-chevron-up:
+  tag: i
+  params:
+    class: fa-solid fa-chevron-up
+^fa-solid-child:
+  tag: i
+  params:
+    class: fa-solid fa-child
+^fa-solid-child-combatant:
+  tag: i
+  params:
+    class: fa-solid fa-child-combatant
+^fa-solid-child-dress:
+  tag: i
+  params:
+    class: fa-solid fa-child-dress
+^fa-solid-child-reaching:
+  tag: i
+  params:
+    class: fa-solid fa-child-reaching
+^fa-solid-children:
+  tag: i
+  params:
+    class: fa-solid fa-children
+^fa-solid-church:
+  tag: i
+  params:
+    class: fa-solid fa-church
+^fa-solid-circle:
+  tag: i
+  params:
+    class: fa-solid fa-circle
+^fa-solid-circle-arrow-down:
+  tag: i
+  params:
+    class: fa-solid fa-circle-arrow-down
+^fa-solid-circle-arrow-left:
+  tag: i
+  params:
+    class: fa-solid fa-circle-arrow-left
+^fa-solid-circle-arrow-right:
+  tag: i
+  params:
+    class: fa-solid fa-circle-arrow-right
+^fa-solid-circle-arrow-up:
+  tag: i
+  params:
+    class: fa-solid fa-circle-arrow-up
+^fa-solid-circle-check:
+  tag: i
+  params:
+    class: fa-solid fa-circle-check
+^fa-solid-circle-chevron-down:
+  tag: i
+  params:
+    class: fa-solid fa-circle-chevron-down
+^fa-solid-circle-chevron-left:
+  tag: i
+  params:
+    class: fa-solid fa-circle-chevron-left
+^fa-solid-circle-chevron-right:
+  tag: i
+  params:
+    class: fa-solid fa-circle-chevron-right
+^fa-solid-circle-chevron-up:
+  tag: i
+  params:
+    class: fa-solid fa-circle-chevron-up
+^fa-solid-circle-dollar-to-slot:
+  tag: i
+  params:
+    class: fa-solid fa-circle-dollar-to-slot
+^fa-solid-circle-dot:
+  tag: i
+  params:
+    class: fa-solid fa-circle-dot
+^fa-solid-circle-down:
+  tag: i
+  params:
+    class: fa-solid fa-circle-down
+^fa-solid-circle-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-circle-exclamation
+^fa-solid-circle-h:
+  tag: i
+  params:
+    class: fa-solid fa-circle-h
+^fa-solid-circle-half-stroke:
+  tag: i
+  params:
+    class: fa-solid fa-circle-half-stroke
+^fa-solid-circle-info:
+  tag: i
+  params:
+    class: fa-solid fa-circle-info
+^fa-solid-circle-left:
+  tag: i
+  params:
+    class: fa-solid fa-circle-left
+^fa-solid-circle-minus:
+  tag: i
+  params:
+    class: fa-solid fa-circle-minus
+^fa-solid-circle-nodes:
+  tag: i
+  params:
+    class: fa-solid fa-circle-nodes
+^fa-solid-circle-notch:
+  tag: i
+  params:
+    class: fa-solid fa-circle-notch
+^fa-solid-circle-pause:
+  tag: i
+  params:
+    class: fa-solid fa-circle-pause
+^fa-solid-circle-play:
+  tag: i
+  params:
+    class: fa-solid fa-circle-play
+^fa-solid-circle-plus:
+  tag: i
+  params:
+    class: fa-solid fa-circle-plus
+^fa-solid-circle-question:
+  tag: i
+  params:
+    class: fa-solid fa-circle-question
+^fa-solid-circle-radiation:
+  tag: i
+  params:
+    class: fa-solid fa-circle-radiation
+^fa-solid-circle-right:
+  tag: i
+  params:
+    class: fa-solid fa-circle-right
+^fa-solid-circle-stop:
+  tag: i
+  params:
+    class: fa-solid fa-circle-stop
+^fa-solid-circle-up:
+  tag: i
+  params:
+    class: fa-solid fa-circle-up
+^fa-solid-circle-user:
+  tag: i
+  params:
+    class: fa-solid fa-circle-user
+^fa-solid-circle-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-circle-xmark
+^fa-solid-city:
+  tag: i
+  params:
+    class: fa-solid fa-city
+^fa-solid-clapperboard:
+  tag: i
+  params:
+    class: fa-solid fa-clapperboard
+^fa-solid-clipboard:
+  tag: i
+  params:
+    class: fa-solid fa-clipboard
+^fa-solid-clipboard-check:
+  tag: i
+  params:
+    class: fa-solid fa-clipboard-check
+^fa-solid-clipboard-list:
+  tag: i
+  params:
+    class: fa-solid fa-clipboard-list
+^fa-solid-clipboard-question:
+  tag: i
+  params:
+    class: fa-solid fa-clipboard-question
+^fa-solid-clipboard-user:
+  tag: i
+  params:
+    class: fa-solid fa-clipboard-user
+^fa-solid-clock:
+  tag: i
+  params:
+    class: fa-solid fa-clock
+^fa-solid-clock-rotate-left:
+  tag: i
+  params:
+    class: fa-solid fa-clock-rotate-left
+^fa-solid-clone:
+  tag: i
+  params:
+    class: fa-solid fa-clone
+^fa-solid-closed-captioning:
+  tag: i
+  params:
+    class: fa-solid fa-closed-captioning
+^fa-solid-cloud:
+  tag: i
+  params:
+    class: fa-solid fa-cloud
+^fa-solid-cloud-arrow-down:
+  tag: i
+  params:
+    class: fa-solid fa-cloud-arrow-down
+^fa-solid-cloud-arrow-up:
+  tag: i
+  params:
+    class: fa-solid fa-cloud-arrow-up
+^fa-solid-cloud-bolt:
+  tag: i
+  params:
+    class: fa-solid fa-cloud-bolt
+^fa-solid-cloud-meatball:
+  tag: i
+  params:
+    class: fa-solid fa-cloud-meatball
+^fa-solid-cloud-moon:
+  tag: i
+  params:
+    class: fa-solid fa-cloud-moon
+^fa-solid-cloud-moon-rain:
+  tag: i
+  params:
+    class: fa-solid fa-cloud-moon-rain
+^fa-solid-cloud-rain:
+  tag: i
+  params:
+    class: fa-solid fa-cloud-rain
+^fa-solid-cloud-showers-heavy:
+  tag: i
+  params:
+    class: fa-solid fa-cloud-showers-heavy
+^fa-solid-cloud-showers-water:
+  tag: i
+  params:
+    class: fa-solid fa-cloud-showers-water
+^fa-solid-cloud-sun:
+  tag: i
+  params:
+    class: fa-solid fa-cloud-sun
+^fa-solid-cloud-sun-rain:
+  tag: i
+  params:
+    class: fa-solid fa-cloud-sun-rain
+^fa-solid-clover:
+  tag: i
+  params:
+    class: fa-solid fa-clover
+^fa-solid-code:
+  tag: i
+  params:
+    class: fa-solid fa-code
+^fa-solid-code-branch:
+  tag: i
+  params:
+    class: fa-solid fa-code-branch
+^fa-solid-code-commit:
+  tag: i
+  params:
+    class: fa-solid fa-code-commit
+^fa-solid-code-compare:
+  tag: i
+  params:
+    class: fa-solid fa-code-compare
+^fa-solid-code-fork:
+  tag: i
+  params:
+    class: fa-solid fa-code-fork
+^fa-solid-code-merge:
+  tag: i
+  params:
+    class: fa-solid fa-code-merge
+^fa-solid-code-pull-request:
+  tag: i
+  params:
+    class: fa-solid fa-code-pull-request
+^fa-solid-coins:
+  tag: i
+  params:
+    class: fa-solid fa-coins
+^fa-solid-colon-sign:
+  tag: i
+  params:
+    class: fa-solid fa-colon-sign
+^fa-solid-comment:
+  tag: i
+  params:
+    class: fa-solid fa-comment
+^fa-solid-comment-dollar:
+  tag: i
+  params:
+    class: fa-solid fa-comment-dollar
+^fa-solid-comment-dots:
+  tag: i
+  params:
+    class: fa-solid fa-comment-dots
+^fa-solid-comment-medical:
+  tag: i
+  params:
+    class: fa-solid fa-comment-medical
+^fa-solid-comment-nodes:
+  tag: i
+  params:
+    class: fa-solid fa-comment-nodes
+^fa-solid-comment-slash:
+  tag: i
+  params:
+    class: fa-solid fa-comment-slash
+^fa-solid-comment-sms:
+  tag: i
+  params:
+    class: fa-solid fa-comment-sms
+^fa-solid-comments:
+  tag: i
+  params:
+    class: fa-solid fa-comments
+^fa-solid-comments-dollar:
+  tag: i
+  params:
+    class: fa-solid fa-comments-dollar
+^fa-solid-compact-disc:
+  tag: i
+  params:
+    class: fa-solid fa-compact-disc
+^fa-solid-compass:
+  tag: i
+  params:
+    class: fa-solid fa-compass
+^fa-solid-compass-drafting:
+  tag: i
+  params:
+    class: fa-solid fa-compass-drafting
+^fa-solid-compress:
+  tag: i
+  params:
+    class: fa-solid fa-compress
+^fa-solid-computer:
+  tag: i
+  params:
+    class: fa-solid fa-computer
+^fa-solid-computer-mouse:
+  tag: i
+  params:
+    class: fa-solid fa-computer-mouse
+^fa-solid-cookie:
+  tag: i
+  params:
+    class: fa-solid fa-cookie
+^fa-solid-cookie-bite:
+  tag: i
+  params:
+    class: fa-solid fa-cookie-bite
+^fa-solid-copy:
+  tag: i
+  params:
+    class: fa-solid fa-copy
+^fa-solid-copyright:
+  tag: i
+  params:
+    class: fa-solid fa-copyright
+^fa-solid-couch:
+  tag: i
+  params:
+    class: fa-solid fa-couch
+^fa-solid-cow:
+  tag: i
+  params:
+    class: fa-solid fa-cow
+^fa-solid-credit-card:
+  tag: i
+  params:
+    class: fa-solid fa-credit-card
+^fa-solid-crop:
+  tag: i
+  params:
+    class: fa-solid fa-crop
+^fa-solid-crop-simple:
+  tag: i
+  params:
+    class: fa-solid fa-crop-simple
+^fa-solid-cross:
+  tag: i
+  params:
+    class: fa-solid fa-cross
+^fa-solid-crosshairs:
+  tag: i
+  params:
+    class: fa-solid fa-crosshairs
+^fa-solid-crow:
+  tag: i
+  params:
+    class: fa-solid fa-crow
+^fa-solid-crown:
+  tag: i
+  params:
+    class: fa-solid fa-crown
+^fa-solid-crutch:
+  tag: i
+  params:
+    class: fa-solid fa-crutch
+^fa-solid-cruzeiro-sign:
+  tag: i
+  params:
+    class: fa-solid fa-cruzeiro-sign
+^fa-solid-cube:
+  tag: i
+  params:
+    class: fa-solid fa-cube
+^fa-solid-cubes:
+  tag: i
+  params:
+    class: fa-solid fa-cubes
+^fa-solid-cubes-stacked:
+  tag: i
+  params:
+    class: fa-solid fa-cubes-stacked
+^fa-solid-d:
+  tag: i
+  params:
+    class: fa-solid fa-d
+^fa-solid-database:
+  tag: i
+  params:
+    class: fa-solid fa-database
+^fa-solid-delete-left:
+  tag: i
+  params:
+    class: fa-solid fa-delete-left
+^fa-solid-democrat:
+  tag: i
+  params:
+    class: fa-solid fa-democrat
+^fa-solid-desktop:
+  tag: i
+  params:
+    class: fa-solid fa-desktop
+^fa-solid-dharmachakra:
+  tag: i
+  params:
+    class: fa-solid fa-dharmachakra
+^fa-solid-diagram-next:
+  tag: i
+  params:
+    class: fa-solid fa-diagram-next
+^fa-solid-diagram-predecessor:
+  tag: i
+  params:
+    class: fa-solid fa-diagram-predecessor
+^fa-solid-diagram-project:
+  tag: i
+  params:
+    class: fa-solid fa-diagram-project
+^fa-solid-diagram-successor:
+  tag: i
+  params:
+    class: fa-solid fa-diagram-successor
+^fa-solid-diamond:
+  tag: i
+  params:
+    class: fa-solid fa-diamond
+^fa-solid-diamond-turn-right:
+  tag: i
+  params:
+    class: fa-solid fa-diamond-turn-right
+^fa-solid-dice:
+  tag: i
+  params:
+    class: fa-solid fa-dice
+^fa-solid-dice-d20:
+  tag: i
+  params:
+    class: fa-solid fa-dice-d20
+^fa-solid-dice-d6:
+  tag: i
+  params:
+    class: fa-solid fa-dice-d6
+^fa-solid-dice-five:
+  tag: i
+  params:
+    class: fa-solid fa-dice-five
+^fa-solid-dice-four:
+  tag: i
+  params:
+    class: fa-solid fa-dice-four
+^fa-solid-dice-one:
+  tag: i
+  params:
+    class: fa-solid fa-dice-one
+^fa-solid-dice-six:
+  tag: i
+  params:
+    class: fa-solid fa-dice-six
+^fa-solid-dice-three:
+  tag: i
+  params:
+    class: fa-solid fa-dice-three
+^fa-solid-dice-two:
+  tag: i
+  params:
+    class: fa-solid fa-dice-two
+^fa-solid-disease:
+  tag: i
+  params:
+    class: fa-solid fa-disease
+^fa-solid-display:
+  tag: i
+  params:
+    class: fa-solid fa-display
+^fa-solid-divide:
+  tag: i
+  params:
+    class: fa-solid fa-divide
+^fa-solid-dna:
+  tag: i
+  params:
+    class: fa-solid fa-dna
+^fa-solid-dog:
+  tag: i
+  params:
+    class: fa-solid fa-dog
+^fa-solid-dollar-sign:
+  tag: i
+  params:
+    class: fa-solid fa-dollar-sign
+^fa-solid-dolly:
+  tag: i
+  params:
+    class: fa-solid fa-dolly
+^fa-solid-dong-sign:
+  tag: i
+  params:
+    class: fa-solid fa-dong-sign
+^fa-solid-door-closed:
+  tag: i
+  params:
+    class: fa-solid fa-door-closed
+^fa-solid-door-open:
+  tag: i
+  params:
+    class: fa-solid fa-door-open
+^fa-solid-dove:
+  tag: i
+  params:
+    class: fa-solid fa-dove
+^fa-solid-down-left-and-up-right-to-center:
+  tag: i
+  params:
+    class: fa-solid fa-down-left-and-up-right-to-center
+^fa-solid-down-long:
+  tag: i
+  params:
+    class: fa-solid fa-down-long
+^fa-solid-download:
+  tag: i
+  params:
+    class: fa-solid fa-download
+^fa-solid-dragon:
+  tag: i
+  params:
+    class: fa-solid fa-dragon
+^fa-solid-draw-polygon:
+  tag: i
+  params:
+    class: fa-solid fa-draw-polygon
+^fa-solid-droplet:
+  tag: i
+  params:
+    class: fa-solid fa-droplet
+^fa-solid-droplet-slash:
+  tag: i
+  params:
+    class: fa-solid fa-droplet-slash
+^fa-solid-drum:
+  tag: i
+  params:
+    class: fa-solid fa-drum
+^fa-solid-drum-steelpan:
+  tag: i
+  params:
+    class: fa-solid fa-drum-steelpan
+^fa-solid-drumstick-bite:
+  tag: i
+  params:
+    class: fa-solid fa-drumstick-bite
+^fa-solid-dumbbell:
+  tag: i
+  params:
+    class: fa-solid fa-dumbbell
+^fa-solid-dumpster:
+  tag: i
+  params:
+    class: fa-solid fa-dumpster
+^fa-solid-dumpster-fire:
+  tag: i
+  params:
+    class: fa-solid fa-dumpster-fire
+^fa-solid-dungeon:
+  tag: i
+  params:
+    class: fa-solid fa-dungeon
+^fa-solid-e:
+  tag: i
+  params:
+    class: fa-solid fa-e
+^fa-solid-ear-deaf:
+  tag: i
+  params:
+    class: fa-solid fa-ear-deaf
+^fa-solid-ear-listen:
+  tag: i
+  params:
+    class: fa-solid fa-ear-listen
+^fa-solid-earth-africa:
+  tag: i
+  params:
+    class: fa-solid fa-earth-africa
+^fa-solid-earth-americas:
+  tag: i
+  params:
+    class: fa-solid fa-earth-americas
+^fa-solid-earth-asia:
+  tag: i
+  params:
+    class: fa-solid fa-earth-asia
+^fa-solid-earth-europe:
+  tag: i
+  params:
+    class: fa-solid fa-earth-europe
+^fa-solid-earth-oceania:
+  tag: i
+  params:
+    class: fa-solid fa-earth-oceania
+^fa-solid-egg:
+  tag: i
+  params:
+    class: fa-solid fa-egg
+^fa-solid-eject:
+  tag: i
+  params:
+    class: fa-solid fa-eject
+^fa-solid-elevator:
+  tag: i
+  params:
+    class: fa-solid fa-elevator
+^fa-solid-ellipsis:
+  tag: i
+  params:
+    class: fa-solid fa-ellipsis
+^fa-solid-ellipsis-vertical:
+  tag: i
+  params:
+    class: fa-solid fa-ellipsis-vertical
+^fa-solid-envelope:
+  tag: i
+  params:
+    class: fa-solid fa-envelope
+^fa-solid-envelope-circle-check:
+  tag: i
+  params:
+    class: fa-solid fa-envelope-circle-check
+^fa-solid-envelope-open:
+  tag: i
+  params:
+    class: fa-solid fa-envelope-open
+^fa-solid-envelope-open-text:
+  tag: i
+  params:
+    class: fa-solid fa-envelope-open-text
+^fa-solid-envelopes-bulk:
+  tag: i
+  params:
+    class: fa-solid fa-envelopes-bulk
+^fa-solid-equals:
+  tag: i
+  params:
+    class: fa-solid fa-equals
+^fa-solid-eraser:
+  tag: i
+  params:
+    class: fa-solid fa-eraser
+^fa-solid-ethernet:
+  tag: i
+  params:
+    class: fa-solid fa-ethernet
+^fa-solid-euro-sign:
+  tag: i
+  params:
+    class: fa-solid fa-euro-sign
+^fa-solid-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-exclamation
+^fa-solid-expand:
+  tag: i
+  params:
+    class: fa-solid fa-expand
+^fa-solid-explosion:
+  tag: i
+  params:
+    class: fa-solid fa-explosion
+^fa-solid-eye:
+  tag: i
+  params:
+    class: fa-solid fa-eye
+^fa-solid-eye-dropper:
+  tag: i
+  params:
+    class: fa-solid fa-eye-dropper
+^fa-solid-eye-low-vision:
+  tag: i
+  params:
+    class: fa-solid fa-eye-low-vision
+^fa-solid-eye-slash:
+  tag: i
+  params:
+    class: fa-solid fa-eye-slash
+^fa-solid-f:
+  tag: i
+  params:
+    class: fa-solid fa-f
+^fa-solid-face-angry:
+  tag: i
+  params:
+    class: fa-solid fa-face-angry
+^fa-solid-face-dizzy:
+  tag: i
+  params:
+    class: fa-solid fa-face-dizzy
+^fa-solid-face-flushed:
+  tag: i
+  params:
+    class: fa-solid fa-face-flushed
+^fa-solid-face-frown:
+  tag: i
+  params:
+    class: fa-solid fa-face-frown
+^fa-solid-face-frown-open:
+  tag: i
+  params:
+    class: fa-solid fa-face-frown-open
+^fa-solid-face-grimace:
+  tag: i
+  params:
+    class: fa-solid fa-face-grimace
+^fa-solid-face-grin:
+  tag: i
+  params:
+    class: fa-solid fa-face-grin
+^fa-solid-face-grin-beam:
+  tag: i
+  params:
+    class: fa-solid fa-face-grin-beam
+^fa-solid-face-grin-beam-sweat:
+  tag: i
+  params:
+    class: fa-solid fa-face-grin-beam-sweat
+^fa-solid-face-grin-hearts:
+  tag: i
+  params:
+    class: fa-solid fa-face-grin-hearts
+^fa-solid-face-grin-squint:
+  tag: i
+  params:
+    class: fa-solid fa-face-grin-squint
+^fa-solid-face-grin-squint-tears:
+  tag: i
+  params:
+    class: fa-solid fa-face-grin-squint-tears
+^fa-solid-face-grin-stars:
+  tag: i
+  params:
+    class: fa-solid fa-face-grin-stars
+^fa-solid-face-grin-tears:
+  tag: i
+  params:
+    class: fa-solid fa-face-grin-tears
+^fa-solid-face-grin-tongue:
+  tag: i
+  params:
+    class: fa-solid fa-face-grin-tongue
+^fa-solid-face-grin-tongue-squint:
+  tag: i
+  params:
+    class: fa-solid fa-face-grin-tongue-squint
+^fa-solid-face-grin-tongue-wink:
+  tag: i
+  params:
+    class: fa-solid fa-face-grin-tongue-wink
+^fa-solid-face-grin-wide:
+  tag: i
+  params:
+    class: fa-solid fa-face-grin-wide
+^fa-solid-face-grin-wink:
+  tag: i
+  params:
+    class: fa-solid fa-face-grin-wink
+^fa-solid-face-kiss:
+  tag: i
+  params:
+    class: fa-solid fa-face-kiss
+^fa-solid-face-kiss-beam:
+  tag: i
+  params:
+    class: fa-solid fa-face-kiss-beam
+^fa-solid-face-kiss-wink-heart:
+  tag: i
+  params:
+    class: fa-solid fa-face-kiss-wink-heart
+^fa-solid-face-laugh:
+  tag: i
+  params:
+    class: fa-solid fa-face-laugh
+^fa-solid-face-laugh-beam:
+  tag: i
+  params:
+    class: fa-solid fa-face-laugh-beam
+^fa-solid-face-laugh-squint:
+  tag: i
+  params:
+    class: fa-solid fa-face-laugh-squint
+^fa-solid-face-laugh-wink:
+  tag: i
+  params:
+    class: fa-solid fa-face-laugh-wink
+^fa-solid-face-meh:
+  tag: i
+  params:
+    class: fa-solid fa-face-meh
+^fa-solid-face-meh-blank:
+  tag: i
+  params:
+    class: fa-solid fa-face-meh-blank
+^fa-solid-face-rolling-eyes:
+  tag: i
+  params:
+    class: fa-solid fa-face-rolling-eyes
+^fa-solid-face-sad-cry:
+  tag: i
+  params:
+    class: fa-solid fa-face-sad-cry
+^fa-solid-face-sad-tear:
+  tag: i
+  params:
+    class: fa-solid fa-face-sad-tear
+^fa-solid-face-smile:
+  tag: i
+  params:
+    class: fa-solid fa-face-smile
+^fa-solid-face-smile-beam:
+  tag: i
+  params:
+    class: fa-solid fa-face-smile-beam
+^fa-solid-face-smile-wink:
+  tag: i
+  params:
+    class: fa-solid fa-face-smile-wink
+^fa-solid-face-surprise:
+  tag: i
+  params:
+    class: fa-solid fa-face-surprise
+^fa-solid-face-tired:
+  tag: i
+  params:
+    class: fa-solid fa-face-tired
+^fa-solid-fan:
+  tag: i
+  params:
+    class: fa-solid fa-fan
+^fa-solid-faucet:
+  tag: i
+  params:
+    class: fa-solid fa-faucet
+^fa-solid-faucet-drip:
+  tag: i
+  params:
+    class: fa-solid fa-faucet-drip
+^fa-solid-fax:
+  tag: i
+  params:
+    class: fa-solid fa-fax
+^fa-solid-feather:
+  tag: i
+  params:
+    class: fa-solid fa-feather
+^fa-solid-feather-pointed:
+  tag: i
+  params:
+    class: fa-solid fa-feather-pointed
+^fa-solid-ferry:
+  tag: i
+  params:
+    class: fa-solid fa-ferry
+^fa-solid-file:
+  tag: i
+  params:
+    class: fa-solid fa-file
+^fa-solid-file-arrow-down:
+  tag: i
+  params:
+    class: fa-solid fa-file-arrow-down
+^fa-solid-file-arrow-up:
+  tag: i
+  params:
+    class: fa-solid fa-file-arrow-up
+^fa-solid-file-audio:
+  tag: i
+  params:
+    class: fa-solid fa-file-audio
+^fa-solid-file-circle-check:
+  tag: i
+  params:
+    class: fa-solid fa-file-circle-check
+^fa-solid-file-circle-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-file-circle-exclamation
+^fa-solid-file-circle-minus:
+  tag: i
+  params:
+    class: fa-solid fa-file-circle-minus
+^fa-solid-file-circle-plus:
+  tag: i
+  params:
+    class: fa-solid fa-file-circle-plus
+^fa-solid-file-circle-question:
+  tag: i
+  params:
+    class: fa-solid fa-file-circle-question
+^fa-solid-file-circle-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-file-circle-xmark
+^fa-solid-file-code:
+  tag: i
+  params:
+    class: fa-solid fa-file-code
+^fa-solid-file-contract:
+  tag: i
+  params:
+    class: fa-solid fa-file-contract
+^fa-solid-file-csv:
+  tag: i
+  params:
+    class: fa-solid fa-file-csv
+^fa-solid-file-excel:
+  tag: i
+  params:
+    class: fa-solid fa-file-excel
+^fa-solid-file-export:
+  tag: i
+  params:
+    class: fa-solid fa-file-export
+^fa-solid-file-fragment:
+  tag: i
+  params:
+    class: fa-solid fa-file-fragment
+^fa-solid-file-half-dashed:
+  tag: i
+  params:
+    class: fa-solid fa-file-half-dashed
+^fa-solid-file-image:
+  tag: i
+  params:
+    class: fa-solid fa-file-image
+^fa-solid-file-import:
+  tag: i
+  params:
+    class: fa-solid fa-file-import
+^fa-solid-file-invoice:
+  tag: i
+  params:
+    class: fa-solid fa-file-invoice
+^fa-solid-file-invoice-dollar:
+  tag: i
+  params:
+    class: fa-solid fa-file-invoice-dollar
+^fa-solid-file-lines:
+  tag: i
+  params:
+    class: fa-solid fa-file-lines
+^fa-solid-file-medical:
+  tag: i
+  params:
+    class: fa-solid fa-file-medical
+^fa-solid-file-pdf:
+  tag: i
+  params:
+    class: fa-solid fa-file-pdf
+^fa-solid-file-pen:
+  tag: i
+  params:
+    class: fa-solid fa-file-pen
+^fa-solid-file-powerpoint:
+  tag: i
+  params:
+    class: fa-solid fa-file-powerpoint
+^fa-solid-file-prescription:
+  tag: i
+  params:
+    class: fa-solid fa-file-prescription
+^fa-solid-file-shield:
+  tag: i
+  params:
+    class: fa-solid fa-file-shield
+^fa-solid-file-signature:
+  tag: i
+  params:
+    class: fa-solid fa-file-signature
+^fa-solid-file-video:
+  tag: i
+  params:
+    class: fa-solid fa-file-video
+^fa-solid-file-waveform:
+  tag: i
+  params:
+    class: fa-solid fa-file-waveform
+^fa-solid-file-word:
+  tag: i
+  params:
+    class: fa-solid fa-file-word
+^fa-solid-file-zipper:
+  tag: i
+  params:
+    class: fa-solid fa-file-zipper
+^fa-solid-fill:
+  tag: i
+  params:
+    class: fa-solid fa-fill
+^fa-solid-fill-drip:
+  tag: i
+  params:
+    class: fa-solid fa-fill-drip
+^fa-solid-film:
+  tag: i
+  params:
+    class: fa-solid fa-film
+^fa-solid-filter:
+  tag: i
+  params:
+    class: fa-solid fa-filter
+^fa-solid-filter-circle-dollar:
+  tag: i
+  params:
+    class: fa-solid fa-filter-circle-dollar
+^fa-solid-filter-circle-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-filter-circle-xmark
+^fa-solid-fingerprint:
+  tag: i
+  params:
+    class: fa-solid fa-fingerprint
+^fa-solid-fire:
+  tag: i
+  params:
+    class: fa-solid fa-fire
+^fa-solid-fire-burner:
+  tag: i
+  params:
+    class: fa-solid fa-fire-burner
+^fa-solid-fire-extinguisher:
+  tag: i
+  params:
+    class: fa-solid fa-fire-extinguisher
+^fa-solid-fire-flame-curved:
+  tag: i
+  params:
+    class: fa-solid fa-fire-flame-curved
+^fa-solid-fire-flame-simple:
+  tag: i
+  params:
+    class: fa-solid fa-fire-flame-simple
+^fa-solid-fish:
+  tag: i
+  params:
+    class: fa-solid fa-fish
+^fa-solid-fish-fins:
+  tag: i
+  params:
+    class: fa-solid fa-fish-fins
+^fa-solid-flag:
+  tag: i
+  params:
+    class: fa-solid fa-flag
+^fa-solid-flag-checkered:
+  tag: i
+  params:
+    class: fa-solid fa-flag-checkered
+^fa-solid-flag-usa:
+  tag: i
+  params:
+    class: fa-solid fa-flag-usa
+^fa-solid-flask:
+  tag: i
+  params:
+    class: fa-solid fa-flask
+^fa-solid-flask-vial:
+  tag: i
+  params:
+    class: fa-solid fa-flask-vial
+^fa-solid-floppy-disk:
+  tag: i
+  params:
+    class: fa-solid fa-floppy-disk
+^fa-solid-florin-sign:
+  tag: i
+  params:
+    class: fa-solid fa-florin-sign
+^fa-solid-folder:
+  tag: i
+  params:
+    class: fa-solid fa-folder
+^fa-solid-folder-closed:
+  tag: i
+  params:
+    class: fa-solid fa-folder-closed
+^fa-solid-folder-minus:
+  tag: i
+  params:
+    class: fa-solid fa-folder-minus
+^fa-solid-folder-open:
+  tag: i
+  params:
+    class: fa-solid fa-folder-open
+^fa-solid-folder-plus:
+  tag: i
+  params:
+    class: fa-solid fa-folder-plus
+^fa-solid-folder-tree:
+  tag: i
+  params:
+    class: fa-solid fa-folder-tree
+^fa-solid-font:
+  tag: i
+  params:
+    class: fa-solid fa-font
+^fa-solid-font-awesome:
+  tag: i
+  params:
+    class: fa-solid fa-font-awesome
+^fa-solid-football:
+  tag: i
+  params:
+    class: fa-solid fa-football
+^fa-solid-forward:
+  tag: i
+  params:
+    class: fa-solid fa-forward
+^fa-solid-forward-fast:
+  tag: i
+  params:
+    class: fa-solid fa-forward-fast
+^fa-solid-forward-step:
+  tag: i
+  params:
+    class: fa-solid fa-forward-step
+^fa-solid-franc-sign:
+  tag: i
+  params:
+    class: fa-solid fa-franc-sign
+^fa-solid-frog:
+  tag: i
+  params:
+    class: fa-solid fa-frog
+^fa-solid-futbol:
+  tag: i
+  params:
+    class: fa-solid fa-futbol
+^fa-solid-g:
+  tag: i
+  params:
+    class: fa-solid fa-g
+^fa-solid-gamepad:
+  tag: i
+  params:
+    class: fa-solid fa-gamepad
+^fa-solid-gas-pump:
+  tag: i
+  params:
+    class: fa-solid fa-gas-pump
+^fa-solid-gauge:
+  tag: i
+  params:
+    class: fa-solid fa-gauge
+^fa-solid-gauge-high:
+  tag: i
+  params:
+    class: fa-solid fa-gauge-high
+^fa-solid-gauge-simple:
+  tag: i
+  params:
+    class: fa-solid fa-gauge-simple
+^fa-solid-gauge-simple-high:
+  tag: i
+  params:
+    class: fa-solid fa-gauge-simple-high
+^fa-solid-gavel:
+  tag: i
+  params:
+    class: fa-solid fa-gavel
+^fa-solid-gear:
+  tag: i
+  params:
+    class: fa-solid fa-gear
+^fa-solid-gears:
+  tag: i
+  params:
+    class: fa-solid fa-gears
+^fa-solid-gem:
+  tag: i
+  params:
+    class: fa-solid fa-gem
+^fa-solid-genderless:
+  tag: i
+  params:
+    class: fa-solid fa-genderless
+^fa-solid-ghost:
+  tag: i
+  params:
+    class: fa-solid fa-ghost
+^fa-solid-gift:
+  tag: i
+  params:
+    class: fa-solid fa-gift
+^fa-solid-gifts:
+  tag: i
+  params:
+    class: fa-solid fa-gifts
+^fa-solid-glass-water:
+  tag: i
+  params:
+    class: fa-solid fa-glass-water
+^fa-solid-glass-water-droplet:
+  tag: i
+  params:
+    class: fa-solid fa-glass-water-droplet
+^fa-solid-glasses:
+  tag: i
+  params:
+    class: fa-solid fa-glasses
+^fa-solid-globe:
+  tag: i
+  params:
+    class: fa-solid fa-globe
+^fa-solid-golf-ball-tee:
+  tag: i
+  params:
+    class: fa-solid fa-golf-ball-tee
+^fa-solid-gopuram:
+  tag: i
+  params:
+    class: fa-solid fa-gopuram
+^fa-solid-graduation-cap:
+  tag: i
+  params:
+    class: fa-solid fa-graduation-cap
+^fa-solid-greater-than:
+  tag: i
+  params:
+    class: fa-solid fa-greater-than
+^fa-solid-greater-than-equal:
+  tag: i
+  params:
+    class: fa-solid fa-greater-than-equal
+^fa-solid-grip:
+  tag: i
+  params:
+    class: fa-solid fa-grip
+^fa-solid-grip-lines:
+  tag: i
+  params:
+    class: fa-solid fa-grip-lines
+^fa-solid-grip-lines-vertical:
+  tag: i
+  params:
+    class: fa-solid fa-grip-lines-vertical
+^fa-solid-grip-vertical:
+  tag: i
+  params:
+    class: fa-solid fa-grip-vertical
+^fa-solid-group-arrows-rotate:
+  tag: i
+  params:
+    class: fa-solid fa-group-arrows-rotate
+^fa-solid-guarani-sign:
+  tag: i
+  params:
+    class: fa-solid fa-guarani-sign
+^fa-solid-guitar:
+  tag: i
+  params:
+    class: fa-solid fa-guitar
+^fa-solid-gun:
+  tag: i
+  params:
+    class: fa-solid fa-gun
+^fa-solid-h:
+  tag: i
+  params:
+    class: fa-solid fa-h
+^fa-solid-hammer:
+  tag: i
+  params:
+    class: fa-solid fa-hammer
+^fa-solid-hamsa:
+  tag: i
+  params:
+    class: fa-solid fa-hamsa
+^fa-solid-hand:
+  tag: i
+  params:
+    class: fa-solid fa-hand
+^fa-solid-hand-back-fist:
+  tag: i
+  params:
+    class: fa-solid fa-hand-back-fist
+^fa-solid-hand-dots:
+  tag: i
+  params:
+    class: fa-solid fa-hand-dots
+^fa-solid-hand-fist:
+  tag: i
+  params:
+    class: fa-solid fa-hand-fist
+^fa-solid-hand-holding:
+  tag: i
+  params:
+    class: fa-solid fa-hand-holding
+^fa-solid-hand-holding-dollar:
+  tag: i
+  params:
+    class: fa-solid fa-hand-holding-dollar
+^fa-solid-hand-holding-droplet:
+  tag: i
+  params:
+    class: fa-solid fa-hand-holding-droplet
+^fa-solid-hand-holding-hand:
+  tag: i
+  params:
+    class: fa-solid fa-hand-holding-hand
+^fa-solid-hand-holding-heart:
+  tag: i
+  params:
+    class: fa-solid fa-hand-holding-heart
+^fa-solid-hand-holding-medical:
+  tag: i
+  params:
+    class: fa-solid fa-hand-holding-medical
+^fa-solid-hand-lizard:
+  tag: i
+  params:
+    class: fa-solid fa-hand-lizard
+^fa-solid-hand-middle-finger:
+  tag: i
+  params:
+    class: fa-solid fa-hand-middle-finger
+^fa-solid-hand-peace:
+  tag: i
+  params:
+    class: fa-solid fa-hand-peace
+^fa-solid-hand-point-down:
+  tag: i
+  params:
+    class: fa-solid fa-hand-point-down
+^fa-solid-hand-point-left:
+  tag: i
+  params:
+    class: fa-solid fa-hand-point-left
+^fa-solid-hand-point-right:
+  tag: i
+  params:
+    class: fa-solid fa-hand-point-right
+^fa-solid-hand-point-up:
+  tag: i
+  params:
+    class: fa-solid fa-hand-point-up
+^fa-solid-hand-pointer:
+  tag: i
+  params:
+    class: fa-solid fa-hand-pointer
+^fa-solid-hand-scissors:
+  tag: i
+  params:
+    class: fa-solid fa-hand-scissors
+^fa-solid-hand-sparkles:
+  tag: i
+  params:
+    class: fa-solid fa-hand-sparkles
+^fa-solid-hand-spock:
+  tag: i
+  params:
+    class: fa-solid fa-hand-spock
+^fa-solid-handcuffs:
+  tag: i
+  params:
+    class: fa-solid fa-handcuffs
+^fa-solid-hands:
+  tag: i
+  params:
+    class: fa-solid fa-hands
+^fa-solid-hands-asl-interpreting:
+  tag: i
+  params:
+    class: fa-solid fa-hands-asl-interpreting
+^fa-solid-hands-bound:
+  tag: i
+  params:
+    class: fa-solid fa-hands-bound
+^fa-solid-hands-bubbles:
+  tag: i
+  params:
+    class: fa-solid fa-hands-bubbles
+^fa-solid-hands-clapping:
+  tag: i
+  params:
+    class: fa-solid fa-hands-clapping
+^fa-solid-hands-holding:
+  tag: i
+  params:
+    class: fa-solid fa-hands-holding
+^fa-solid-hands-holding-child:
+  tag: i
+  params:
+    class: fa-solid fa-hands-holding-child
+^fa-solid-hands-holding-circle:
+  tag: i
+  params:
+    class: fa-solid fa-hands-holding-circle
+^fa-solid-hands-praying:
+  tag: i
+  params:
+    class: fa-solid fa-hands-praying
+^fa-solid-handshake:
+  tag: i
+  params:
+    class: fa-solid fa-handshake
+^fa-solid-handshake-angle:
+  tag: i
+  params:
+    class: fa-solid fa-handshake-angle
+^fa-solid-handshake-slash:
+  tag: i
+  params:
+    class: fa-solid fa-handshake-slash
+^fa-solid-hanukiah:
+  tag: i
+  params:
+    class: fa-solid fa-hanukiah
+^fa-solid-hard-drive:
+  tag: i
+  params:
+    class: fa-solid fa-hard-drive
+^fa-solid-hashtag:
+  tag: i
+  params:
+    class: fa-solid fa-hashtag
+^fa-solid-hat-cowboy:
+  tag: i
+  params:
+    class: fa-solid fa-hat-cowboy
+^fa-solid-hat-cowboy-side:
+  tag: i
+  params:
+    class: fa-solid fa-hat-cowboy-side
+^fa-solid-hat-wizard:
+  tag: i
+  params:
+    class: fa-solid fa-hat-wizard
+^fa-solid-head-side-cough:
+  tag: i
+  params:
+    class: fa-solid fa-head-side-cough
+^fa-solid-head-side-cough-slash:
+  tag: i
+  params:
+    class: fa-solid fa-head-side-cough-slash
+^fa-solid-head-side-mask:
+  tag: i
+  params:
+    class: fa-solid fa-head-side-mask
+^fa-solid-head-side-virus:
+  tag: i
+  params:
+    class: fa-solid fa-head-side-virus
+^fa-solid-heading:
+  tag: i
+  params:
+    class: fa-solid fa-heading
+^fa-solid-headphones:
+  tag: i
+  params:
+    class: fa-solid fa-headphones
+^fa-solid-headset:
+  tag: i
+  params:
+    class: fa-solid fa-headset
+^fa-solid-heart:
+  tag: i
+  params:
+    class: fa-solid fa-heart
+^fa-solid-heart-circle-bolt:
+  tag: i
+  params:
+    class: fa-solid fa-heart-circle-bolt
+^fa-solid-heart-circle-check:
+  tag: i
+  params:
+    class: fa-solid fa-heart-circle-check
+^fa-solid-heart-circle-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-heart-circle-exclamation
+^fa-solid-heart-circle-minus:
+  tag: i
+  params:
+    class: fa-solid fa-heart-circle-minus
+^fa-solid-heart-circle-plus:
+  tag: i
+  params:
+    class: fa-solid fa-heart-circle-plus
+^fa-solid-heart-circle-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-heart-circle-xmark
+^fa-solid-heart-crack:
+  tag: i
+  params:
+    class: fa-solid fa-heart-crack
+^fa-solid-heart-pulse:
+  tag: i
+  params:
+    class: fa-solid fa-heart-pulse
+^fa-solid-helicopter:
+  tag: i
+  params:
+    class: fa-solid fa-helicopter
+^fa-solid-helicopter-symbol:
+  tag: i
+  params:
+    class: fa-solid fa-helicopter-symbol
+^fa-solid-helmet-safety:
+  tag: i
+  params:
+    class: fa-solid fa-helmet-safety
+^fa-solid-helmet-un:
+  tag: i
+  params:
+    class: fa-solid fa-helmet-un
+^fa-solid-hexagon:
+  tag: i
+  params:
+    class: fa-solid fa-hexagon
+^fa-solid-hexagon-nodes:
+  tag: i
+  params:
+    class: fa-solid fa-hexagon-nodes
+^fa-solid-hexagon-nodes-bolt:
+  tag: i
+  params:
+    class: fa-solid fa-hexagon-nodes-bolt
+^fa-solid-highlighter:
+  tag: i
+  params:
+    class: fa-solid fa-highlighter
+^fa-solid-hill-avalanche:
+  tag: i
+  params:
+    class: fa-solid fa-hill-avalanche
+^fa-solid-hill-rockslide:
+  tag: i
+  params:
+    class: fa-solid fa-hill-rockslide
+^fa-solid-hippo:
+  tag: i
+  params:
+    class: fa-solid fa-hippo
+^fa-solid-hockey-puck:
+  tag: i
+  params:
+    class: fa-solid fa-hockey-puck
+^fa-solid-holly-berry:
+  tag: i
+  params:
+    class: fa-solid fa-holly-berry
+^fa-solid-horse:
+  tag: i
+  params:
+    class: fa-solid fa-horse
+^fa-solid-horse-head:
+  tag: i
+  params:
+    class: fa-solid fa-horse-head
+^fa-solid-hospital:
+  tag: i
+  params:
+    class: fa-solid fa-hospital
+^fa-solid-hospital-user:
+  tag: i
+  params:
+    class: fa-solid fa-hospital-user
+^fa-solid-hot-tub-person:
+  tag: i
+  params:
+    class: fa-solid fa-hot-tub-person
+^fa-solid-hotdog:
+  tag: i
+  params:
+    class: fa-solid fa-hotdog
+^fa-solid-hotel:
+  tag: i
+  params:
+    class: fa-solid fa-hotel
+^fa-solid-hourglass:
+  tag: i
+  params:
+    class: fa-solid fa-hourglass
+^fa-solid-hourglass-end:
+  tag: i
+  params:
+    class: fa-solid fa-hourglass-end
+^fa-solid-hourglass-half:
+  tag: i
+  params:
+    class: fa-solid fa-hourglass-half
+^fa-solid-hourglass-start:
+  tag: i
+  params:
+    class: fa-solid fa-hourglass-start
+^fa-solid-house:
+  tag: i
+  params:
+    class: fa-solid fa-house
+^fa-solid-house-chimney:
+  tag: i
+  params:
+    class: fa-solid fa-house-chimney
+^fa-solid-house-chimney-crack:
+  tag: i
+  params:
+    class: fa-solid fa-house-chimney-crack
+^fa-solid-house-chimney-medical:
+  tag: i
+  params:
+    class: fa-solid fa-house-chimney-medical
+^fa-solid-house-chimney-user:
+  tag: i
+  params:
+    class: fa-solid fa-house-chimney-user
+^fa-solid-house-chimney-window:
+  tag: i
+  params:
+    class: fa-solid fa-house-chimney-window
+^fa-solid-house-circle-check:
+  tag: i
+  params:
+    class: fa-solid fa-house-circle-check
+^fa-solid-house-circle-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-house-circle-exclamation
+^fa-solid-house-circle-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-house-circle-xmark
+^fa-solid-house-crack:
+  tag: i
+  params:
+    class: fa-solid fa-house-crack
+^fa-solid-house-fire:
+  tag: i
+  params:
+    class: fa-solid fa-house-fire
+^fa-solid-house-flag:
+  tag: i
+  params:
+    class: fa-solid fa-house-flag
+^fa-solid-house-flood-water:
+  tag: i
+  params:
+    class: fa-solid fa-house-flood-water
+^fa-solid-house-flood-water-circle-arrow-right:
+  tag: i
+  params:
+    class: fa-solid fa-house-flood-water-circle-arrow-right
+^fa-solid-house-laptop:
+  tag: i
+  params:
+    class: fa-solid fa-house-laptop
+^fa-solid-house-lock:
+  tag: i
+  params:
+    class: fa-solid fa-house-lock
+^fa-solid-house-medical:
+  tag: i
+  params:
+    class: fa-solid fa-house-medical
+^fa-solid-house-medical-circle-check:
+  tag: i
+  params:
+    class: fa-solid fa-house-medical-circle-check
+^fa-solid-house-medical-circle-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-house-medical-circle-exclamation
+^fa-solid-house-medical-circle-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-house-medical-circle-xmark
+^fa-solid-house-medical-flag:
+  tag: i
+  params:
+    class: fa-solid fa-house-medical-flag
+^fa-solid-house-signal:
+  tag: i
+  params:
+    class: fa-solid fa-house-signal
+^fa-solid-house-tsunami:
+  tag: i
+  params:
+    class: fa-solid fa-house-tsunami
+^fa-solid-house-user:
+  tag: i
+  params:
+    class: fa-solid fa-house-user
+^fa-solid-hryvnia-sign:
+  tag: i
+  params:
+    class: fa-solid fa-hryvnia-sign
+^fa-solid-hurricane:
+  tag: i
+  params:
+    class: fa-solid fa-hurricane
+^fa-solid-i:
+  tag: i
+  params:
+    class: fa-solid fa-i
+^fa-solid-i-cursor:
+  tag: i
+  params:
+    class: fa-solid fa-i-cursor
+^fa-solid-ice-cream:
+  tag: i
+  params:
+    class: fa-solid fa-ice-cream
+^fa-solid-icicles:
+  tag: i
+  params:
+    class: fa-solid fa-icicles
+^fa-solid-icons:
+  tag: i
+  params:
+    class: fa-solid fa-icons
+^fa-solid-id-badge:
+  tag: i
+  params:
+    class: fa-solid fa-id-badge
+^fa-solid-id-card:
+  tag: i
+  params:
+    class: fa-solid fa-id-card
+^fa-solid-id-card-clip:
+  tag: i
+  params:
+    class: fa-solid fa-id-card-clip
+^fa-solid-igloo:
+  tag: i
+  params:
+    class: fa-solid fa-igloo
+^fa-solid-image:
+  tag: i
+  params:
+    class: fa-solid fa-image
+^fa-solid-image-portrait:
+  tag: i
+  params:
+    class: fa-solid fa-image-portrait
+^fa-solid-images:
+  tag: i
+  params:
+    class: fa-solid fa-images
+^fa-solid-inbox:
+  tag: i
+  params:
+    class: fa-solid fa-inbox
+^fa-solid-indent:
+  tag: i
+  params:
+    class: fa-solid fa-indent
+^fa-solid-indian-rupee-sign:
+  tag: i
+  params:
+    class: fa-solid fa-indian-rupee-sign
+^fa-solid-industry:
+  tag: i
+  params:
+    class: fa-solid fa-industry
+^fa-solid-infinity:
+  tag: i
+  params:
+    class: fa-solid fa-infinity
+^fa-solid-info:
+  tag: i
+  params:
+    class: fa-solid fa-info
+^fa-solid-italic:
+  tag: i
+  params:
+    class: fa-solid fa-italic
+^fa-solid-j:
+  tag: i
+  params:
+    class: fa-solid fa-j
+^fa-solid-jar:
+  tag: i
+  params:
+    class: fa-solid fa-jar
+^fa-solid-jar-wheat:
+  tag: i
+  params:
+    class: fa-solid fa-jar-wheat
+^fa-solid-jedi:
+  tag: i
+  params:
+    class: fa-solid fa-jedi
+^fa-solid-jet-fighter:
+  tag: i
+  params:
+    class: fa-solid fa-jet-fighter
+^fa-solid-jet-fighter-up:
+  tag: i
+  params:
+    class: fa-solid fa-jet-fighter-up
+^fa-solid-joint:
+  tag: i
+  params:
+    class: fa-solid fa-joint
+^fa-solid-jug-detergent:
+  tag: i
+  params:
+    class: fa-solid fa-jug-detergent
+^fa-solid-k:
+  tag: i
+  params:
+    class: fa-solid fa-k
+^fa-solid-kaaba:
+  tag: i
+  params:
+    class: fa-solid fa-kaaba
+^fa-solid-key:
+  tag: i
+  params:
+    class: fa-solid fa-key
+^fa-solid-keyboard:
+  tag: i
+  params:
+    class: fa-solid fa-keyboard
+^fa-solid-khanda:
+  tag: i
+  params:
+    class: fa-solid fa-khanda
+^fa-solid-kip-sign:
+  tag: i
+  params:
+    class: fa-solid fa-kip-sign
+^fa-solid-kit-medical:
+  tag: i
+  params:
+    class: fa-solid fa-kit-medical
+^fa-solid-kitchen-set:
+  tag: i
+  params:
+    class: fa-solid fa-kitchen-set
+^fa-solid-kiwi-bird:
+  tag: i
+  params:
+    class: fa-solid fa-kiwi-bird
+^fa-solid-l:
+  tag: i
+  params:
+    class: fa-solid fa-l
+^fa-solid-land-mine-on:
+  tag: i
+  params:
+    class: fa-solid fa-land-mine-on
+^fa-solid-landmark:
+  tag: i
+  params:
+    class: fa-solid fa-landmark
+^fa-solid-landmark-dome:
+  tag: i
+  params:
+    class: fa-solid fa-landmark-dome
+^fa-solid-landmark-flag:
+  tag: i
+  params:
+    class: fa-solid fa-landmark-flag
+^fa-solid-language:
+  tag: i
+  params:
+    class: fa-solid fa-language
+^fa-solid-laptop:
+  tag: i
+  params:
+    class: fa-solid fa-laptop
+^fa-solid-laptop-code:
+  tag: i
+  params:
+    class: fa-solid fa-laptop-code
+^fa-solid-laptop-file:
+  tag: i
+  params:
+    class: fa-solid fa-laptop-file
+^fa-solid-laptop-medical:
+  tag: i
+  params:
+    class: fa-solid fa-laptop-medical
+^fa-solid-lari-sign:
+  tag: i
+  params:
+    class: fa-solid fa-lari-sign
+^fa-solid-layer-group:
+  tag: i
+  params:
+    class: fa-solid fa-layer-group
+^fa-solid-leaf:
+  tag: i
+  params:
+    class: fa-solid fa-leaf
+^fa-solid-left-long:
+  tag: i
+  params:
+    class: fa-solid fa-left-long
+^fa-solid-left-right:
+  tag: i
+  params:
+    class: fa-solid fa-left-right
+^fa-solid-lemon:
+  tag: i
+  params:
+    class: fa-solid fa-lemon
+^fa-solid-less-than:
+  tag: i
+  params:
+    class: fa-solid fa-less-than
+^fa-solid-less-than-equal:
+  tag: i
+  params:
+    class: fa-solid fa-less-than-equal
+^fa-solid-life-ring:
+  tag: i
+  params:
+    class: fa-solid fa-life-ring
+^fa-solid-lightbulb:
+  tag: i
+  params:
+    class: fa-solid fa-lightbulb
+^fa-solid-lines-leaning:
+  tag: i
+  params:
+    class: fa-solid fa-lines-leaning
+^fa-solid-link:
+  tag: i
+  params:
+    class: fa-solid fa-link
+^fa-solid-link-slash:
+  tag: i
+  params:
+    class: fa-solid fa-link-slash
+^fa-solid-lira-sign:
+  tag: i
+  params:
+    class: fa-solid fa-lira-sign
+^fa-solid-list:
+  tag: i
+  params:
+    class: fa-solid fa-list
+^fa-solid-list-check:
+  tag: i
+  params:
+    class: fa-solid fa-list-check
+^fa-solid-list-ol:
+  tag: i
+  params:
+    class: fa-solid fa-list-ol
+^fa-solid-list-ul:
+  tag: i
+  params:
+    class: fa-solid fa-list-ul
+^fa-solid-litecoin-sign:
+  tag: i
+  params:
+    class: fa-solid fa-litecoin-sign
+^fa-solid-location-arrow:
+  tag: i
+  params:
+    class: fa-solid fa-location-arrow
+^fa-solid-location-crosshairs:
+  tag: i
+  params:
+    class: fa-solid fa-location-crosshairs
+^fa-solid-location-dot:
+  tag: i
+  params:
+    class: fa-solid fa-location-dot
+^fa-solid-location-pin:
+  tag: i
+  params:
+    class: fa-solid fa-location-pin
+^fa-solid-location-pin-lock:
+  tag: i
+  params:
+    class: fa-solid fa-location-pin-lock
+^fa-solid-lock:
+  tag: i
+  params:
+    class: fa-solid fa-lock
+^fa-solid-lock-open:
+  tag: i
+  params:
+    class: fa-solid fa-lock-open
+^fa-solid-locust:
+  tag: i
+  params:
+    class: fa-solid fa-locust
+^fa-solid-lungs:
+  tag: i
+  params:
+    class: fa-solid fa-lungs
+^fa-solid-lungs-virus:
+  tag: i
+  params:
+    class: fa-solid fa-lungs-virus
+^fa-solid-m:
+  tag: i
+  params:
+    class: fa-solid fa-m
+^fa-solid-magnet:
+  tag: i
+  params:
+    class: fa-solid fa-magnet
+^fa-solid-magnifying-glass:
+  tag: i
+  params:
+    class: fa-solid fa-magnifying-glass
+^fa-solid-magnifying-glass-arrow-right:
+  tag: i
+  params:
+    class: fa-solid fa-magnifying-glass-arrow-right
+^fa-solid-magnifying-glass-chart:
+  tag: i
+  params:
+    class: fa-solid fa-magnifying-glass-chart
+^fa-solid-magnifying-glass-dollar:
+  tag: i
+  params:
+    class: fa-solid fa-magnifying-glass-dollar
+^fa-solid-magnifying-glass-location:
+  tag: i
+  params:
+    class: fa-solid fa-magnifying-glass-location
+^fa-solid-magnifying-glass-minus:
+  tag: i
+  params:
+    class: fa-solid fa-magnifying-glass-minus
+^fa-solid-magnifying-glass-plus:
+  tag: i
+  params:
+    class: fa-solid fa-magnifying-glass-plus
+^fa-solid-manat-sign:
+  tag: i
+  params:
+    class: fa-solid fa-manat-sign
+^fa-solid-map:
+  tag: i
+  params:
+    class: fa-solid fa-map
+^fa-solid-map-location:
+  tag: i
+  params:
+    class: fa-solid fa-map-location
+^fa-solid-map-location-dot:
+  tag: i
+  params:
+    class: fa-solid fa-map-location-dot
+^fa-solid-map-pin:
+  tag: i
+  params:
+    class: fa-solid fa-map-pin
+^fa-solid-marker:
+  tag: i
+  params:
+    class: fa-solid fa-marker
+^fa-solid-mars:
+  tag: i
+  params:
+    class: fa-solid fa-mars
+^fa-solid-mars-and-venus:
+  tag: i
+  params:
+    class: fa-solid fa-mars-and-venus
+^fa-solid-mars-and-venus-burst:
+  tag: i
+  params:
+    class: fa-solid fa-mars-and-venus-burst
+^fa-solid-mars-double:
+  tag: i
+  params:
+    class: fa-solid fa-mars-double
+^fa-solid-mars-stroke:
+  tag: i
+  params:
+    class: fa-solid fa-mars-stroke
+^fa-solid-mars-stroke-right:
+  tag: i
+  params:
+    class: fa-solid fa-mars-stroke-right
+^fa-solid-mars-stroke-up:
+  tag: i
+  params:
+    class: fa-solid fa-mars-stroke-up
+^fa-solid-martini-glass:
+  tag: i
+  params:
+    class: fa-solid fa-martini-glass
+^fa-solid-martini-glass-citrus:
+  tag: i
+  params:
+    class: fa-solid fa-martini-glass-citrus
+^fa-solid-martini-glass-empty:
+  tag: i
+  params:
+    class: fa-solid fa-martini-glass-empty
+^fa-solid-mask:
+  tag: i
+  params:
+    class: fa-solid fa-mask
+^fa-solid-mask-face:
+  tag: i
+  params:
+    class: fa-solid fa-mask-face
+^fa-solid-mask-ventilator:
+  tag: i
+  params:
+    class: fa-solid fa-mask-ventilator
+^fa-solid-masks-theater:
+  tag: i
+  params:
+    class: fa-solid fa-masks-theater
+^fa-solid-mattress-pillow:
+  tag: i
+  params:
+    class: fa-solid fa-mattress-pillow
+^fa-solid-maximize:
+  tag: i
+  params:
+    class: fa-solid fa-maximize
+^fa-solid-medal:
+  tag: i
+  params:
+    class: fa-solid fa-medal
+^fa-solid-memory:
+  tag: i
+  params:
+    class: fa-solid fa-memory
+^fa-solid-menorah:
+  tag: i
+  params:
+    class: fa-solid fa-menorah
+^fa-solid-mercury:
+  tag: i
+  params:
+    class: fa-solid fa-mercury
+^fa-solid-message:
+  tag: i
+  params:
+    class: fa-solid fa-message
+^fa-solid-meteor:
+  tag: i
+  params:
+    class: fa-solid fa-meteor
+^fa-solid-microchip:
+  tag: i
+  params:
+    class: fa-solid fa-microchip
+^fa-solid-microphone:
+  tag: i
+  params:
+    class: fa-solid fa-microphone
+^fa-solid-microphone-lines:
+  tag: i
+  params:
+    class: fa-solid fa-microphone-lines
+^fa-solid-microphone-lines-slash:
+  tag: i
+  params:
+    class: fa-solid fa-microphone-lines-slash
+^fa-solid-microphone-slash:
+  tag: i
+  params:
+    class: fa-solid fa-microphone-slash
+^fa-solid-microscope:
+  tag: i
+  params:
+    class: fa-solid fa-microscope
+^fa-solid-mill-sign:
+  tag: i
+  params:
+    class: fa-solid fa-mill-sign
+^fa-solid-minimize:
+  tag: i
+  params:
+    class: fa-solid fa-minimize
+^fa-solid-minus:
+  tag: i
+  params:
+    class: fa-solid fa-minus
+^fa-solid-mitten:
+  tag: i
+  params:
+    class: fa-solid fa-mitten
+^fa-solid-mobile:
+  tag: i
+  params:
+    class: fa-solid fa-mobile
+^fa-solid-mobile-button:
+  tag: i
+  params:
+    class: fa-solid fa-mobile-button
+^fa-solid-mobile-retro:
+  tag: i
+  params:
+    class: fa-solid fa-mobile-retro
+^fa-solid-mobile-screen:
+  tag: i
+  params:
+    class: fa-solid fa-mobile-screen
+^fa-solid-mobile-screen-button:
+  tag: i
+  params:
+    class: fa-solid fa-mobile-screen-button
+^fa-solid-mobile-vibrate:
+  tag: i
+  params:
+    class: fa-solid fa-mobile-vibrate
+^fa-solid-money-bill:
+  tag: i
+  params:
+    class: fa-solid fa-money-bill
+^fa-solid-money-bill-1:
+  tag: i
+  params:
+    class: fa-solid fa-money-bill-1
+^fa-solid-money-bill-1-wave:
+  tag: i
+  params:
+    class: fa-solid fa-money-bill-1-wave
+^fa-solid-money-bill-transfer:
+  tag: i
+  params:
+    class: fa-solid fa-money-bill-transfer
+^fa-solid-money-bill-trend-up:
+  tag: i
+  params:
+    class: fa-solid fa-money-bill-trend-up
+^fa-solid-money-bill-wave:
+  tag: i
+  params:
+    class: fa-solid fa-money-bill-wave
+^fa-solid-money-bill-wheat:
+  tag: i
+  params:
+    class: fa-solid fa-money-bill-wheat
+^fa-solid-money-bills:
+  tag: i
+  params:
+    class: fa-solid fa-money-bills
+^fa-solid-money-check:
+  tag: i
+  params:
+    class: fa-solid fa-money-check
+^fa-solid-money-check-dollar:
+  tag: i
+  params:
+    class: fa-solid fa-money-check-dollar
+^fa-solid-monument:
+  tag: i
+  params:
+    class: fa-solid fa-monument
+^fa-solid-moon:
+  tag: i
+  params:
+    class: fa-solid fa-moon
+^fa-solid-mortar-pestle:
+  tag: i
+  params:
+    class: fa-solid fa-mortar-pestle
+^fa-solid-mosque:
+  tag: i
+  params:
+    class: fa-solid fa-mosque
+^fa-solid-mosquito:
+  tag: i
+  params:
+    class: fa-solid fa-mosquito
+^fa-solid-mosquito-net:
+  tag: i
+  params:
+    class: fa-solid fa-mosquito-net
+^fa-solid-motorcycle:
+  tag: i
+  params:
+    class: fa-solid fa-motorcycle
+^fa-solid-mound:
+  tag: i
+  params:
+    class: fa-solid fa-mound
+^fa-solid-mountain:
+  tag: i
+  params:
+    class: fa-solid fa-mountain
+^fa-solid-mountain-city:
+  tag: i
+  params:
+    class: fa-solid fa-mountain-city
+^fa-solid-mountain-sun:
+  tag: i
+  params:
+    class: fa-solid fa-mountain-sun
+^fa-solid-mug-hot:
+  tag: i
+  params:
+    class: fa-solid fa-mug-hot
+^fa-solid-mug-saucer:
+  tag: i
+  params:
+    class: fa-solid fa-mug-saucer
+^fa-solid-music:
+  tag: i
+  params:
+    class: fa-solid fa-music
+^fa-solid-n:
+  tag: i
+  params:
+    class: fa-solid fa-n
+^fa-solid-naira-sign:
+  tag: i
+  params:
+    class: fa-solid fa-naira-sign
+^fa-solid-network-wired:
+  tag: i
+  params:
+    class: fa-solid fa-network-wired
+^fa-solid-neuter:
+  tag: i
+  params:
+    class: fa-solid fa-neuter
+^fa-solid-newspaper:
+  tag: i
+  params:
+    class: fa-solid fa-newspaper
+^fa-solid-non-binary:
+  tag: i
+  params:
+    class: fa-solid fa-non-binary
+^fa-solid-not-equal:
+  tag: i
+  params:
+    class: fa-solid fa-not-equal
+^fa-solid-notdef:
+  tag: i
+  params:
+    class: fa-solid fa-notdef
+^fa-solid-note-sticky:
+  tag: i
+  params:
+    class: fa-solid fa-note-sticky
+^fa-solid-notes-medical:
+  tag: i
+  params:
+    class: fa-solid fa-notes-medical
+^fa-solid-o:
+  tag: i
+  params:
+    class: fa-solid fa-o
+^fa-solid-object-group:
+  tag: i
+  params:
+    class: fa-solid fa-object-group
+^fa-solid-object-ungroup:
+  tag: i
+  params:
+    class: fa-solid fa-object-ungroup
+^fa-solid-octagon:
+  tag: i
+  params:
+    class: fa-solid fa-octagon
+^fa-solid-oil-can:
+  tag: i
+  params:
+    class: fa-solid fa-oil-can
+^fa-solid-oil-well:
+  tag: i
+  params:
+    class: fa-solid fa-oil-well
+^fa-solid-om:
+  tag: i
+  params:
+    class: fa-solid fa-om
+^fa-solid-otter:
+  tag: i
+  params:
+    class: fa-solid fa-otter
+^fa-solid-outdent:
+  tag: i
+  params:
+    class: fa-solid fa-outdent
+^fa-solid-p:
+  tag: i
+  params:
+    class: fa-solid fa-p
+^fa-solid-pager:
+  tag: i
+  params:
+    class: fa-solid fa-pager
+^fa-solid-paint-roller:
+  tag: i
+  params:
+    class: fa-solid fa-paint-roller
+^fa-solid-paintbrush:
+  tag: i
+  params:
+    class: fa-solid fa-paintbrush
+^fa-solid-palette:
+  tag: i
+  params:
+    class: fa-solid fa-palette
+^fa-solid-pallet:
+  tag: i
+  params:
+    class: fa-solid fa-pallet
+^fa-solid-panorama:
+  tag: i
+  params:
+    class: fa-solid fa-panorama
+^fa-solid-paper-plane:
+  tag: i
+  params:
+    class: fa-solid fa-paper-plane
+^fa-solid-paperclip:
+  tag: i
+  params:
+    class: fa-solid fa-paperclip
+^fa-solid-parachute-box:
+  tag: i
+  params:
+    class: fa-solid fa-parachute-box
+^fa-solid-paragraph:
+  tag: i
+  params:
+    class: fa-solid fa-paragraph
+^fa-solid-passport:
+  tag: i
+  params:
+    class: fa-solid fa-passport
+^fa-solid-paste:
+  tag: i
+  params:
+    class: fa-solid fa-paste
+^fa-solid-pause:
+  tag: i
+  params:
+    class: fa-solid fa-pause
+^fa-solid-paw:
+  tag: i
+  params:
+    class: fa-solid fa-paw
+^fa-solid-peace:
+  tag: i
+  params:
+    class: fa-solid fa-peace
+^fa-solid-pen:
+  tag: i
+  params:
+    class: fa-solid fa-pen
+^fa-solid-pen-clip:
+  tag: i
+  params:
+    class: fa-solid fa-pen-clip
+^fa-solid-pen-fancy:
+  tag: i
+  params:
+    class: fa-solid fa-pen-fancy
+^fa-solid-pen-nib:
+  tag: i
+  params:
+    class: fa-solid fa-pen-nib
+^fa-solid-pen-ruler:
+  tag: i
+  params:
+    class: fa-solid fa-pen-ruler
+^fa-solid-pen-to-square:
+  tag: i
+  params:
+    class: fa-solid fa-pen-to-square
+^fa-solid-pencil:
+  tag: i
+  params:
+    class: fa-solid fa-pencil
+^fa-solid-pentagon:
+  tag: i
+  params:
+    class: fa-solid fa-pentagon
+^fa-solid-people-arrows:
+  tag: i
+  params:
+    class: fa-solid fa-people-arrows
+^fa-solid-people-carry-box:
+  tag: i
+  params:
+    class: fa-solid fa-people-carry-box
+^fa-solid-people-group:
+  tag: i
+  params:
+    class: fa-solid fa-people-group
+^fa-solid-people-line:
+  tag: i
+  params:
+    class: fa-solid fa-people-line
+^fa-solid-people-pulling:
+  tag: i
+  params:
+    class: fa-solid fa-people-pulling
+^fa-solid-people-robbery:
+  tag: i
+  params:
+    class: fa-solid fa-people-robbery
+^fa-solid-people-roof:
+  tag: i
+  params:
+    class: fa-solid fa-people-roof
+^fa-solid-pepper-hot:
+  tag: i
+  params:
+    class: fa-solid fa-pepper-hot
+^fa-solid-percent:
+  tag: i
+  params:
+    class: fa-solid fa-percent
+^fa-solid-person:
+  tag: i
+  params:
+    class: fa-solid fa-person
+^fa-solid-person-arrow-down-to-line:
+  tag: i
+  params:
+    class: fa-solid fa-person-arrow-down-to-line
+^fa-solid-person-arrow-up-from-line:
+  tag: i
+  params:
+    class: fa-solid fa-person-arrow-up-from-line
+^fa-solid-person-biking:
+  tag: i
+  params:
+    class: fa-solid fa-person-biking
+^fa-solid-person-booth:
+  tag: i
+  params:
+    class: fa-solid fa-person-booth
+^fa-solid-person-breastfeeding:
+  tag: i
+  params:
+    class: fa-solid fa-person-breastfeeding
+^fa-solid-person-burst:
+  tag: i
+  params:
+    class: fa-solid fa-person-burst
+^fa-solid-person-cane:
+  tag: i
+  params:
+    class: fa-solid fa-person-cane
+^fa-solid-person-chalkboard:
+  tag: i
+  params:
+    class: fa-solid fa-person-chalkboard
+^fa-solid-person-circle-check:
+  tag: i
+  params:
+    class: fa-solid fa-person-circle-check
+^fa-solid-person-circle-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-person-circle-exclamation
+^fa-solid-person-circle-minus:
+  tag: i
+  params:
+    class: fa-solid fa-person-circle-minus
+^fa-solid-person-circle-plus:
+  tag: i
+  params:
+    class: fa-solid fa-person-circle-plus
+^fa-solid-person-circle-question:
+  tag: i
+  params:
+    class: fa-solid fa-person-circle-question
+^fa-solid-person-circle-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-person-circle-xmark
+^fa-solid-person-digging:
+  tag: i
+  params:
+    class: fa-solid fa-person-digging
+^fa-solid-person-dots-from-line:
+  tag: i
+  params:
+    class: fa-solid fa-person-dots-from-line
+^fa-solid-person-dress:
+  tag: i
+  params:
+    class: fa-solid fa-person-dress
+^fa-solid-person-dress-burst:
+  tag: i
+  params:
+    class: fa-solid fa-person-dress-burst
+^fa-solid-person-drowning:
+  tag: i
+  params:
+    class: fa-solid fa-person-drowning
+^fa-solid-person-falling:
+  tag: i
+  params:
+    class: fa-solid fa-person-falling
+^fa-solid-person-falling-burst:
+  tag: i
+  params:
+    class: fa-solid fa-person-falling-burst
+^fa-solid-person-half-dress:
+  tag: i
+  params:
+    class: fa-solid fa-person-half-dress
+^fa-solid-person-harassing:
+  tag: i
+  params:
+    class: fa-solid fa-person-harassing
+^fa-solid-person-hiking:
+  tag: i
+  params:
+    class: fa-solid fa-person-hiking
+^fa-solid-person-military-pointing:
+  tag: i
+  params:
+    class: fa-solid fa-person-military-pointing
+^fa-solid-person-military-rifle:
+  tag: i
+  params:
+    class: fa-solid fa-person-military-rifle
+^fa-solid-person-military-to-person:
+  tag: i
+  params:
+    class: fa-solid fa-person-military-to-person
+^fa-solid-person-praying:
+  tag: i
+  params:
+    class: fa-solid fa-person-praying
+^fa-solid-person-pregnant:
+  tag: i
+  params:
+    class: fa-solid fa-person-pregnant
+^fa-solid-person-rays:
+  tag: i
+  params:
+    class: fa-solid fa-person-rays
+^fa-solid-person-rifle:
+  tag: i
+  params:
+    class: fa-solid fa-person-rifle
+^fa-solid-person-running:
+  tag: i
+  params:
+    class: fa-solid fa-person-running
+^fa-solid-person-shelter:
+  tag: i
+  params:
+    class: fa-solid fa-person-shelter
+^fa-solid-person-skating:
+  tag: i
+  params:
+    class: fa-solid fa-person-skating
+^fa-solid-person-skiing:
+  tag: i
+  params:
+    class: fa-solid fa-person-skiing
+^fa-solid-person-skiing-nordic:
+  tag: i
+  params:
+    class: fa-solid fa-person-skiing-nordic
+^fa-solid-person-snowboarding:
+  tag: i
+  params:
+    class: fa-solid fa-person-snowboarding
+^fa-solid-person-swimming:
+  tag: i
+  params:
+    class: fa-solid fa-person-swimming
+^fa-solid-person-through-window:
+  tag: i
+  params:
+    class: fa-solid fa-person-through-window
+^fa-solid-person-walking:
+  tag: i
+  params:
+    class: fa-solid fa-person-walking
+^fa-solid-person-walking-arrow-loop-left:
+  tag: i
+  params:
+    class: fa-solid fa-person-walking-arrow-loop-left
+^fa-solid-person-walking-arrow-right:
+  tag: i
+  params:
+    class: fa-solid fa-person-walking-arrow-right
+^fa-solid-person-walking-dashed-line-arrow-right:
+  tag: i
+  params:
+    class: fa-solid fa-person-walking-dashed-line-arrow-right
+^fa-solid-person-walking-luggage:
+  tag: i
+  params:
+    class: fa-solid fa-person-walking-luggage
+^fa-solid-person-walking-with-cane:
+  tag: i
+  params:
+    class: fa-solid fa-person-walking-with-cane
+^fa-solid-peseta-sign:
+  tag: i
+  params:
+    class: fa-solid fa-peseta-sign
+^fa-solid-peso-sign:
+  tag: i
+  params:
+    class: fa-solid fa-peso-sign
+^fa-solid-phone:
+  tag: i
+  params:
+    class: fa-solid fa-phone
+^fa-solid-phone-flip:
+  tag: i
+  params:
+    class: fa-solid fa-phone-flip
+^fa-solid-phone-slash:
+  tag: i
+  params:
+    class: fa-solid fa-phone-slash
+^fa-solid-phone-volume:
+  tag: i
+  params:
+    class: fa-solid fa-phone-volume
+^fa-solid-photo-film:
+  tag: i
+  params:
+    class: fa-solid fa-photo-film
+^fa-solid-piggy-bank:
+  tag: i
+  params:
+    class: fa-solid fa-piggy-bank
+^fa-solid-pills:
+  tag: i
+  params:
+    class: fa-solid fa-pills
+^fa-solid-pizza-slice:
+  tag: i
+  params:
+    class: fa-solid fa-pizza-slice
+^fa-solid-place-of-worship:
+  tag: i
+  params:
+    class: fa-solid fa-place-of-worship
+^fa-solid-plane:
+  tag: i
+  params:
+    class: fa-solid fa-plane
+^fa-solid-plane-arrival:
+  tag: i
+  params:
+    class: fa-solid fa-plane-arrival
+^fa-solid-plane-circle-check:
+  tag: i
+  params:
+    class: fa-solid fa-plane-circle-check
+^fa-solid-plane-circle-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-plane-circle-exclamation
+^fa-solid-plane-circle-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-plane-circle-xmark
+^fa-solid-plane-departure:
+  tag: i
+  params:
+    class: fa-solid fa-plane-departure
+^fa-solid-plane-lock:
+  tag: i
+  params:
+    class: fa-solid fa-plane-lock
+^fa-solid-plane-slash:
+  tag: i
+  params:
+    class: fa-solid fa-plane-slash
+^fa-solid-plane-up:
+  tag: i
+  params:
+    class: fa-solid fa-plane-up
+^fa-solid-plant-wilt:
+  tag: i
+  params:
+    class: fa-solid fa-plant-wilt
+^fa-solid-plate-wheat:
+  tag: i
+  params:
+    class: fa-solid fa-plate-wheat
+^fa-solid-play:
+  tag: i
+  params:
+    class: fa-solid fa-play
+^fa-solid-plug:
+  tag: i
+  params:
+    class: fa-solid fa-plug
+^fa-solid-plug-circle-bolt:
+  tag: i
+  params:
+    class: fa-solid fa-plug-circle-bolt
+^fa-solid-plug-circle-check:
+  tag: i
+  params:
+    class: fa-solid fa-plug-circle-check
+^fa-solid-plug-circle-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-plug-circle-exclamation
+^fa-solid-plug-circle-minus:
+  tag: i
+  params:
+    class: fa-solid fa-plug-circle-minus
+^fa-solid-plug-circle-plus:
+  tag: i
+  params:
+    class: fa-solid fa-plug-circle-plus
+^fa-solid-plug-circle-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-plug-circle-xmark
+^fa-solid-plus:
+  tag: i
+  params:
+    class: fa-solid fa-plus
+^fa-solid-plus-minus:
+  tag: i
+  params:
+    class: fa-solid fa-plus-minus
+^fa-solid-podcast:
+  tag: i
+  params:
+    class: fa-solid fa-podcast
+^fa-solid-poo:
+  tag: i
+  params:
+    class: fa-solid fa-poo
+^fa-solid-poo-storm:
+  tag: i
+  params:
+    class: fa-solid fa-poo-storm
+^fa-solid-poop:
+  tag: i
+  params:
+    class: fa-solid fa-poop
+^fa-solid-power-off:
+  tag: i
+  params:
+    class: fa-solid fa-power-off
+^fa-solid-prescription:
+  tag: i
+  params:
+    class: fa-solid fa-prescription
+^fa-solid-prescription-bottle:
+  tag: i
+  params:
+    class: fa-solid fa-prescription-bottle
+^fa-solid-prescription-bottle-medical:
+  tag: i
+  params:
+    class: fa-solid fa-prescription-bottle-medical
+^fa-solid-print:
+  tag: i
+  params:
+    class: fa-solid fa-print
+^fa-solid-pump-medical:
+  tag: i
+  params:
+    class: fa-solid fa-pump-medical
+^fa-solid-pump-soap:
+  tag: i
+  params:
+    class: fa-solid fa-pump-soap
+^fa-solid-puzzle-piece:
+  tag: i
+  params:
+    class: fa-solid fa-puzzle-piece
+^fa-solid-q:
+  tag: i
+  params:
+    class: fa-solid fa-q
+^fa-solid-qrcode:
+  tag: i
+  params:
+    class: fa-solid fa-qrcode
+^fa-solid-question:
+  tag: i
+  params:
+    class: fa-solid fa-question
+^fa-solid-quote-left:
+  tag: i
+  params:
+    class: fa-solid fa-quote-left
+^fa-solid-quote-right:
+  tag: i
+  params:
+    class: fa-solid fa-quote-right
+^fa-solid-r:
+  tag: i
+  params:
+    class: fa-solid fa-r
+^fa-solid-radiation:
+  tag: i
+  params:
+    class: fa-solid fa-radiation
+^fa-solid-radio:
+  tag: i
+  params:
+    class: fa-solid fa-radio
+^fa-solid-rainbow:
+  tag: i
+  params:
+    class: fa-solid fa-rainbow
+^fa-solid-ranking-star:
+  tag: i
+  params:
+    class: fa-solid fa-ranking-star
+^fa-solid-receipt:
+  tag: i
+  params:
+    class: fa-solid fa-receipt
+^fa-solid-record-vinyl:
+  tag: i
+  params:
+    class: fa-solid fa-record-vinyl
+^fa-solid-rectangle-ad:
+  tag: i
+  params:
+    class: fa-solid fa-rectangle-ad
+^fa-solid-rectangle-list:
+  tag: i
+  params:
+    class: fa-solid fa-rectangle-list
+^fa-solid-rectangle-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-rectangle-xmark
+^fa-solid-recycle:
+  tag: i
+  params:
+    class: fa-solid fa-recycle
+^fa-solid-registered:
+  tag: i
+  params:
+    class: fa-solid fa-registered
+^fa-solid-repeat:
+  tag: i
+  params:
+    class: fa-solid fa-repeat
+^fa-solid-reply:
+  tag: i
+  params:
+    class: fa-solid fa-reply
+^fa-solid-reply-all:
+  tag: i
+  params:
+    class: fa-solid fa-reply-all
+^fa-solid-republican:
+  tag: i
+  params:
+    class: fa-solid fa-republican
+^fa-solid-restroom:
+  tag: i
+  params:
+    class: fa-solid fa-restroom
+^fa-solid-retweet:
+  tag: i
+  params:
+    class: fa-solid fa-retweet
+^fa-solid-ribbon:
+  tag: i
+  params:
+    class: fa-solid fa-ribbon
+^fa-solid-right-from-bracket:
+  tag: i
+  params:
+    class: fa-solid fa-right-from-bracket
+^fa-solid-right-left:
+  tag: i
+  params:
+    class: fa-solid fa-right-left
+^fa-solid-right-long:
+  tag: i
+  params:
+    class: fa-solid fa-right-long
+^fa-solid-right-to-bracket:
+  tag: i
+  params:
+    class: fa-solid fa-right-to-bracket
+^fa-solid-ring:
+  tag: i
+  params:
+    class: fa-solid fa-ring
+^fa-solid-road:
+  tag: i
+  params:
+    class: fa-solid fa-road
+^fa-solid-road-barrier:
+  tag: i
+  params:
+    class: fa-solid fa-road-barrier
+^fa-solid-road-bridge:
+  tag: i
+  params:
+    class: fa-solid fa-road-bridge
+^fa-solid-road-circle-check:
+  tag: i
+  params:
+    class: fa-solid fa-road-circle-check
+^fa-solid-road-circle-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-road-circle-exclamation
+^fa-solid-road-circle-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-road-circle-xmark
+^fa-solid-road-lock:
+  tag: i
+  params:
+    class: fa-solid fa-road-lock
+^fa-solid-road-spikes:
+  tag: i
+  params:
+    class: fa-solid fa-road-spikes
+^fa-solid-robot:
+  tag: i
+  params:
+    class: fa-solid fa-robot
+^fa-solid-rocket:
+  tag: i
+  params:
+    class: fa-solid fa-rocket
+^fa-solid-rotate:
+  tag: i
+  params:
+    class: fa-solid fa-rotate
+^fa-solid-rotate-left:
+  tag: i
+  params:
+    class: fa-solid fa-rotate-left
+^fa-solid-rotate-right:
+  tag: i
+  params:
+    class: fa-solid fa-rotate-right
+^fa-solid-route:
+  tag: i
+  params:
+    class: fa-solid fa-route
+^fa-solid-rss:
+  tag: i
+  params:
+    class: fa-solid fa-rss
+^fa-solid-ruble-sign:
+  tag: i
+  params:
+    class: fa-solid fa-ruble-sign
+^fa-solid-rug:
+  tag: i
+  params:
+    class: fa-solid fa-rug
+^fa-solid-ruler:
+  tag: i
+  params:
+    class: fa-solid fa-ruler
+^fa-solid-ruler-combined:
+  tag: i
+  params:
+    class: fa-solid fa-ruler-combined
+^fa-solid-ruler-horizontal:
+  tag: i
+  params:
+    class: fa-solid fa-ruler-horizontal
+^fa-solid-ruler-vertical:
+  tag: i
+  params:
+    class: fa-solid fa-ruler-vertical
+^fa-solid-rupee-sign:
+  tag: i
+  params:
+    class: fa-solid fa-rupee-sign
+^fa-solid-rupiah-sign:
+  tag: i
+  params:
+    class: fa-solid fa-rupiah-sign
+^fa-solid-s:
+  tag: i
+  params:
+    class: fa-solid fa-s
+^fa-solid-sack-dollar:
+  tag: i
+  params:
+    class: fa-solid fa-sack-dollar
+^fa-solid-sack-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-sack-xmark
+^fa-solid-sailboat:
+  tag: i
+  params:
+    class: fa-solid fa-sailboat
+^fa-solid-satellite:
+  tag: i
+  params:
+    class: fa-solid fa-satellite
+^fa-solid-satellite-dish:
+  tag: i
+  params:
+    class: fa-solid fa-satellite-dish
+^fa-solid-scale-balanced:
+  tag: i
+  params:
+    class: fa-solid fa-scale-balanced
+^fa-solid-scale-unbalanced:
+  tag: i
+  params:
+    class: fa-solid fa-scale-unbalanced
+^fa-solid-scale-unbalanced-flip:
+  tag: i
+  params:
+    class: fa-solid fa-scale-unbalanced-flip
+^fa-solid-school:
+  tag: i
+  params:
+    class: fa-solid fa-school
+^fa-solid-school-circle-check:
+  tag: i
+  params:
+    class: fa-solid fa-school-circle-check
+^fa-solid-school-circle-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-school-circle-exclamation
+^fa-solid-school-circle-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-school-circle-xmark
+^fa-solid-school-flag:
+  tag: i
+  params:
+    class: fa-solid fa-school-flag
+^fa-solid-school-lock:
+  tag: i
+  params:
+    class: fa-solid fa-school-lock
+^fa-solid-scissors:
+  tag: i
+  params:
+    class: fa-solid fa-scissors
+^fa-solid-screwdriver:
+  tag: i
+  params:
+    class: fa-solid fa-screwdriver
+^fa-solid-screwdriver-wrench:
+  tag: i
+  params:
+    class: fa-solid fa-screwdriver-wrench
+^fa-solid-scroll:
+  tag: i
+  params:
+    class: fa-solid fa-scroll
+^fa-solid-scroll-torah:
+  tag: i
+  params:
+    class: fa-solid fa-scroll-torah
+^fa-solid-sd-card:
+  tag: i
+  params:
+    class: fa-solid fa-sd-card
+^fa-solid-section:
+  tag: i
+  params:
+    class: fa-solid fa-section
+^fa-solid-seedling:
+  tag: i
+  params:
+    class: fa-solid fa-seedling
+^fa-solid-septagon:
+  tag: i
+  params:
+    class: fa-solid fa-septagon
+^fa-solid-server:
+  tag: i
+  params:
+    class: fa-solid fa-server
+^fa-solid-shapes:
+  tag: i
+  params:
+    class: fa-solid fa-shapes
+^fa-solid-share:
+  tag: i
+  params:
+    class: fa-solid fa-share
+^fa-solid-share-from-square:
+  tag: i
+  params:
+    class: fa-solid fa-share-from-square
+^fa-solid-share-nodes:
+  tag: i
+  params:
+    class: fa-solid fa-share-nodes
+^fa-solid-sheet-plastic:
+  tag: i
+  params:
+    class: fa-solid fa-sheet-plastic
+^fa-solid-shekel-sign:
+  tag: i
+  params:
+    class: fa-solid fa-shekel-sign
+^fa-solid-shield:
+  tag: i
+  params:
+    class: fa-solid fa-shield
+^fa-solid-shield-cat:
+  tag: i
+  params:
+    class: fa-solid fa-shield-cat
+^fa-solid-shield-dog:
+  tag: i
+  params:
+    class: fa-solid fa-shield-dog
+^fa-solid-shield-halved:
+  tag: i
+  params:
+    class: fa-solid fa-shield-halved
+^fa-solid-shield-heart:
+  tag: i
+  params:
+    class: fa-solid fa-shield-heart
+^fa-solid-shield-virus:
+  tag: i
+  params:
+    class: fa-solid fa-shield-virus
+^fa-solid-ship:
+  tag: i
+  params:
+    class: fa-solid fa-ship
+^fa-solid-shirt:
+  tag: i
+  params:
+    class: fa-solid fa-shirt
+^fa-solid-shoe-prints:
+  tag: i
+  params:
+    class: fa-solid fa-shoe-prints
+^fa-solid-shop:
+  tag: i
+  params:
+    class: fa-solid fa-shop
+^fa-solid-shop-lock:
+  tag: i
+  params:
+    class: fa-solid fa-shop-lock
+^fa-solid-shop-slash:
+  tag: i
+  params:
+    class: fa-solid fa-shop-slash
+^fa-solid-shower:
+  tag: i
+  params:
+    class: fa-solid fa-shower
+^fa-solid-shrimp:
+  tag: i
+  params:
+    class: fa-solid fa-shrimp
+^fa-solid-shuffle:
+  tag: i
+  params:
+    class: fa-solid fa-shuffle
+^fa-solid-shuttle-space:
+  tag: i
+  params:
+    class: fa-solid fa-shuttle-space
+^fa-solid-sign-hanging:
+  tag: i
+  params:
+    class: fa-solid fa-sign-hanging
+^fa-solid-signal:
+  tag: i
+  params:
+    class: fa-solid fa-signal
+^fa-solid-signature:
+  tag: i
+  params:
+    class: fa-solid fa-signature
+^fa-solid-signs-post:
+  tag: i
+  params:
+    class: fa-solid fa-signs-post
+^fa-solid-sim-card:
+  tag: i
+  params:
+    class: fa-solid fa-sim-card
+^fa-solid-single-quote-left:
+  tag: i
+  params:
+    class: fa-solid fa-single-quote-left
+^fa-solid-single-quote-right:
+  tag: i
+  params:
+    class: fa-solid fa-single-quote-right
+^fa-solid-sink:
+  tag: i
+  params:
+    class: fa-solid fa-sink
+^fa-solid-sitemap:
+  tag: i
+  params:
+    class: fa-solid fa-sitemap
+^fa-solid-skull:
+  tag: i
+  params:
+    class: fa-solid fa-skull
+^fa-solid-skull-crossbones:
+  tag: i
+  params:
+    class: fa-solid fa-skull-crossbones
+^fa-solid-slash:
+  tag: i
+  params:
+    class: fa-solid fa-slash
+^fa-solid-sleigh:
+  tag: i
+  params:
+    class: fa-solid fa-sleigh
+^fa-solid-sliders:
+  tag: i
+  params:
+    class: fa-solid fa-sliders
+^fa-solid-smog:
+  tag: i
+  params:
+    class: fa-solid fa-smog
+^fa-solid-smoking:
+  tag: i
+  params:
+    class: fa-solid fa-smoking
+^fa-solid-snowflake:
+  tag: i
+  params:
+    class: fa-solid fa-snowflake
+^fa-solid-snowman:
+  tag: i
+  params:
+    class: fa-solid fa-snowman
+^fa-solid-snowplow:
+  tag: i
+  params:
+    class: fa-solid fa-snowplow
+^fa-solid-soap:
+  tag: i
+  params:
+    class: fa-solid fa-soap
+^fa-solid-socks:
+  tag: i
+  params:
+    class: fa-solid fa-socks
+^fa-solid-solar-panel:
+  tag: i
+  params:
+    class: fa-solid fa-solar-panel
+^fa-solid-sort:
+  tag: i
+  params:
+    class: fa-solid fa-sort
+^fa-solid-sort-down:
+  tag: i
+  params:
+    class: fa-solid fa-sort-down
+^fa-solid-sort-up:
+  tag: i
+  params:
+    class: fa-solid fa-sort-up
+^fa-solid-spa:
+  tag: i
+  params:
+    class: fa-solid fa-spa
+^fa-solid-spaghetti-monster-flying:
+  tag: i
+  params:
+    class: fa-solid fa-spaghetti-monster-flying
+^fa-solid-spell-check:
+  tag: i
+  params:
+    class: fa-solid fa-spell-check
+^fa-solid-spider:
+  tag: i
+  params:
+    class: fa-solid fa-spider
+^fa-solid-spinner:
+  tag: i
+  params:
+    class: fa-solid fa-spinner
+^fa-solid-spiral:
+  tag: i
+  params:
+    class: fa-solid fa-spiral
+^fa-solid-splotch:
+  tag: i
+  params:
+    class: fa-solid fa-splotch
+^fa-solid-spoon:
+  tag: i
+  params:
+    class: fa-solid fa-spoon
+^fa-solid-spray-can:
+  tag: i
+  params:
+    class: fa-solid fa-spray-can
+^fa-solid-spray-can-sparkles:
+  tag: i
+  params:
+    class: fa-solid fa-spray-can-sparkles
+^fa-solid-square:
+  tag: i
+  params:
+    class: fa-solid fa-square
+^fa-solid-square-arrow-up-right:
+  tag: i
+  params:
+    class: fa-solid fa-square-arrow-up-right
+^fa-solid-square-binary:
+  tag: i
+  params:
+    class: fa-solid fa-square-binary
+^fa-solid-square-caret-down:
+  tag: i
+  params:
+    class: fa-solid fa-square-caret-down
+^fa-solid-square-caret-left:
+  tag: i
+  params:
+    class: fa-solid fa-square-caret-left
+^fa-solid-square-caret-right:
+  tag: i
+  params:
+    class: fa-solid fa-square-caret-right
+^fa-solid-square-caret-up:
+  tag: i
+  params:
+    class: fa-solid fa-square-caret-up
+^fa-solid-square-check:
+  tag: i
+  params:
+    class: fa-solid fa-square-check
+^fa-solid-square-envelope:
+  tag: i
+  params:
+    class: fa-solid fa-square-envelope
+^fa-solid-square-full:
+  tag: i
+  params:
+    class: fa-solid fa-square-full
+^fa-solid-square-h:
+  tag: i
+  params:
+    class: fa-solid fa-square-h
+^fa-solid-square-minus:
+  tag: i
+  params:
+    class: fa-solid fa-square-minus
+^fa-solid-square-nfi:
+  tag: i
+  params:
+    class: fa-solid fa-square-nfi
+^fa-solid-square-parking:
+  tag: i
+  params:
+    class: fa-solid fa-square-parking
+^fa-solid-square-pen:
+  tag: i
+  params:
+    class: fa-solid fa-square-pen
+^fa-solid-square-person-confined:
+  tag: i
+  params:
+    class: fa-solid fa-square-person-confined
+^fa-solid-square-phone:
+  tag: i
+  params:
+    class: fa-solid fa-square-phone
+^fa-solid-square-phone-flip:
+  tag: i
+  params:
+    class: fa-solid fa-square-phone-flip
+^fa-solid-square-plus:
+  tag: i
+  params:
+    class: fa-solid fa-square-plus
+^fa-solid-square-poll-horizontal:
+  tag: i
+  params:
+    class: fa-solid fa-square-poll-horizontal
+^fa-solid-square-poll-vertical:
+  tag: i
+  params:
+    class: fa-solid fa-square-poll-vertical
+^fa-solid-square-root-variable:
+  tag: i
+  params:
+    class: fa-solid fa-square-root-variable
+^fa-solid-square-rss:
+  tag: i
+  params:
+    class: fa-solid fa-square-rss
+^fa-solid-square-share-nodes:
+  tag: i
+  params:
+    class: fa-solid fa-square-share-nodes
+^fa-solid-square-up-right:
+  tag: i
+  params:
+    class: fa-solid fa-square-up-right
+^fa-solid-square-virus:
+  tag: i
+  params:
+    class: fa-solid fa-square-virus
+^fa-solid-square-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-square-xmark
+^fa-solid-staff-snake:
+  tag: i
+  params:
+    class: fa-solid fa-staff-snake
+^fa-solid-stairs:
+  tag: i
+  params:
+    class: fa-solid fa-stairs
+^fa-solid-stamp:
+  tag: i
+  params:
+    class: fa-solid fa-stamp
+^fa-solid-stapler:
+  tag: i
+  params:
+    class: fa-solid fa-stapler
+^fa-solid-star:
+  tag: i
+  params:
+    class: fa-solid fa-star
+^fa-solid-star-and-crescent:
+  tag: i
+  params:
+    class: fa-solid fa-star-and-crescent
+^fa-solid-star-half:
+  tag: i
+  params:
+    class: fa-solid fa-star-half
+^fa-solid-star-half-stroke:
+  tag: i
+  params:
+    class: fa-solid fa-star-half-stroke
+^fa-solid-star-of-david:
+  tag: i
+  params:
+    class: fa-solid fa-star-of-david
+^fa-solid-star-of-life:
+  tag: i
+  params:
+    class: fa-solid fa-star-of-life
+^fa-solid-sterling-sign:
+  tag: i
+  params:
+    class: fa-solid fa-sterling-sign
+^fa-solid-stethoscope:
+  tag: i
+  params:
+    class: fa-solid fa-stethoscope
+^fa-solid-stop:
+  tag: i
+  params:
+    class: fa-solid fa-stop
+^fa-solid-stopwatch:
+  tag: i
+  params:
+    class: fa-solid fa-stopwatch
+^fa-solid-stopwatch-20:
+  tag: i
+  params:
+    class: fa-solid fa-stopwatch-20
+^fa-solid-store:
+  tag: i
+  params:
+    class: fa-solid fa-store
+^fa-solid-store-slash:
+  tag: i
+  params:
+    class: fa-solid fa-store-slash
+^fa-solid-street-view:
+  tag: i
+  params:
+    class: fa-solid fa-street-view
+^fa-solid-strikethrough:
+  tag: i
+  params:
+    class: fa-solid fa-strikethrough
+^fa-solid-stroopwafel:
+  tag: i
+  params:
+    class: fa-solid fa-stroopwafel
+^fa-solid-subscript:
+  tag: i
+  params:
+    class: fa-solid fa-subscript
+^fa-solid-suitcase:
+  tag: i
+  params:
+    class: fa-solid fa-suitcase
+^fa-solid-suitcase-medical:
+  tag: i
+  params:
+    class: fa-solid fa-suitcase-medical
+^fa-solid-suitcase-rolling:
+  tag: i
+  params:
+    class: fa-solid fa-suitcase-rolling
+^fa-solid-sun:
+  tag: i
+  params:
+    class: fa-solid fa-sun
+^fa-solid-sun-plant-wilt:
+  tag: i
+  params:
+    class: fa-solid fa-sun-plant-wilt
+^fa-solid-superscript:
+  tag: i
+  params:
+    class: fa-solid fa-superscript
+^fa-solid-swatchbook:
+  tag: i
+  params:
+    class: fa-solid fa-swatchbook
+^fa-solid-synagogue:
+  tag: i
+  params:
+    class: fa-solid fa-synagogue
+^fa-solid-syringe:
+  tag: i
+  params:
+    class: fa-solid fa-syringe
+^fa-solid-t:
+  tag: i
+  params:
+    class: fa-solid fa-t
+^fa-solid-table:
+  tag: i
+  params:
+    class: fa-solid fa-table
+^fa-solid-table-cells:
+  tag: i
+  params:
+    class: fa-solid fa-table-cells
+^fa-solid-table-cells-column-lock:
+  tag: i
+  params:
+    class: fa-solid fa-table-cells-column-lock
+^fa-solid-table-cells-large:
+  tag: i
+  params:
+    class: fa-solid fa-table-cells-large
+^fa-solid-table-cells-row-lock:
+  tag: i
+  params:
+    class: fa-solid fa-table-cells-row-lock
+^fa-solid-table-cells-row-unlock:
+  tag: i
+  params:
+    class: fa-solid fa-table-cells-row-unlock
+^fa-solid-table-columns:
+  tag: i
+  params:
+    class: fa-solid fa-table-columns
+^fa-solid-table-list:
+  tag: i
+  params:
+    class: fa-solid fa-table-list
+^fa-solid-table-tennis-paddle-ball:
+  tag: i
+  params:
+    class: fa-solid fa-table-tennis-paddle-ball
+^fa-solid-tablet:
+  tag: i
+  params:
+    class: fa-solid fa-tablet
+^fa-solid-tablet-button:
+  tag: i
+  params:
+    class: fa-solid fa-tablet-button
+^fa-solid-tablet-screen-button:
+  tag: i
+  params:
+    class: fa-solid fa-tablet-screen-button
+^fa-solid-tablets:
+  tag: i
+  params:
+    class: fa-solid fa-tablets
+^fa-solid-tachograph-digital:
+  tag: i
+  params:
+    class: fa-solid fa-tachograph-digital
+^fa-solid-tag:
+  tag: i
+  params:
+    class: fa-solid fa-tag
+^fa-solid-tags:
+  tag: i
+  params:
+    class: fa-solid fa-tags
+^fa-solid-tape:
+  tag: i
+  params:
+    class: fa-solid fa-tape
+^fa-solid-tarp:
+  tag: i
+  params:
+    class: fa-solid fa-tarp
+^fa-solid-tarp-droplet:
+  tag: i
+  params:
+    class: fa-solid fa-tarp-droplet
+^fa-solid-taxi:
+  tag: i
+  params:
+    class: fa-solid fa-taxi
+^fa-solid-teeth:
+  tag: i
+  params:
+    class: fa-solid fa-teeth
+^fa-solid-teeth-open:
+  tag: i
+  params:
+    class: fa-solid fa-teeth-open
+^fa-solid-temperature-arrow-down:
+  tag: i
+  params:
+    class: fa-solid fa-temperature-arrow-down
+^fa-solid-temperature-arrow-up:
+  tag: i
+  params:
+    class: fa-solid fa-temperature-arrow-up
+^fa-solid-temperature-empty:
+  tag: i
+  params:
+    class: fa-solid fa-temperature-empty
+^fa-solid-temperature-full:
+  tag: i
+  params:
+    class: fa-solid fa-temperature-full
+^fa-solid-temperature-half:
+  tag: i
+  params:
+    class: fa-solid fa-temperature-half
+^fa-solid-temperature-high:
+  tag: i
+  params:
+    class: fa-solid fa-temperature-high
+^fa-solid-temperature-low:
+  tag: i
+  params:
+    class: fa-solid fa-temperature-low
+^fa-solid-temperature-quarter:
+  tag: i
+  params:
+    class: fa-solid fa-temperature-quarter
+^fa-solid-temperature-three-quarters:
+  tag: i
+  params:
+    class: fa-solid fa-temperature-three-quarters
+^fa-solid-tenge-sign:
+  tag: i
+  params:
+    class: fa-solid fa-tenge-sign
+^fa-solid-tent:
+  tag: i
+  params:
+    class: fa-solid fa-tent
+^fa-solid-tent-arrow-down-to-line:
+  tag: i
+  params:
+    class: fa-solid fa-tent-arrow-down-to-line
+^fa-solid-tent-arrow-left-right:
+  tag: i
+  params:
+    class: fa-solid fa-tent-arrow-left-right
+^fa-solid-tent-arrow-turn-left:
+  tag: i
+  params:
+    class: fa-solid fa-tent-arrow-turn-left
+^fa-solid-tent-arrows-down:
+  tag: i
+  params:
+    class: fa-solid fa-tent-arrows-down
+^fa-solid-tents:
+  tag: i
+  params:
+    class: fa-solid fa-tents
+^fa-solid-terminal:
+  tag: i
+  params:
+    class: fa-solid fa-terminal
+^fa-solid-text-height:
+  tag: i
+  params:
+    class: fa-solid fa-text-height
+^fa-solid-text-slash:
+  tag: i
+  params:
+    class: fa-solid fa-text-slash
+^fa-solid-text-width:
+  tag: i
+  params:
+    class: fa-solid fa-text-width
+^fa-solid-thermometer:
+  tag: i
+  params:
+    class: fa-solid fa-thermometer
+^fa-solid-thumbs-down:
+  tag: i
+  params:
+    class: fa-solid fa-thumbs-down
+^fa-solid-thumbs-up:
+  tag: i
+  params:
+    class: fa-solid fa-thumbs-up
+^fa-solid-thumbtack:
+  tag: i
+  params:
+    class: fa-solid fa-thumbtack
+^fa-solid-thumbtack-slash:
+  tag: i
+  params:
+    class: fa-solid fa-thumbtack-slash
+^fa-solid-ticket:
+  tag: i
+  params:
+    class: fa-solid fa-ticket
+^fa-solid-ticket-simple:
+  tag: i
+  params:
+    class: fa-solid fa-ticket-simple
+^fa-solid-timeline:
+  tag: i
+  params:
+    class: fa-solid fa-timeline
+^fa-solid-toggle-off:
+  tag: i
+  params:
+    class: fa-solid fa-toggle-off
+^fa-solid-toggle-on:
+  tag: i
+  params:
+    class: fa-solid fa-toggle-on
+^fa-solid-toilet:
+  tag: i
+  params:
+    class: fa-solid fa-toilet
+^fa-solid-toilet-paper:
+  tag: i
+  params:
+    class: fa-solid fa-toilet-paper
+^fa-solid-toilet-paper-slash:
+  tag: i
+  params:
+    class: fa-solid fa-toilet-paper-slash
+^fa-solid-toilet-portable:
+  tag: i
+  params:
+    class: fa-solid fa-toilet-portable
+^fa-solid-toilets-portable:
+  tag: i
+  params:
+    class: fa-solid fa-toilets-portable
+^fa-solid-toolbox:
+  tag: i
+  params:
+    class: fa-solid fa-toolbox
+^fa-solid-tooth:
+  tag: i
+  params:
+    class: fa-solid fa-tooth
+^fa-solid-torii-gate:
+  tag: i
+  params:
+    class: fa-solid fa-torii-gate
+^fa-solid-tornado:
+  tag: i
+  params:
+    class: fa-solid fa-tornado
+^fa-solid-tower-broadcast:
+  tag: i
+  params:
+    class: fa-solid fa-tower-broadcast
+^fa-solid-tower-cell:
+  tag: i
+  params:
+    class: fa-solid fa-tower-cell
+^fa-solid-tower-observation:
+  tag: i
+  params:
+    class: fa-solid fa-tower-observation
+^fa-solid-tractor:
+  tag: i
+  params:
+    class: fa-solid fa-tractor
+^fa-solid-trademark:
+  tag: i
+  params:
+    class: fa-solid fa-trademark
+^fa-solid-traffic-light:
+  tag: i
+  params:
+    class: fa-solid fa-traffic-light
+^fa-solid-trailer:
+  tag: i
+  params:
+    class: fa-solid fa-trailer
+^fa-solid-train:
+  tag: i
+  params:
+    class: fa-solid fa-train
+^fa-solid-train-subway:
+  tag: i
+  params:
+    class: fa-solid fa-train-subway
+^fa-solid-train-tram:
+  tag: i
+  params:
+    class: fa-solid fa-train-tram
+^fa-solid-transgender:
+  tag: i
+  params:
+    class: fa-solid fa-transgender
+^fa-solid-trash:
+  tag: i
+  params:
+    class: fa-solid fa-trash
+^fa-solid-trash-arrow-up:
+  tag: i
+  params:
+    class: fa-solid fa-trash-arrow-up
+^fa-solid-trash-can:
+  tag: i
+  params:
+    class: fa-solid fa-trash-can
+^fa-solid-trash-can-arrow-up:
+  tag: i
+  params:
+    class: fa-solid fa-trash-can-arrow-up
+^fa-solid-tree:
+  tag: i
+  params:
+    class: fa-solid fa-tree
+^fa-solid-tree-city:
+  tag: i
+  params:
+    class: fa-solid fa-tree-city
+^fa-solid-triangle-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-triangle-exclamation
+^fa-solid-trophy:
+  tag: i
+  params:
+    class: fa-solid fa-trophy
+^fa-solid-trowel:
+  tag: i
+  params:
+    class: fa-solid fa-trowel
+^fa-solid-trowel-bricks:
+  tag: i
+  params:
+    class: fa-solid fa-trowel-bricks
+^fa-solid-truck:
+  tag: i
+  params:
+    class: fa-solid fa-truck
+^fa-solid-truck-arrow-right:
+  tag: i
+  params:
+    class: fa-solid fa-truck-arrow-right
+^fa-solid-truck-droplet:
+  tag: i
+  params:
+    class: fa-solid fa-truck-droplet
+^fa-solid-truck-fast:
+  tag: i
+  params:
+    class: fa-solid fa-truck-fast
+^fa-solid-truck-field:
+  tag: i
+  params:
+    class: fa-solid fa-truck-field
+^fa-solid-truck-field-un:
+  tag: i
+  params:
+    class: fa-solid fa-truck-field-un
+^fa-solid-truck-front:
+  tag: i
+  params:
+    class: fa-solid fa-truck-front
+^fa-solid-truck-medical:
+  tag: i
+  params:
+    class: fa-solid fa-truck-medical
+^fa-solid-truck-monster:
+  tag: i
+  params:
+    class: fa-solid fa-truck-monster
+^fa-solid-truck-moving:
+  tag: i
+  params:
+    class: fa-solid fa-truck-moving
+^fa-solid-truck-pickup:
+  tag: i
+  params:
+    class: fa-solid fa-truck-pickup
+^fa-solid-truck-plane:
+  tag: i
+  params:
+    class: fa-solid fa-truck-plane
+^fa-solid-truck-ramp-box:
+  tag: i
+  params:
+    class: fa-solid fa-truck-ramp-box
+^fa-solid-tty:
+  tag: i
+  params:
+    class: fa-solid fa-tty
+^fa-solid-turkish-lira-sign:
+  tag: i
+  params:
+    class: fa-solid fa-turkish-lira-sign
+^fa-solid-turn-down:
+  tag: i
+  params:
+    class: fa-solid fa-turn-down
+^fa-solid-turn-up:
+  tag: i
+  params:
+    class: fa-solid fa-turn-up
+^fa-solid-tv:
+  tag: i
+  params:
+    class: fa-solid fa-tv
+^fa-solid-u:
+  tag: i
+  params:
+    class: fa-solid fa-u
+^fa-solid-umbrella:
+  tag: i
+  params:
+    class: fa-solid fa-umbrella
+^fa-solid-umbrella-beach:
+  tag: i
+  params:
+    class: fa-solid fa-umbrella-beach
+^fa-solid-underline:
+  tag: i
+  params:
+    class: fa-solid fa-underline
+^fa-solid-universal-access:
+  tag: i
+  params:
+    class: fa-solid fa-universal-access
+^fa-solid-unlock:
+  tag: i
+  params:
+    class: fa-solid fa-unlock
+^fa-solid-unlock-keyhole:
+  tag: i
+  params:
+    class: fa-solid fa-unlock-keyhole
+^fa-solid-up-down:
+  tag: i
+  params:
+    class: fa-solid fa-up-down
+^fa-solid-up-down-left-right:
+  tag: i
+  params:
+    class: fa-solid fa-up-down-left-right
+^fa-solid-up-long:
+  tag: i
+  params:
+    class: fa-solid fa-up-long
+^fa-solid-up-right-and-down-left-from-center:
+  tag: i
+  params:
+    class: fa-solid fa-up-right-and-down-left-from-center
+^fa-solid-up-right-from-square:
+  tag: i
+  params:
+    class: fa-solid fa-up-right-from-square
+^fa-solid-upload:
+  tag: i
+  params:
+    class: fa-solid fa-upload
+^fa-solid-user:
+  tag: i
+  params:
+    class: fa-solid fa-user
+^fa-solid-user-astronaut:
+  tag: i
+  params:
+    class: fa-solid fa-user-astronaut
+^fa-solid-user-check:
+  tag: i
+  params:
+    class: fa-solid fa-user-check
+^fa-solid-user-clock:
+  tag: i
+  params:
+    class: fa-solid fa-user-clock
+^fa-solid-user-doctor:
+  tag: i
+  params:
+    class: fa-solid fa-user-doctor
+^fa-solid-user-gear:
+  tag: i
+  params:
+    class: fa-solid fa-user-gear
+^fa-solid-user-graduate:
+  tag: i
+  params:
+    class: fa-solid fa-user-graduate
+^fa-solid-user-group:
+  tag: i
+  params:
+    class: fa-solid fa-user-group
+^fa-solid-user-injured:
+  tag: i
+  params:
+    class: fa-solid fa-user-injured
+^fa-solid-user-lock:
+  tag: i
+  params:
+    class: fa-solid fa-user-lock
+^fa-solid-user-minus:
+  tag: i
+  params:
+    class: fa-solid fa-user-minus
+^fa-solid-user-ninja:
+  tag: i
+  params:
+    class: fa-solid fa-user-ninja
+^fa-solid-user-nurse:
+  tag: i
+  params:
+    class: fa-solid fa-user-nurse
+^fa-solid-user-pen:
+  tag: i
+  params:
+    class: fa-solid fa-user-pen
+^fa-solid-user-plus:
+  tag: i
+  params:
+    class: fa-solid fa-user-plus
+^fa-solid-user-secret:
+  tag: i
+  params:
+    class: fa-solid fa-user-secret
+^fa-solid-user-shield:
+  tag: i
+  params:
+    class: fa-solid fa-user-shield
+^fa-solid-user-slash:
+  tag: i
+  params:
+    class: fa-solid fa-user-slash
+^fa-solid-user-tag:
+  tag: i
+  params:
+    class: fa-solid fa-user-tag
+^fa-solid-user-tie:
+  tag: i
+  params:
+    class: fa-solid fa-user-tie
+^fa-solid-user-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-user-xmark
+^fa-solid-users:
+  tag: i
+  params:
+    class: fa-solid fa-users
+^fa-solid-users-between-lines:
+  tag: i
+  params:
+    class: fa-solid fa-users-between-lines
+^fa-solid-users-gear:
+  tag: i
+  params:
+    class: fa-solid fa-users-gear
+^fa-solid-users-line:
+  tag: i
+  params:
+    class: fa-solid fa-users-line
+^fa-solid-users-rays:
+  tag: i
+  params:
+    class: fa-solid fa-users-rays
+^fa-solid-users-rectangle:
+  tag: i
+  params:
+    class: fa-solid fa-users-rectangle
+^fa-solid-users-slash:
+  tag: i
+  params:
+    class: fa-solid fa-users-slash
+^fa-solid-users-viewfinder:
+  tag: i
+  params:
+    class: fa-solid fa-users-viewfinder
+^fa-solid-utensils:
+  tag: i
+  params:
+    class: fa-solid fa-utensils
+^fa-solid-v:
+  tag: i
+  params:
+    class: fa-solid fa-v
+^fa-solid-van-shuttle:
+  tag: i
+  params:
+    class: fa-solid fa-van-shuttle
+^fa-solid-vault:
+  tag: i
+  params:
+    class: fa-solid fa-vault
+^fa-solid-venus:
+  tag: i
+  params:
+    class: fa-solid fa-venus
+^fa-solid-venus-double:
+  tag: i
+  params:
+    class: fa-solid fa-venus-double
+^fa-solid-venus-mars:
+  tag: i
+  params:
+    class: fa-solid fa-venus-mars
+^fa-solid-vest:
+  tag: i
+  params:
+    class: fa-solid fa-vest
+^fa-solid-vest-patches:
+  tag: i
+  params:
+    class: fa-solid fa-vest-patches
+^fa-solid-vial:
+  tag: i
+  params:
+    class: fa-solid fa-vial
+^fa-solid-vial-circle-check:
+  tag: i
+  params:
+    class: fa-solid fa-vial-circle-check
+^fa-solid-vial-virus:
+  tag: i
+  params:
+    class: fa-solid fa-vial-virus
+^fa-solid-vials:
+  tag: i
+  params:
+    class: fa-solid fa-vials
+^fa-solid-video:
+  tag: i
+  params:
+    class: fa-solid fa-video
+^fa-solid-video-slash:
+  tag: i
+  params:
+    class: fa-solid fa-video-slash
+^fa-solid-vihara:
+  tag: i
+  params:
+    class: fa-solid fa-vihara
+^fa-solid-virus:
+  tag: i
+  params:
+    class: fa-solid fa-virus
+^fa-solid-virus-covid:
+  tag: i
+  params:
+    class: fa-solid fa-virus-covid
+^fa-solid-virus-covid-slash:
+  tag: i
+  params:
+    class: fa-solid fa-virus-covid-slash
+^fa-solid-virus-slash:
+  tag: i
+  params:
+    class: fa-solid fa-virus-slash
+^fa-solid-viruses:
+  tag: i
+  params:
+    class: fa-solid fa-viruses
+^fa-solid-voicemail:
+  tag: i
+  params:
+    class: fa-solid fa-voicemail
+^fa-solid-volcano:
+  tag: i
+  params:
+    class: fa-solid fa-volcano
+^fa-solid-volleyball:
+  tag: i
+  params:
+    class: fa-solid fa-volleyball
+^fa-solid-volume-high:
+  tag: i
+  params:
+    class: fa-solid fa-volume-high
+^fa-solid-volume-low:
+  tag: i
+  params:
+    class: fa-solid fa-volume-low
+^fa-solid-volume-off:
+  tag: i
+  params:
+    class: fa-solid fa-volume-off
+^fa-solid-volume-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-volume-xmark
+^fa-solid-vr-cardboard:
+  tag: i
+  params:
+    class: fa-solid fa-vr-cardboard
+^fa-solid-w:
+  tag: i
+  params:
+    class: fa-solid fa-w
+^fa-solid-walkie-talkie:
+  tag: i
+  params:
+    class: fa-solid fa-walkie-talkie
+^fa-solid-wallet:
+  tag: i
+  params:
+    class: fa-solid fa-wallet
+^fa-solid-wand-magic:
+  tag: i
+  params:
+    class: fa-solid fa-wand-magic
+^fa-solid-wand-magic-sparkles:
+  tag: i
+  params:
+    class: fa-solid fa-wand-magic-sparkles
+^fa-solid-wand-sparkles:
+  tag: i
+  params:
+    class: fa-solid fa-wand-sparkles
+^fa-solid-warehouse:
+  tag: i
+  params:
+    class: fa-solid fa-warehouse
+^fa-solid-water:
+  tag: i
+  params:
+    class: fa-solid fa-water
+^fa-solid-water-ladder:
+  tag: i
+  params:
+    class: fa-solid fa-water-ladder
+^fa-solid-wave-square:
+  tag: i
+  params:
+    class: fa-solid fa-wave-square
+^fa-solid-web-awesome:
+  tag: i
+  params:
+    class: fa-solid fa-web-awesome
+^fa-solid-weight-hanging:
+  tag: i
+  params:
+    class: fa-solid fa-weight-hanging
+^fa-solid-weight-scale:
+  tag: i
+  params:
+    class: fa-solid fa-weight-scale
+^fa-solid-wheat-awn:
+  tag: i
+  params:
+    class: fa-solid fa-wheat-awn
+^fa-solid-wheat-awn-circle-exclamation:
+  tag: i
+  params:
+    class: fa-solid fa-wheat-awn-circle-exclamation
+^fa-solid-wheelchair:
+  tag: i
+  params:
+    class: fa-solid fa-wheelchair
+^fa-solid-wheelchair-move:
+  tag: i
+  params:
+    class: fa-solid fa-wheelchair-move
+^fa-solid-whiskey-glass:
+  tag: i
+  params:
+    class: fa-solid fa-whiskey-glass
+^fa-solid-wifi:
+  tag: i
+  params:
+    class: fa-solid fa-wifi
+^fa-solid-wind:
+  tag: i
+  params:
+    class: fa-solid fa-wind
+^fa-solid-window-maximize:
+  tag: i
+  params:
+    class: fa-solid fa-window-maximize
+^fa-solid-window-minimize:
+  tag: i
+  params:
+    class: fa-solid fa-window-minimize
+^fa-solid-window-restore:
+  tag: i
+  params:
+    class: fa-solid fa-window-restore
+^fa-solid-wine-bottle:
+  tag: i
+  params:
+    class: fa-solid fa-wine-bottle
+^fa-solid-wine-glass:
+  tag: i
+  params:
+    class: fa-solid fa-wine-glass
+^fa-solid-wine-glass-empty:
+  tag: i
+  params:
+    class: fa-solid fa-wine-glass-empty
+^fa-solid-won-sign:
+  tag: i
+  params:
+    class: fa-solid fa-won-sign
+^fa-solid-worm:
+  tag: i
+  params:
+    class: fa-solid fa-worm
+^fa-solid-wrench:
+  tag: i
+  params:
+    class: fa-solid fa-wrench
+^fa-solid-x:
+  tag: i
+  params:
+    class: fa-solid fa-x
+^fa-solid-x-ray:
+  tag: i
+  params:
+    class: fa-solid fa-x-ray
+^fa-solid-xmark:
+  tag: i
+  params:
+    class: fa-solid fa-xmark
+^fa-solid-xmarks-lines:
+  tag: i
+  params:
+    class: fa-solid fa-xmarks-lines
+^fa-solid-y:
+  tag: i
+  params:
+    class: fa-solid fa-y
+^fa-solid-yen-sign:
+  tag: i
+  params:
+    class: fa-solid fa-yen-sign
+^fa-solid-yin-yang:
+  tag: i
+  params:
+    class: fa-solid fa-yin-yang
+^fa-solid-z:
+  tag: i
+  params:
+    class: fa-solid fa-z
