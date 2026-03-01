@@ -26,9 +26,13 @@ main:
   - p: "All free icons from FontAwesome 7.0.1, available as YAML shorthand definitions."
   - h2: "Usage"
   - p: "Reference any icon by its name in your YAML content:"
-  - pre: "main:\n  - fa-solid-location-dot"
-  - p: "This renders as:"
-  - raw: '<p><i class="fa-solid fa-location-dot fa-2x"></i></p>'
+  - pre: "p:\n  - This\n  - fa-solid-arrow-right\n  - that"
+  - h3: "This renders as:"
+  - p:
+    - ' This'
+    - fa-solid-arrow-right
+    - 'that '
+  - hr
   - raw: '<input type="text" id="icon-filter" class="form-control mb-4" placeholder="Filter icons by name...">'
   - icon-grid: generate
   - raw: |
