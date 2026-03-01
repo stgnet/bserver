@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 main:
   - h1: Form Test
   - raw: |
@@ -27,14 +26,12 @@ main:
     - form-post-self:
       - row:
         - colform:
-          - input:
+          - inputlabel:
              name: Phone
              type: text
              class: form-control
              id: Phone
-          - label:
-             for: Phone
-             text: Phone Number
+             label: Phone Number
   - php: |
       echo '<pre>';
       print_r($GLOBALS);
@@ -55,17 +52,10 @@ main:
   params:
     for: '$for'
   content: '$text'
-^input:
-  tag: input
-  params: '$*'
-=======
-# form generation definitions
-# ^input uses params: '$*' to pass all key/value pairs as tag attributes
-^input:
-    tag: input
+^inputlabel:
+  - tag: input
     params: '$*'
-^textarea:
-    tag: textarea
-    params: '$*'
-    contents: '$*'
->>>>>>> dd0aee1a0a3a1a13ef0cedea96411b195c2fb26e
+  - tag: label
+    params:
+      for: '$id'
+    content: '$label'
