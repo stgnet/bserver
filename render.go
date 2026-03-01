@@ -762,6 +762,18 @@ func (ctx *renderContext) renderName(sb *strings.Builder, name string, depth int
 		fmt.Fprintf(sb, "<!-- ^%s: tag=%q contents=%q -->\n", name, fd.Tag, fd.Contents)
 	}
 
+	// Array format definition: render each sub-definition in sequence
+	if fd != nil && fd.Sequence != nil {
+		if found {
+			ctx.resolving[name] = true
+			for _, subFd := range fd.Sequence {
+				ctx.renderInlineTag(sb, name, subFd.Tag, subFd, content, depth)
+			}
+			delete(ctx.resolving, name)
+		}
+		return
+	}
+
 	// Special case: style tag renders CSS from its content map
 	if tag == "style" && found {
 		css := renderStyleYAML(content, depth+1)
@@ -1011,6 +1023,15 @@ func (ctx *renderContext) renderContent(sb *strings.Builder, val interface{}, de
 func (ctx *renderContext) renderInlineTag(sb *strings.Builder, name, tag string, fd *formatDef, content interface{}, depth int) {
 	if ctx.debug {
 		fmt.Fprintf(sb, "<!-- inline tag %q -> <%s> -->\n", name, tag)
+	}
+
+	// Array format definition: render each sub-definition in sequence,
+	// each producing its own tag against the same content.
+	if fd != nil && fd.Sequence != nil {
+		for _, subFd := range fd.Sequence {
+			ctx.renderInlineTag(sb, name, subFd.Tag, subFd, content, depth)
+		}
+		return
 	}
 
 	// Script processing: execute content as script code (e.g., ^php: script: php)

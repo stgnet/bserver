@@ -1172,3 +1172,101 @@ func TestParamsWildcardInlineTag(t *testing.T) {
 		t.Errorf("Expected exactly 1 <input> tag, got %d. Params should be combined on one tag.\nOutput:\n%s", inputCount, output)
 	}
 }
+
+func TestArrayFormatDefinition(t *testing.T) {
+	// Test that an array format definition renders each element in sequence.
+	// ^inputlabel is defined as an array of two format defs:
+	//   - tag: input with params: '$*' (wildcard)
+	//   - tag: label with params: {for: '$id'} and content: '$label'
+	// When used with a map of field attributes, it should produce both tags.
+	tmpDir := t.TempDir()
+
+	os.WriteFile(filepath.Join(tmpDir, "html.yaml"), []byte("html:\n - body\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "body.yaml"), []byte("body:\n - main\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte(`main:
+  - inputlabel:
+      name: Phone
+      type: text
+      class: form-control
+      id: Phone
+      label: Phone Number
+
+^inputlabel:
+  - tag: input
+    params: '$*'
+  - tag: label
+    params:
+      for: '$id'
+    content: '$label'
+`), 0644)
+
+	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+
+	// Should produce an <input> tag with the field attributes
+	if !strings.Contains(output, "<input") {
+		t.Errorf("Missing <input> tag from array format definition.\nOutput:\n%s", output)
+	}
+	if !strings.Contains(output, `name="Phone"`) {
+		t.Errorf("Missing name attribute in input tag.\nOutput:\n%s", output)
+	}
+	if !strings.Contains(output, `type="text"`) {
+		t.Errorf("Missing type attribute in input tag.\nOutput:\n%s", output)
+	}
+	if !strings.Contains(output, `class="form-control"`) {
+		t.Errorf("Missing class attribute in input tag.\nOutput:\n%s", output)
+	}
+	if !strings.Contains(output, `id="Phone"`) {
+		t.Errorf("Missing id attribute in input tag.\nOutput:\n%s", output)
+	}
+
+	// Should produce a <label> tag with for= and text content
+	if !strings.Contains(output, "<label") {
+		t.Errorf("Missing <label> tag from array format definition.\nOutput:\n%s", output)
+	}
+	if !strings.Contains(output, `for="Phone"`) {
+		t.Errorf("Missing for attribute in label tag.\nOutput:\n%s", output)
+	}
+	if !strings.Contains(output, "Phone Number</label>") {
+		t.Errorf("Missing label text content.\nOutput:\n%s", output)
+	}
+}
+
+func TestArrayFormatDefinitionTopLevel(t *testing.T) {
+	// Test array format definitions used as top-level name references.
+	tmpDir := t.TempDir()
+
+	os.WriteFile(filepath.Join(tmpDir, "html.yaml"), []byte("html:\n - body\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "body.yaml"), []byte("body:\n - main\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte(`main:
+  - myfield
+
+myfield:
+  name: Email
+  type: email
+  id: Email
+  label: Email Address
+
+^myfield:
+  - tag: input
+    params: '$*'
+  - tag: label
+    params:
+      for: '$id'
+    content: '$label'
+`), 0644)
+
+	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+
+	if !strings.Contains(output, "<input") {
+		t.Errorf("Missing <input> tag from top-level array format.\nOutput:\n%s", output)
+	}
+	if !strings.Contains(output, `type="email"`) {
+		t.Errorf("Missing type attribute.\nOutput:\n%s", output)
+	}
+	if !strings.Contains(output, "<label") {
+		t.Errorf("Missing <label> tag from top-level array format.\nOutput:\n%s", output)
+	}
+	if !strings.Contains(output, "Email Address</label>") {
+		t.Errorf("Missing label text.\nOutput:\n%s", output)
+	}
+}

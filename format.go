@@ -18,10 +18,27 @@ type formatDef struct {
 	Code              string      // inline script code (per-record body)
 	File              string      // script file to load code from (relative to docRoot)
 	Markup            string      // markup language for content: "markdown"
+	Sequence          []*formatDef // array format: multiple tags rendered in sequence
 }
 
 // parseFormatDef parses a ^name value into a formatDef struct.
+// If the value is a YAML array, each element is parsed as a separate formatDef
+// and stored in the Sequence field. When rendered, each element produces its
+// own tag in order, all receiving the same content/variables.
 func parseFormatDef(v interface{}) *formatDef {
+	// Handle array of format defs: each element is rendered in sequence
+	if arr, ok := v.([]interface{}); ok {
+		var seq []*formatDef
+		for _, item := range arr {
+			if _, isMap := item.(*OrderedMap); isMap {
+				seq = append(seq, parseFormatDef(item))
+			}
+		}
+		if len(seq) == 0 {
+			return &formatDef{}
+		}
+		return &formatDef{Sequence: seq}
+	}
 	m, ok := v.(*OrderedMap)
 	if !ok {
 		return &formatDef{}
