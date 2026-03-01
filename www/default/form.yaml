@@ -1,0 +1,9 @@
+# form generation definitions
+# ^input uses params: '$*' to pass all key/value pairs as tag attributes
+^input:
+    tag: input
+    params: '$*'
+^textarea:
+    tag: textarea
+    params: '$*'
+    contents: '$*'

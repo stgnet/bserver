@@ -1036,6 +1036,12 @@ func (ctx *renderContext) renderInlineTag(sb *strings.Builder, name, tag string,
 		}
 	}
 
+	// ParamsWildcard: content entries become tag attributes directly (params: '$*')
+	if fd != nil && fd.ParamsWildcard {
+		ctx.renderIterated(sb, name, fd, content, depth)
+		return
+	}
+
 	// If the format has $var params and content is a map, use entries as var substitutions
 	if fd != nil && fd.Params != nil && hasVarSubstitution(fd) {
 		if _, ok := content.(*OrderedMap); ok {
