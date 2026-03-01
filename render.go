@@ -920,10 +920,8 @@ func (ctx *renderContext) renderName(sb *strings.Builder, name string, depth int
 		return
 	}
 
-	// Unresolved name (YAML errors already handled above)
-	fmt.Fprintf(sb, "%s<div style=\"border:2px dashed red;padding:8px;margin:4px;color:red;\">"+
-		"Undefined name: <strong>%s</strong></div>\n",
-		indent(depth), html.EscapeString(name))
+	// Unresolved name — just output the word as-is
+	fmt.Fprintf(sb, "%s%s\n", indent(depth), html.EscapeString(name))
 }
 
 // renderContent renders a yaml value as page content.
