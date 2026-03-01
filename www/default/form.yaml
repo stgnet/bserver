@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 main:
   - h1: Form Test
   - raw: |
@@ -57,3 +58,14 @@ main:
 ^input:
   tag: input
   params: '$*'
+=======
+# form generation definitions
+# ^input uses params: '$*' to pass all key/value pairs as tag attributes
+^input:
+    tag: input
+    params: '$*'
+^textarea:
+    tag: textarea
+    params: '$*'
+    contents: '$*'
+>>>>>>> dd0aee1a0a3a1a13ef0cedea96411b195c2fb26e
