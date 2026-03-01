@@ -1,0 +1,5 @@
+^formsubmit:
+  tag: button
+  params:
+    type: submit
+    class: btn btn-primary

@@ -1,0 +1,6 @@
+^formcol:
+  tag: div
+  params:
+    class: col form-floating mb-3 ps-0
+    style: 'min-width:300px'
+

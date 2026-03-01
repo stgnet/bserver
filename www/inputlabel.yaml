@@ -1,0 +1,9 @@
+^inputlabel:
+  - tag: input
+    params: '$*'
+  - tag: label
+    params:
+      class: 
+      for: '$id'
+    content: '$label'
+

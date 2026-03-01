@@ -1,61 +1,66 @@
 main:
-  - h1: Form Test
-  - raw: |
-      <p>Please enter your Email or Phone to access your service status</p>
-      <form method="post" action="/form">
-        <div class="row">
-          <div class="col form-floating mb-3" style="min-width:300px">
-            <input name="Email" type="email" class="form-control" id="Email">
-            <label for="Email">Email address</label>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col form-floating mb-3" style="min-width:300px">
-            <input name="Phone" type="text" class="form-control" id="Phone">
-            <label for="Phone">Phone Number</label>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col form-floating mb-3" style="min-width:300px">
-            <button type="submit" class="btn btn-primary">SEARCH</button>
-          </div>
-        </div>
-      </form>
   - card:
-    - p: Please enter your Email or Phone to access your service status
+    - h1: GET Form Test
+    - form-get-self:
+      - row:
+        - formcol:
+          - inputlabel:
+              name: search
+              type: text
+              class: form-control
+              id: searchid
+              label: Search
+      - row:
+        - formcol:
+          - formsubmit: SEARCH
+  - card:
+    - h1: POST Form Test
     - form-post-self:
       - row:
-        - colform:
+        - formcol:
           - inputlabel:
              name: Phone
              type: text
              class: form-control
              id: Phone
              label: Phone Number
+        - formcol:
+          - inputlabel:
+             name: Email
+             type: email
+             class: form-control
+             id: Email
+             label: Email address
+      - row:
+        - formcol:
+          - formsubmit:
+              SUBMIT
+
+  - h3: 'PHP Script Output:'
   - php: |
       echo '<pre>';
-      print_r($GLOBALS);
+      if (!empty($_POST)) {
+        echo '$_POST=';
+        var_dump($_POST);
+      }
+      else if (!empty($_GET)) {
+        echo '$_GET=';
+        var_dump($_GET);
+      }
+      else
+        echo 'No GET or POST data';
       echo '</pre>';
+
+^form-get-self:
+  tag: form
+  params:
+    class: m-2
+    method: get
+    action: /form
 
 ^form-post-self:
   tag: form
   params:
+    class: m-2
     method: post
     action: /form
-^colform:
-  tag: div
-  params:
-    class: col form-floating mb-3
-    style: 'min-width:300px'
-^label:
-  tag: label
-  params:
-    for: '$for'
-  content: '$text'
-^inputlabel:
-  - tag: input
-    params: '$*'
-  - tag: label
-    params:
-      for: '$id'
-    content: '$label'
