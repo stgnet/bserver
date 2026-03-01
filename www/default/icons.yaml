@@ -11,6 +11,7 @@ title: FontAwesome Icons
     transition: background-color 0.15s
   .icon-card:hover:
     background-color: '#e9ecef'
+    cursor: pointer
   .icon-card i:
     font-size: 2em
     display: block
@@ -41,6 +42,21 @@ main:
         document.querySelectorAll('.icon-section').forEach(function(sec) {
           var visible = sec.querySelectorAll('.col:not([style*="display: none"])').length;
           sec.style.display = visible ? '' : 'none';
+        });
+      });
+      document.querySelectorAll('.icon-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+          var name = this.getAttribute('data-name');
+          navigator.clipboard.writeText(name).then(function() {
+            var nameEl = card.querySelector('.icon-name');
+            var orig = nameEl.textContent;
+            nameEl.textContent = 'Copied!';
+            nameEl.style.color = '#198754';
+            setTimeout(function() {
+              nameEl.textContent = orig;
+              nameEl.style.color = '';
+            }, 1000);
+          });
         });
       });
       </script>
