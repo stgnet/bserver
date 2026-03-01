@@ -11,10 +11,17 @@ main:
       - Virtual hosting with automatic Let's Encrypt
       - Cascading name resolution across directories
   - h2: "How It Works"
-  - p: "Every page starts from html.yaml, which references head and body. The body references header, main, and footer. Your page defines main to set its content. Names are resolved by searching for matching YAML files, starting in the current directory and walking upward."
+  - p:
+    - "Every page starts from html.yaml, which references head and body. "
+    - "The body references header, main, and footer. "
+    - "Your page defines main to set its content. "
+    - "Names are resolved by searching for matching YAML files, starting in the current directory and walking upward."
   - h2: "Quick Example"
   - p: "A minimal page needs just an index.yaml file:"
-  - pre: "main:\n  - h1: \"Hello World\"\n  - p: \"Welcome to my site.\""
+  - pre: |
+     main:
+     - h1: "Hello World"
+     - p: "Welcome to my site."
   - p: "This produces a complete HTML page with doctype, head, body, navbar, and footer - all from a few lines of YAML."
   - h2: "Installation"
   - p: "Requires Go 1.24 or later. Clone the repository, build, and install as a service:"

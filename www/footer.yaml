@@ -1,20 +1,22 @@
 footer:
   hr:
   muted:
+    - php: |
+        $sf = $_SERVER['SCRIPT_FILENAME'] ?? '';
+        if ($sf && file_exists($sf)) {
+          $name = htmlspecialchars(basename($sf));
+          $contents = htmlspecialchars(file_get_contents($sf));
+          echo "<div id=\"source-viewer\" style=\"display:none\"><pre>$contents</pre></div>";
+          echo "<span class=\"float-end\"><a class=\"btn btn-primary\" href=\"#\"
+            onclick=\"var e=document.getElementById('source-viewer');e.style.display=e.style.display==='none'?'block':'none';return false;\">
+            View Source ($name)</a></span>";
+        }
     - p:
       - 'Powered by '
       - links:
           https://github.com/stgnet/bserver/: bserver
       - ' - YAML-driven web serving'
-      - php: |
-          $sf = $_SERVER['SCRIPT_FILENAME'] ?? '';
-          if ($sf && file_exists($sf)) {
-            $name = htmlspecialchars(basename($sf));
-            echo "<span class=\"float-end\"><a href=\"#\" onclick=\"var e=document.getElementById('source-viewer');e.style.display=e.style.display==='none'?'block':'none';return false;\">View Source ($name)</a></span>";
-          }
     - php: |
         $sf = $_SERVER['SCRIPT_FILENAME'] ?? '';
         if ($sf && file_exists($sf)) {
-          $contents = htmlspecialchars(file_get_contents($sf));
-          echo "<div id=\"source-viewer\" style=\"display:none\"><pre>$contents</pre></div>";
         }
