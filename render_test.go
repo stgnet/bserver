@@ -1142,3 +1142,28 @@ func BenchmarkRenderMarkdownPage(b *testing.B) {
 		renderMarkdownPage(docRoot, mdPath, false, 1, nil)
 	}
 }
+
+func TestParamsWildcardInlineTag(t *testing.T) {
+	// Test that params: '$*' works when the format is used as an inline tag
+	// (e.g., input: {type: text, name: user} inside a list).
+	// This verifies that ParamsWildcard formats are handled in renderInlineTag,
+	// not just in renderName/renderIterated.
+	tmpDir := t.TempDir()
+
+	os.WriteFile(filepath.Join(tmpDir, "html.yaml"), []byte("html:\n - body\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "body.yaml"), []byte("body:\n - main\n^input:\n  tag: input\n  params: '$*'\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  - input:\n      type: text\n      name: username\n      placeholder: Enter name\n"), 0644)
+
+	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+
+	// The <input> tag should have all three attributes from the content map
+	if !strings.Contains(output, `type="text"`) {
+		t.Errorf("Missing type attribute in input tag.\nOutput:\n%s", output)
+	}
+	if !strings.Contains(output, `name="username"`) {
+		t.Errorf("Missing name attribute in input tag.\nOutput:\n%s", output)
+	}
+	if !strings.Contains(output, `placeholder="Enter name"`) {
+		t.Errorf("Missing placeholder attribute in input tag.\nOutput:\n%s", output)
+	}
+}
