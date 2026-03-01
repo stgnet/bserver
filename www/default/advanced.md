@@ -252,15 +252,8 @@ The maximum nesting depth is 50 levels to prevent runaway recursion.
 ## Undefined Names
 
 If a name can't be resolved (no YAML file found, no definition loaded),
-bserver renders a visible error indicator:
-
-```html
-<div style="border:2px dashed red;padding:8px;margin:4px;color:red;">
-  Undefined name: <strong>myname</strong>
-</div>
-```
-
-This makes missing definitions immediately obvious during development.
+bserver outputs the word as plain text. This allows single words to be
+placed adjacent to icons or other content without generating errors.
 
 ## Debug Mode
 

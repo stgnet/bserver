@@ -61,9 +61,6 @@ func TestHomepageContent(t *testing.T) {
 	if !strings.Contains(output, `href="/formats"`) {
 		t.Error("Homepage missing link to Formats")
 	}
-	if strings.Contains(output, "Undefined name") {
-		t.Errorf("Homepage has undefined name errors.\nOutput:\n%s", output)
-	}
 }
 
 func TestFooterContent(t *testing.T) {
@@ -268,17 +265,6 @@ func TestMarkdownAdvanced(t *testing.T) {
 	}
 }
 
-func TestNoUndefinedNames(t *testing.T) {
-	base, _ := os.Getwd()
-	docRoot := filepath.Join(base, "www", "default")
-	indexPath := filepath.Join(docRoot, "index.yaml")
-	output, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
-
-	if strings.Contains(output, "Undefined name") {
-		t.Errorf("Homepage has undefined name errors.\nOutput:\n%s", output)
-	}
-}
-
 func TestIsNameRef(t *testing.T) {
 	// Valid name refs
 	for _, s := range []string{"html", "main", "navbarcon", "B-Haven", "h1", "col2"} {
@@ -332,9 +318,6 @@ func TestUlistWrappingLinks(t *testing.T) {
 
 	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
 
-	if strings.Contains(output, "Undefined name") {
-		t.Errorf("Unexpected 'Undefined name' error in output.\nOutput:\n%s", output)
-	}
 	if !strings.Contains(output, "<li>") {
 		t.Errorf("Missing <li> tags from ulist-wrapped links.\nOutput:\n%s", output)
 	}
@@ -524,10 +507,6 @@ func TestYAMLParseErrorPageFile(t *testing.T) {
 	}
 	if !strings.Contains(output, "index.yaml") {
 		t.Errorf("expected error to mention index.yaml, got: %s", output)
-	}
-	// Should NOT show generic "Undefined name: main" — YAML error is more informative
-	if strings.Contains(output, "Undefined name") {
-		t.Error("should show YAML error, not generic 'Undefined name'")
 	}
 }
 
