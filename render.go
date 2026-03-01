@@ -385,9 +385,11 @@ func (ctx *renderContext) yamlErrorForName(name string) (string, string) {
 func (ctx *renderContext) mergeDoc(doc *OrderedMap) {
 	doc.Range(func(k string, v interface{}) bool {
 		if strings.HasPrefix(k, "^") {
-			// Format definition: ^name
+			// Format definition: ^name — first one wins (page-level overrides inherited)
 			name := k[1:]
-			ctx.formats[name] = parseFormatDef(v)
+			if _, exists := ctx.formats[name]; !exists {
+				ctx.formats[name] = parseFormatDef(v)
+			}
 		} else if strings.HasPrefix(k, "$") {
 			// Data source definition: $name
 			name := k[1:]
