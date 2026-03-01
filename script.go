@@ -214,6 +214,11 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 	scriptFile := ""
 	if fd.File != "" {
 		scriptFile = filepath.Join(ctx.docRoot, fd.File)
+	} else if ctx.sourceFile != "" {
+		// For inline scripts, SCRIPT_FILENAME points to the page's
+		// primary source file (e.g., index.yaml, page.md) so embedded
+		// scripts can discover which file generated the current page.
+		scriptFile = ctx.sourceFile
 	}
 	cmd.Env = ctx.buildScriptEnv(scriptFile)
 	cmd.Stdin = bytes.NewReader(jsonData)

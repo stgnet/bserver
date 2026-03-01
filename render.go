@@ -88,6 +88,7 @@ type renderContext struct {
 	debug           bool                   // emit HTML comments tracing resolution
 	postBody        []byte                 // buffered POST body (read once, reused across scripts)
 	postBodyRead    bool                   // whether postBody has been read from httpRequest
+	sourceFile      string                 // primary source file for this page (e.g., index.yaml, page.md)
 }
 
 // renderYAMLPage is the entry point: given a request for a path within docRoot,
@@ -115,6 +116,7 @@ func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, r 
 		ctx.requestDir = reqPath
 	} else {
 		ctx.requestDir = filepath.Dir(reqPath)
+		ctx.sourceFile = reqPath
 		if strings.HasSuffix(strings.ToLower(reqPath), ".yaml") {
 			ctx.loadYAMLFile(reqPath)
 		}
@@ -270,6 +272,7 @@ func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int,
 		yamlErrors:      make(map[string]string),
 		resolving:       make(map[string]bool),
 		debug:           debug,
+		sourceFile:      mdPath,
 	}
 
 	// Read and convert markdown to HTML.
