@@ -12,6 +12,7 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"math/big"
 	"mime"
@@ -130,8 +131,11 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if strings.HasSuffix(strings.ToLower(fsPath), ".php") {
-		m.handlePHP(w, r, host, root, fsPath)
-		return
+		if st, err := os.Stat(fsPath); err == nil && !st.IsDir() {
+			m.handlePHP(w, r, host, root, fsPath)
+			return
+		}
+		// PHP file doesn't exist — fall through to 404
 	}
 
 	// YAML rendering: if the resolved path is a .yaml file, render it as HTML
@@ -243,7 +247,19 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 	if ct := r.Header.Get("Content-Type"); ct != "" {
 		env = append(env, "CONTENT_TYPE="+ct)
 	}
-	if r.ContentLength >= 0 {
+
+	// Buffer the request body so CONTENT_LENGTH is always accurate.
+	// r.Body may be a streaming reader and the header-based ContentLength
+	// may be -1 (unknown/chunked), which would prevent php-cgi from
+	// reading POST data.
+	var bodyBuf bytes.Buffer
+	if r.Body != nil {
+		io.Copy(&bodyBuf, r.Body)
+		r.Body.Close()
+	}
+	if bodyBuf.Len() > 0 {
+		env = append(env, fmt.Sprintf("CONTENT_LENGTH=%d", bodyBuf.Len()))
+	} else if r.ContentLength >= 0 {
 		env = append(env, fmt.Sprintf("CONTENT_LENGTH=%d", r.ContentLength))
 	}
 
@@ -258,7 +274,7 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 	cmd := exec.CommandContext(ctx, m.cfg.PHPCGI)
 	cmd.Dir = docroot
 	cmd.Env = env
-	cmd.Stdin = r.Body
+	cmd.Stdin = &bodyBuf
 
 	var stdoutBuf bytes.Buffer
 	cmd.Stdout = &stdoutBuf
@@ -329,8 +345,12 @@ func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docR
 	_, debug := r.URL.Query()["debug"]
 	key := cacheKey(docRoot, yamlPath)
 
-	// Try cache (skip for debug mode)
-	if !debug && m.cfg.Cache != nil {
+	// Skip cache for requests with query parameters or POST data, since
+	// scripts may produce different output based on $_GET/$_POST values.
+	dynamic := r.URL.RawQuery != "" || r.Method == http.MethodPost
+
+	// Try cache (skip for debug mode and dynamic requests)
+	if !debug && !dynamic && m.cfg.Cache != nil {
 		if cached, ok := m.cfg.Cache.Get(key); ok {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
@@ -342,12 +362,12 @@ func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docR
 
 	output, sourceFiles := renderYAMLPage(docRoot, yamlPath, debug, site.ParentLevels, r)
 
-	if !debug && m.cfg.Cache != nil {
+	if !debug && !dynamic && m.cfg.Cache != nil {
 		m.cfg.Cache.Put(key, output, sourceFiles)
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if !debug {
+	if !debug && !dynamic {
 		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
 	}
 	w.WriteHeader(http.StatusOK)
@@ -358,8 +378,11 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 	_, debug := r.URL.Query()["debug"]
 	key := cacheKey(docRoot, mdPath)
 
-	// Try cache (skip for debug mode)
-	if !debug && m.cfg.Cache != nil {
+	// Skip cache for requests with query parameters or POST data
+	dynamic := r.URL.RawQuery != "" || r.Method == http.MethodPost
+
+	// Try cache (skip for debug mode and dynamic requests)
+	if !debug && !dynamic && m.cfg.Cache != nil {
 		if cached, ok := m.cfg.Cache.Get(key); ok {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
@@ -371,12 +394,12 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 
 	output, sourceFiles := renderMarkdownPage(docRoot, mdPath, debug, site.ParentLevels, r)
 
-	if !debug && m.cfg.Cache != nil {
+	if !debug && !dynamic && m.cfg.Cache != nil {
 		m.cfg.Cache.Put(key, output, sourceFiles)
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if !debug {
+	if !debug && !dynamic {
 		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
 	}
 	w.WriteHeader(http.StatusOK)

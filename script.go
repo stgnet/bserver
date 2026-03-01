@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -89,7 +90,23 @@ func (ctx *renderContext) buildScriptEnv(scriptFile string) []string {
 	if ct := r.Header.Get("Content-Type"); ct != "" {
 		env = append(env, "CONTENT_TYPE="+ct)
 	}
-	if r.ContentLength >= 0 {
+
+	// Buffer the POST body once (r.Body can only be read once) and pass it
+	// via an environment variable so script wrappers can populate $_POST etc.
+	if !ctx.postBodyRead {
+		ctx.postBodyRead = true
+		if r.Body != nil {
+			body, err := io.ReadAll(r.Body)
+			if err == nil {
+				ctx.postBody = body
+			}
+			r.Body.Close()
+		}
+	}
+	if len(ctx.postBody) > 0 {
+		env = append(env, fmt.Sprintf("CONTENT_LENGTH=%d", len(ctx.postBody)))
+		env = append(env, "_POST_DATA="+string(ctx.postBody))
+	} else if r.ContentLength >= 0 {
 		env = append(env, fmt.Sprintf("CONTENT_LENGTH=%d", r.ContentLength))
 	}
 
@@ -316,8 +333,19 @@ func jsScriptWrapper(userCode string) string {
 
 // phpScriptWrapper wraps user code in a PHP loop over JSON records.
 // The user code has $record (an associative array) available for each iteration.
+// PHP CLI mode doesn't auto-populate $_GET/$_POST/$_SERVER from CGI env vars,
+// so we parse them manually from the environment.
 func phpScriptWrapper(userCode string) string {
 	var sb strings.Builder
+	// Populate $_SERVER from CGI environment variables
+	sb.WriteString("foreach (['REQUEST_METHOD','REQUEST_URI','QUERY_STRING','CONTENT_TYPE','CONTENT_LENGTH','DOCUMENT_ROOT','SCRIPT_FILENAME','SCRIPT_NAME','PHP_SELF','SERVER_NAME','SERVER_PORT','SERVER_PROTOCOL','SERVER_SOFTWARE','GATEWAY_INTERFACE','REMOTE_ADDR','HTTP_HOST','REDIRECT_STATUS','SERVER_ADDR','PATH_INFO'] as $_k) { $_v = getenv($_k); if ($_v !== false) $_SERVER[$_k] = $_v; }\n")
+	sb.WriteString("foreach ($_SERVER as $_k => $_v) { if (strpos($_k, 'HTTP_') === 0) $_SERVER[$_k] = $_v; }\n")
+	// Populate $_GET from QUERY_STRING
+	sb.WriteString("parse_str(getenv('QUERY_STRING') ?: '', $_GET);\n")
+	// Populate $_POST from _POST_DATA env var (body passed by bserver)
+	sb.WriteString("$_POST = []; $_postData = getenv('_POST_DATA'); if ($_postData !== false && getenv('REQUEST_METHOD') === 'POST') { $_ct = getenv('CONTENT_TYPE') ?: ''; if (stripos($_ct, 'application/x-www-form-urlencoded') !== false) { parse_str($_postData, $_POST); } elseif (stripos($_ct, 'application/json') !== false) { $_POST = json_decode($_postData, true) ?: []; } }\n")
+	// Populate $_REQUEST from merged GET+POST
+	sb.WriteString("$_REQUEST = array_merge($_GET, $_POST);\n")
 	sb.WriteString("$_data = json_decode(file_get_contents('php://stdin'), true);\n")
 	sb.WriteString("if (!is_array($_data)) $_data = [$_data];\n")
 	sb.WriteString("foreach ($_data as $record) {\n")

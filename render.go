@@ -86,6 +86,8 @@ type renderContext struct {
 	yamlErrors      map[string]string      // yaml files that failed to parse (path -> error message)
 	resolving       map[string]bool        // cycle detection
 	debug           bool                   // emit HTML comments tracing resolution
+	postBody        []byte                 // buffered POST body (read once, reused across scripts)
+	postBodyRead    bool                   // whether postBody has been read from httpRequest
 }
 
 // renderYAMLPage is the entry point: given a request for a path within docRoot,
