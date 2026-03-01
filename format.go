@@ -14,7 +14,7 @@ type formatDef struct {
 	Contents          string      // how to render inner content ("$*" = as-is, "" = iterate)
 	ContentWrap       interface{} // structured content wrapper (e.g., {card-body: '$*'})
 	ContentWrapPlural bool        // true when "contents:" (plural) was used: wrap each iterable individually
-	Script            string      // script language: "python", "javascript", "php"
+	Script            string      // script language: "python", "javascript", "php", "sh"
 	Code              string      // inline script code (per-record body)
 	File              string      // script file to load code from (relative to docRoot)
 	Markup            string      // markup language for content: "markdown"

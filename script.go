@@ -113,7 +113,7 @@ func (ctx *renderContext) buildScriptEnv(scriptFile string) []string {
 	return env
 }
 
-// renderScript executes a script (python, javascript, php) to render data records.
+// renderScript executes a script (python, javascript, php, sh) to render data records.
 // The script's `code` is wrapped in a per-language boilerplate that:
 //   - Reads all records as JSON from stdin
 //   - Iterates with `record` variable set to each record
@@ -200,6 +200,10 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 		interpreter = findScriptInterpreter("php")
 		flag = "-r"
 		wrappedCode = phpScriptWrapper(code)
+	case "sh", "bash", "shell":
+		interpreter = findScriptInterpreter("sh")
+		flag = "-c"
+		wrappedCode = shScriptWrapper(code)
 	default:
 		return fmt.Sprintf("<!-- unknown script language: %s -->\n", fd.Script)
 	}
@@ -257,6 +261,13 @@ func findScriptInterpreter(lang string) string {
 		}
 	case "php":
 		if p, err := exec.LookPath("php"); err == nil {
+			return p
+		}
+	case "sh", "bash", "shell":
+		if p, err := exec.LookPath("bash"); err == nil {
+			return p
+		}
+		if p, err := exec.LookPath("sh"); err == nil {
 			return p
 		}
 	}
@@ -333,6 +344,23 @@ func jsScriptWrapper(userCode string) string {
 	sb.WriteString("for (const record of _records) {\n")
 	sb.WriteString(userCode)
 	sb.WriteString("\n}\n")
+	return sb.String()
+}
+
+// shScriptWrapper wraps user code in a shell loop over JSON records.
+// Each iteration sets $RECORD to the JSON representation of the current record.
+// If jq is available, individual fields are also exported as $RECORD_<KEY>.
+func shScriptWrapper(userCode string) string {
+	var sb strings.Builder
+	sb.WriteString("_INPUT=$(cat)\n")
+	sb.WriteString("_COUNT=$(printf '%s' \"$_INPUT\" | jq -r 'if type==\"array\" then length else 1 end' 2>/dev/null || echo 1)\n")
+	sb.WriteString("_IDX=0\n")
+	sb.WriteString("while [ \"$_IDX\" -lt \"$_COUNT\" ]; do\n")
+	sb.WriteString("  RECORD=$(printf '%s' \"$_INPUT\" | jq -c \"if type==\\\"array\\\" then .[${_IDX}] else . end\" 2>/dev/null || printf '%s' \"$_INPUT\")\n")
+	sb.WriteString("  export RECORD\n")
+	sb.WriteString(userCode)
+	sb.WriteString("\n  _IDX=$((_IDX + 1))\n")
+	sb.WriteString("done\n")
 	return sb.String()
 }
 

@@ -18,7 +18,7 @@ import (
 // for the name. This is distinct from format definitions (^name) which control
 // how content is rendered — data sources control what data is available.
 type dataDef struct {
-	Script string // script language: "python", "javascript", "php"
+	Script string // script language: "python", "javascript", "php", "sh"
 	Code   string // inline script code
 	File   string // script file to load code from (relative to docRoot)
 }
@@ -80,6 +80,8 @@ func (ctx *renderContext) executeDataSource(name string, dd *dataDef) (interface
 		flag = "-e"
 	case "php":
 		flag = "-r"
+	case "sh", "bash", "shell":
+		flag = "-c"
 	default:
 		return nil, fmt.Errorf("unsupported script language: %s", dd.Script)
 	}
