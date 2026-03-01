@@ -1,3 +1,8 @@
 title: bserver Documentation
 +meta:
   - description: Documentation for using bserver
+# redefine navbar here as it gets included first
+^navbar:
+  tag: nav
+  params:
+    class: navbar navbar-expand-lg navbar-dark bg-primary rounded-bottom mb-3
