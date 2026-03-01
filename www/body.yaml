@@ -7,4 +7,6 @@ body:
 ^header:
   tag: div
 ^main:
-  # main doesn't have a tag
+  tag: div
+  params:
+    class: p-1
