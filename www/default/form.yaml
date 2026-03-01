@@ -1,0 +1,59 @@
+main:
+  - h1: Form Test
+  - raw: |
+      <p>Please enter your Email or Phone to access your service status</p>
+      <form method="post" action="/form">
+        <div class="row">
+          <div class="col form-floating mb-3" style="min-width:300px">
+            <input name="Email" type="email" class="form-control" id="Email">
+            <label for="Email">Email address</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col form-floating mb-3" style="min-width:300px">
+            <input name="Phone" type="text" class="form-control" id="Phone">
+            <label for="Phone">Phone Number</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col form-floating mb-3" style="min-width:300px">
+            <button type="submit" class="btn btn-primary">SEARCH</button>
+          </div>
+        </div>
+      </form>
+  - card:
+    - p: Please enter your Email or Phone to access your service status
+    - form-post-self:
+      - row:
+        - colform:
+          - input:
+             name: Phone
+             type: text
+             class: form-control
+             id: Phone
+          - label:
+             for: Phone
+             text: Phone Number
+  - php: |
+      echo '<pre>';
+      print_r($GLOBALS);
+      echo '</pre>';
+
+^form-post-self:
+  tag: form
+  params:
+    method: post
+    action: /form
+^colform:
+  tag: div
+  params:
+    class: col form-floating mb-3
+    style: 'min-width:300px'
+^label:
+  tag: label
+  params:
+    for: '$for'
+  content: '$text'
+^input:
+  tag: input
+  params: '$*'
