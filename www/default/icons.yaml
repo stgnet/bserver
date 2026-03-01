@@ -30,9 +30,9 @@ main:
   - pre: "p:\n  - This\n  - fa-solid-arrow-right\n  - that"
   - h3: "This renders as:"
   - p:
-    - ' This'
+    - This
     - fa-solid-arrow-right
-    - 'that '
+    - that
   - hr
   - raw: '<input type="text" id="icon-filter" class="form-control mb-4" placeholder="Filter icons by name...">'
   - icon-grid: generate
