@@ -1414,17 +1414,16 @@ func (ctx *renderContext) renderIterated(sb *strings.Builder, name string, fd *f
 				}
 			}
 		} else if contentMap, ok := content.(*OrderedMap); ok {
-			// Single map - each key/value pair becomes one tag with that attribute
-			contentMap.Range(func(key string, value interface{}) bool {
-				valStr := fmt.Sprintf("%v", value)
-				attr := fmt.Sprintf(" %s=\"%s\"", key, html.EscapeString(valStr))
-				if voidElements[tag] {
-					fmt.Fprintf(sb, "%s<%s%s>\n", indent(depth), tag, attr)
-				} else {
-					fmt.Fprintf(sb, "%s<%s%s></%s>\n", indent(depth), tag, attr, tag)
-				}
-				return true
-			})
+			// Single map - all key/value pairs become attributes on one tag
+			attrs := formatMapAsAttrs(contentMap)
+			if ctx.debug {
+				fmt.Fprintf(sb, "<!-- ^%s wildcard params (single map) -->\n", name)
+			}
+			if voidElements[tag] {
+				fmt.Fprintf(sb, "%s<%s%s>\n", indent(depth), tag, attrs)
+			} else {
+				fmt.Fprintf(sb, "%s<%s%s></%s>\n", indent(depth), tag, attrs, tag)
+			}
 		}
 		return
 	}
