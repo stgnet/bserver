@@ -3,8 +3,6 @@ title: FontAwesome Icons
 +meta:
   - description: Browse all free FontAwesome 7.0.1 icons
 
-fontawesome:
-
 +style:
   .icon-card:
     text-align: center
@@ -28,7 +26,7 @@ main:
   - p: "All free icons from FontAwesome 7.0.1, available as YAML shorthand definitions."
   - h2: "Usage"
   - p: "Reference any icon by its name in your YAML content:"
-  - pre: "main:\n  - fa-solid-location-dot:"
+  - pre: "main:\n  - fa-solid-location-dot"
   - p: "This renders as:"
   - raw: '<p><i class="fa-solid fa-location-dot fa-2x"></i></p>'
   - raw: '<input type="text" id="icon-filter" class="form-control mb-4" placeholder="Filter icons by name...">'
@@ -38,10 +36,10 @@ main:
       document.getElementById('icon-filter').addEventListener('input', function() {
         var q = this.value.toLowerCase();
         document.querySelectorAll('.icon-card').forEach(function(card) {
-          card.style.display = card.getAttribute('data-name').includes(q) ? '' : 'none';
+          card.parentElement.style.display = card.getAttribute('data-name').includes(q) ? '' : 'none';
         });
         document.querySelectorAll('.icon-section').forEach(function(sec) {
-          var visible = sec.querySelectorAll('.icon-card:not([style*="display: none"])').length;
+          var visible = sec.querySelectorAll('.col:not([style*="display: none"])').length;
           sec.style.display = visible ? '' : 'none';
         });
       });
