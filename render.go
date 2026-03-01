@@ -853,25 +853,27 @@ func (ctx *renderContext) renderName(sb *strings.Builder, name string, depth int
 				return
 			}
 
-			// If content is a list of maps and the format defines a wrapping tag,
-			// iterate and wrap each list item separately in the tag.
-			// E.g., ^navitems: {tag: li} with navitems: [{link: /a, text: A}]
-			// renders each map item as its own <li>.
-			// Lists of strings (name references like [brand, navbarnav]) are
-			// NOT iterated — they are children of a single container.
-			if items, ok := content.([]interface{}); ok && fd != nil && fd.Tag != "" && len(items) > 0 {
-				if _, firstIsMap := items[0].(*OrderedMap); firstIsMap {
-					for _, item := range items {
-						if voidElements[tag] {
-							fmt.Fprintf(sb, "%s<%s%s>\n", indent(depth), tag, attrs)
-						} else {
-							var inner strings.Builder
-							ctx.renderContent(&inner, item, depth+1)
-							writeTagWithContent(sb, tag, attrs, inner.String(), depth)
+			// If content is a list of maps and the format explicitly uses
+			// "contents:" (plural), iterate and wrap each list item separately
+			// in the tag. E.g., ^navitems: {tag: li, contents: '$*'} with
+			// navitems: [{link: /a, text: A}] renders each map item as its
+			// own <li>. Without explicit "contents:" (plural), the default
+			// is to wrap all content as a single block.
+			if fd != nil && fd.ContentWrapPlural {
+				if items, ok := content.([]interface{}); ok && fd.Tag != "" && len(items) > 0 {
+					if _, firstIsMap := items[0].(*OrderedMap); firstIsMap {
+						for _, item := range items {
+							if voidElements[tag] {
+								fmt.Fprintf(sb, "%s<%s%s>\n", indent(depth), tag, attrs)
+							} else {
+								var inner strings.Builder
+								ctx.renderContent(&inner, item, depth+1)
+								writeTagWithContent(sb, tag, attrs, inner.String(), depth)
+							}
 						}
+						delete(ctx.resolving, name)
+						return
 					}
-					delete(ctx.resolving, name)
-					return
 				}
 			}
 
@@ -1168,6 +1170,23 @@ func (ctx *renderContext) renderInlineTag(sb *strings.Builder, name, tag string,
 		}
 		writeTagWithContent(sb, tag, attrs, inner.String(), depth)
 		return
+	}
+
+	// ContentWrapPlural with string contents (contents: '$*'): wrap each
+	// list item individually in its own tag, rather than wrapping all as one.
+	if fd != nil && fd.ContentWrapPlural && fd.ContentWrap == nil {
+		if items, ok := content.([]interface{}); ok && len(items) > 0 {
+			for _, item := range items {
+				if voidElements[tag] {
+					fmt.Fprintf(sb, "%s<%s%s>\n", indent(depth), tag, attrs)
+				} else {
+					var inner strings.Builder
+					ctx.renderContent(&inner, item, depth+1)
+					writeTagWithContent(sb, tag, attrs, inner.String(), depth)
+				}
+			}
+			return
+		}
 	}
 
 	// Otherwise render children recursively

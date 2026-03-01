@@ -45,6 +45,7 @@ func parseFormatDef(v interface{}) *formatDef {
 	if hasContent {
 		if s, ok := contentVal.(string); ok {
 			fd.Contents = s
+			fd.ContentWrapPlural = isPlural
 		} else if contentVal != nil {
 			// Non-string content (e.g., {card-body: '$*'}) is a structural wrapper
 			fd.ContentWrap = contentVal

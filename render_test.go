@@ -374,6 +374,46 @@ func TestContentWrapSingular(t *testing.T) {
 	}
 }
 
+func TestDefaultFormatWrapsSingular(t *testing.T) {
+	// Test that a format with tag+params but no content/contents wraps all
+	// content as a single block (not each element individually).
+	tmpDir := t.TempDir()
+	// Put ^main format in body.yaml so it's loaded during resolution
+	os.WriteFile(filepath.Join(tmpDir, "html.yaml"), []byte("html:\n - body\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "body.yaml"), []byte("body:\n - main\n^main:\n  tag: div\n  params:\n    class: p-1\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  - h1: \"Title\"\n  - p: \"Paragraph\"\n  - h2: \"Subtitle\"\n"), 0644)
+
+	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+
+	// Should have exactly 1 <div class="p-1"> wrapping all content
+	divCount := strings.Count(output, `<div class="p-1">`)
+	if divCount != 1 {
+		t.Errorf("Expected 1 <div class=\"p-1\"> (singular wrap), got %d.\nOutput:\n%s", divCount, output)
+	}
+	// All elements should be inside the single div
+	if !strings.Contains(output, "<h1>") || !strings.Contains(output, "<p>") || !strings.Contains(output, "<h2>") {
+		t.Errorf("Missing child elements inside div.\nOutput:\n%s", output)
+	}
+}
+
+func TestExplicitContentsPluralWrapsEach(t *testing.T) {
+	// Test that a format with explicit "contents: '$*'" wraps each list
+	// item individually in the tag.
+	tmpDir := t.TempDir()
+	// Put ^wrapper format in body.yaml so it's loaded during resolution
+	os.WriteFile(filepath.Join(tmpDir, "html.yaml"), []byte("html:\n - body\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "body.yaml"), []byte("body:\n - main\n^wrapper:\n  tag: div\n  params:\n    class: item\n  contents: '$*'\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  wrapper:\n    - h1: \"Title\"\n    - p: \"Text\"\n    - h2: \"Sub\"\n"), 0644)
+
+	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+
+	// Should have 3 <div class="item"> tags (one per list item)
+	divCount := strings.Count(output, `<div class="item">`)
+	if divCount != 3 {
+		t.Errorf("Expected 3 <div class=\"item\"> (plural wrap), got %d.\nOutput:\n%s", divCount, output)
+	}
+}
+
 func TestPreTagNoIndent(t *testing.T) {
 	// Test that <pre> tag content is not indented (whitespace is significant).
 	tmpDir := t.TempDir()
