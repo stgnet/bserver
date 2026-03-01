@@ -1156,7 +1156,7 @@ func TestParamsWildcardInlineTag(t *testing.T) {
 
 	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
 
-	// The <input> tag should have all three attributes from the content map
+	// All three attributes must appear on a single <input> tag, not repeated tags
 	if !strings.Contains(output, `type="text"`) {
 		t.Errorf("Missing type attribute in input tag.\nOutput:\n%s", output)
 	}
@@ -1165,5 +1165,10 @@ func TestParamsWildcardInlineTag(t *testing.T) {
 	}
 	if !strings.Contains(output, `placeholder="Enter name"`) {
 		t.Errorf("Missing placeholder attribute in input tag.\nOutput:\n%s", output)
+	}
+	// Verify there is exactly one <input tag, not one per attribute
+	inputCount := strings.Count(output, "<input ")
+	if inputCount != 1 {
+		t.Errorf("Expected exactly 1 <input> tag, got %d. Params should be combined on one tag.\nOutput:\n%s", inputCount, output)
 	}
 }
