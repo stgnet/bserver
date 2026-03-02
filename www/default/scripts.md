@@ -1,8 +1,8 @@
 # Server-Side Scripts
 
-bserver can execute server-side scripts in Python, JavaScript (Node.js), or PHP
-to dynamically generate HTML content. This is used for rendering that requires
-logic beyond what static YAML can express.
+bserver can execute server-side scripts in Python, JavaScript (Node.js), PHP,
+or Shell (sh/bash) to dynamically generate HTML content. This is used for
+rendering that requires logic beyond what static YAML can express.
 
 ## How It Works
 
@@ -62,6 +62,21 @@ Aliases: `javascript`, `js`, `node`
 ```
 
 Available variable: `$record` (a PHP associative array)
+
+### Shell (sh/bash)
+
+```yaml
+^renderer:
+  script: sh
+  code: |
+    echo "<div class='item'>$(echo "$RECORD" | jq -r '.key'): $(echo "$RECORD" | jq -r '.value')</div>"
+```
+
+Available variable: `$RECORD` (a JSON string of the current record)
+
+Use `jq` to extract fields from `$RECORD`. Aliases: `sh`, `bash`, `shell`
+
+bserver looks for `bash` first, then `sh`.
 
 ## Data Format
 
@@ -222,6 +237,32 @@ foreach ($_data as $record) {
   // your code here
 }
 ```
+
+### Shell Wrapper
+
+```bash
+_INPUT=$(cat)
+_COUNT=$(printf '%s' "$_INPUT" | jq -r 'if type=="array" then length else 1 end')
+_IDX=0
+while [ "$_IDX" -lt "$_COUNT" ]; do
+  RECORD=$(printf '%s' "$_INPUT" | jq -c "if type==\"array\" then .[${_IDX}] else . end")
+  export RECORD
+  # your code here
+  _IDX=$((_IDX + 1))
+done
+```
+
+The shell wrapper uses `jq` to parse JSON and iterate over records. Each
+record is available as the `$RECORD` environment variable containing a JSON
+string. Use `jq` within your code to extract fields:
+
+```bash
+name=$(echo "$RECORD" | jq -r '.key')
+value=$(echo "$RECORD" | jq -r '.value')
+echo "<p>$name: $value</p>"
+```
+
+**Note:** `jq` must be installed on the system for shell scripts to work.
 
 ## Execution Details
 

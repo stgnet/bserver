@@ -7,7 +7,7 @@ main:
       - Reusable format definitions with the ^ prefix
       - Bootstrap 5 integration out of the box
       - Markdown page support with full site chrome
-      - Server-side scripting in Python, JavaScript, and PHP
+      - Server-side scripting in Python, JavaScript, PHP, and Shell
       - Virtual hosting with automatic Let's Encrypt
       - Cascading name resolution across directories
   - h2: "How It Works"
