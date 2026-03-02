@@ -279,3 +279,40 @@ echo "<p>$name: $value</p>"
 
 - [Built-in Components](/components) - See the navbar's script in context
 - [Advanced Features](/advanced) - Virtual hosting, custom tags, and more
+
+## Data Source Pipelines (New)
+
+Script-backed data sources can now apply optional pipeline transforms after
+JSON output is parsed.
+
+Supported keys on `$name` data sources:
+
+- `where`: exact-match filter map
+- `sort`: field name to sort by
+- `order`: `asc` or `desc`
+- `limit`: max result count
+- `offset`: number of items to skip
+- `page` + `per-page`: pagination shorthand
+
+Example:
+
+```yaml
+$posts:
+  script: python
+  code: |
+    import json
+    print(json.dumps([
+      {"title": "A", "kind": "post"},
+      {"title": "B", "kind": "note"},
+      {"title": "C", "kind": "post"}
+    ]))
+  where:
+    kind: post
+  sort: title
+  order: asc
+  page: 1
+  per-page: 2
+```
+
+This lets you keep scripts simple (produce raw data) while expressing common
+query/pagination behavior in YAML.

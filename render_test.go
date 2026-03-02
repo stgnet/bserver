@@ -519,7 +519,7 @@ func TestMalformedYAMLDoesNotPanic(t *testing.T) {
 
 func TestYAMLParseErrorDisplayed(t *testing.T) {
 	dir := setupMinimalSite(t, map[string]string{
-		"index.yaml": "main:\n - broken\n",
+		"index.yaml":  "main:\n - broken\n",
 		"broken.yaml": "broken:\n\t- invalid yaml\n  mixed indent",
 	})
 
@@ -570,7 +570,7 @@ func TestYAMLParseErrorWithScript(t *testing.T) {
 
 func TestYAMLParseErrorInDebug(t *testing.T) {
 	dir := setupMinimalSite(t, map[string]string{
-		"index.yaml": "main:\n - broken\n",
+		"index.yaml":  "main:\n - broken\n",
 		"broken.yaml": "broken:\n\t- invalid yaml\n  mixed indent",
 	})
 
@@ -1268,5 +1268,61 @@ myfield:
 	}
 	if !strings.Contains(output, "Email Address</label>") {
 		t.Errorf("Missing label text.\nOutput:\n%s", output)
+	}
+}
+
+func TestFormatLayoutVariantDefaultsAndRequired(t *testing.T) {
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": `main:
+  - card:
+      title: Hello
+
+^card:
+  tag: section
+  layout: flex
+  gap: 1rem
+  align: center
+  defaults:
+    variant: primary
+  required: [title]
+  variants:
+    primary:
+      class: card card-primary
+    secondary:
+      class: card card-secondary
+  params:
+    data-title: '$title'
+`,
+	})
+
+	out, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	if !strings.Contains(out, `class="card card-primary"`) {
+		t.Fatalf("expected variant class applied, got:\n%s", out)
+	}
+	if !strings.Contains(out, `style="display:flex; gap:1rem; align-items:center;"`) {
+		t.Fatalf("expected layout style applied, got:\n%s", out)
+	}
+	if !strings.Contains(out, `data-title="Hello"`) {
+		t.Fatalf("expected data-title, got:\n%s", out)
+	}
+}
+
+func TestFormatRequiredPropsCommentWhenMissing(t *testing.T) {
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": `main:
+  - card:
+      subtitle: Missing title
+
+^card:
+  tag: div
+  required: [title]
+  params:
+    data-title: '$title'
+`,
+	})
+
+	out, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	if !strings.Contains(out, "missing required props: title") {
+		t.Fatalf("expected missing required props comment, got:\n%s", out)
 	}
 }

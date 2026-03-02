@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -8,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"golang.org/x/crypto/acme/autocert"
 )
 
 // newTestMux creates a virtualHostMux configured for testing with the given base directory.
@@ -21,6 +24,7 @@ func newTestMux(t *testing.T, base string) *virtualHostMux {
 				StaticAge:    24 * time.Hour,
 				ParentLevels: 1,
 				Index:        []string{"index.yaml", "index.md", "index.html"},
+				MaxBodyBytes: 1 << 20,
 			},
 		},
 	}
@@ -205,8 +209,8 @@ func TestSecurityHeadersMiddleware(t *testing.T) {
 
 	tests := map[string]string{
 		"X-Content-Type-Options": "nosniff",
-		"X-Frame-Options":       "SAMEORIGIN",
-		"Referrer-Policy":       "strict-origin-when-cross-origin",
+		"X-Frame-Options":        "SAMEORIGIN",
+		"Referrer-Policy":        "strict-origin-when-cross-origin",
 	}
 	for header, expected := range tests {
 		if got := w.Header().Get(header); got != expected {
@@ -334,5 +338,72 @@ func TestHostOnly(t *testing.T) {
 		if got := hostOnly(input); got != expected {
 			t.Errorf("hostOnly(%q) = %q, want %q", input, got, expected)
 		}
+	}
+}
+
+func TestOversizedPostBodyReturns413ForYAML(t *testing.T) {
+	base, _ := os.Getwd()
+	mux := newTestMux(t, filepath.Join(base, "www"))
+	mux.cfg.Site.MaxBodyBytes = 8
+	vhostConfigCache.Delete(filepath.Join(base, "www", "default"))
+
+	req := httptest.NewRequest("POST", "/", strings.NewReader("0123456789"))
+	req.Host = "default"
+	req.ContentLength = int64(len("0123456789"))
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusRequestEntityTooLarge)
+	}
+}
+
+func TestPostBodyWithinLimitStillRendersYAML(t *testing.T) {
+	base, _ := os.Getwd()
+	mux := newTestMux(t, filepath.Join(base, "www"))
+	mux.cfg.Site.MaxBodyBytes = 64
+	vhostConfigCache.Delete(filepath.Join(base, "www", "default"))
+
+	req := httptest.NewRequest("POST", "/", strings.NewReader("ok"))
+	req.Host = "default"
+	req.ContentLength = int64(len("ok"))
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if !strings.Contains(w.Body.String(), "<!DOCTYPE html>") {
+		t.Fatal("expected rendered HTML body")
+	}
+}
+
+func TestHardenedTLSConfigDefaults(t *testing.T) {
+	cfg := &config{Base: t.TempDir(), CacheDir: t.TempDir()}
+	m := &autocert.Manager{}
+	tlsCfg := hardenedTLSConfig(cfg, m)
+
+	if tlsCfg.MinVersion != tls.VersionTLS12 {
+		t.Fatalf("MinVersion = %v, want %v", tlsCfg.MinVersion, tls.VersionTLS12)
+	}
+	if len(tlsCfg.CurvePreferences) == 0 {
+		t.Fatal("expected CurvePreferences to be set")
+	}
+	if len(tlsCfg.CipherSuites) == 0 {
+		t.Fatal("expected CipherSuites to be set")
+	}
+	if tlsCfg.GetCertificate == nil {
+		t.Fatal("expected GetCertificate callback")
+	}
+
+	hasACME := false
+	for _, proto := range tlsCfg.NextProtos {
+		if proto == acmeALPNProto {
+			hasACME = true
+			break
+		}
+	}
+	if !hasACME {
+		t.Fatalf("NextProtos missing %q", acmeALPNProto)
 	}
 }

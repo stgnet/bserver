@@ -326,3 +326,36 @@ Override the version at build time with:
 ```
 go build -ldflags "-X main.Version=1.0.0"
 ```
+
+## Request Body Limits (New)
+
+bserver enforces configurable request body limits for dynamic handlers
+(YAML/Markdown render requests that execute scripts and PHP CGI requests).
+Oversized bodies are rejected with:
+
+- `413 Request Entity Too Large`
+
+### Configuration
+
+Set this in `www/_config.yaml` (or per-vhost `_config.yaml`):
+
+```yaml
+max-body-bytes: 1048576
+```
+
+You can also override globally with environment variable:
+
+- `MAX_BODY_BYTES`
+
+This helps prevent unbounded memory usage from large POST payloads.
+
+## TLS Hardening Defaults (New)
+
+HTTPS now uses hardened defaults by default:
+
+- Minimum protocol: TLS 1.2
+- Secure curve preferences (`X25519`, `P-256`)
+- Modern TLS 1.2 cipher suite list
+- Existing ACME ALPN + Let's Encrypt/self-signed fallback behavior retained
+
+This keeps compatibility while improving secure-by-default transport settings.
