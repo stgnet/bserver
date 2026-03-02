@@ -18,10 +18,10 @@ main:
     - "Names are resolved by searching for matching YAML files, starting in the current directory and walking upward."
   - h2: "Quick Example"
   - p: "A minimal page needs just an index.yaml file:"
-  - pre: |
+  - pre: |-
      main:
-     - h1: "Hello World"
-     - p: "Welcome to my site."
+       - h1: "Hello World"
+       - p: "Welcome to my site."
   - p: "This produces a complete HTML page with doctype, head, body, navbar, and footer - all from a few lines of YAML."
   - h2: "Installation"
   - p: "Requires Go 1.24 or later. Clone the repository, build, and install as a service:"
