@@ -153,7 +153,7 @@ documented template with all available settings.
 
 Per-site overrides: place a `_config.yaml` in a virtual host directory
 (e.g., `www/example.com/_config.yaml`) to override `cache-age`, `static-age`,
-`parent-levels`, and `index` for that site.
+`parent-levels`, `index`, and `max-body-bytes` for that site.
 
 Environment variables override `_config.yaml` values:
 
@@ -166,6 +166,10 @@ Environment variables override `_config.yaml` values:
 | `PHP_CGI` | `php` | (auto-detected) | Path to php-cgi executable |
 | `INDEX` | `index` | `index.yaml,index.md,...` | Index file search order |
 | `BASE_DIR` | — | (empty) | Web content root directory |
+| `MAX_BODY_BYTES` | `max-body-bytes` | `1048576` | Maximum request body size in bytes for dynamic handlers |
+
+
+`max-body-bytes` defaults to 1 MiB and applies to dynamic request bodies used by YAML/Markdown script rendering and PHP CGI handling.
 
 ## Command-Line Flags
 
