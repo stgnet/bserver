@@ -1,6 +1,19 @@
 main:
   - h1: "bserver Documentation"
   - p: "bserver is a YAML-driven web server that generates HTML pages from structured definitions. Write YAML, get HTML."
+  - p: |
+      At a high level, bserver is using YAML as a content + composition DSL for full-page generation,
+      not just a template variable file. The key purpose is to let users define site pages declaratively
+      with inheritance and shared structure so they can avoid repetitive HTML boilerplate. That intent is
+      explicit in the pipeline/inheritance model.
+  - p: "The current architecture supports that purpose in several strong ways:"
+  - ulist:
+      - Composable page skeletons and inheritance (html/head/body pipeline + upward name resolution).
+      - Two-pass resolution/render so definitions and merges settle before output generation.
+      - Name-level extension model with ^name formats and +name merges, which is effectively a component and override mechanism.
+      - Unified Markdown integration by injecting converted markdown into main, then rendering the same chrome as YAML pages.
+      - Script and data-source hooks that make the content model dynamic.
+      - YAML-defined CSS generation for style declarations.
   - h2: "Key Features"
   - ulist:
       - YAML-driven page generation with automatic HTML rendering
