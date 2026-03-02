@@ -28,11 +28,14 @@ Names resolve by searching upward through directories — your site's `navlinks.
 - **YAML page generation** — Define pages as structured YAML; bserver renders clean, indented HTML5
 - **Markdown support** — `.md` files render with full site chrome (navbar, header, footer, styles)
 - **Format definitions** — Reusable HTML templates via the `^name` prefix, with variable substitution
+- **Layout primitives** — `layout: flex|grid|stack` with gap/align/justify/columns helpers in format definitions
+- **Component variants/defaults** — `variants`, `defaults`, and `required` props for reusable component patterns
 - **Cascading name resolution** — Definitions resolve upward through directories, child overrides parent
 - **Virtual hosting** — Serve multiple domains from subdirectories, with a `default/` fallback
 - **Automatic HTTPS** — Let's Encrypt certificates with self-signed fallback for local development
 - **Bootstrap 5** — Pre-configured CSS and Font Awesome out of the box
 - **Server-side scripting** — Dynamic content via Python, JavaScript (Node.js), or PHP
+- **Data source pipelines** — Optional `where`, `sort`, `order`, `limit`, `offset`, `page`, `per-page` transforms on script-backed lists
 - **Privilege dropping** — Binds ports 80/443 as root, then drops to `nobody`
 - **Merge definitions** — Extend inherited definitions with the `+name` prefix
 - **Style rendering** — YAML-defined CSS with selector keys and property maps
@@ -112,8 +115,11 @@ All flags can also be set via environment variables:
 | `PHP_CGI` | `-php` |
 | `BASE_DIR` | `-base` |
 | `INDEX` | `-index` |
+| `MAX_BODY_BYTES` | `max-body-bytes` config key |
 
 CLI flags take precedence over environment variables.
+
+`max-body-bytes` is configured via `www/_config.yaml` (or per-vhost `_config.yaml`) and can be overridden by `MAX_BODY_BYTES`. Default is `1048576` (1 MiB).
 
 ## Directory Structure
 

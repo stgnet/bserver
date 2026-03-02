@@ -19,6 +19,7 @@ type siteSettings struct {
 	StaticAge    time.Duration
 	ParentLevels int
 	Index        []string
+	MaxBodyBytes int64
 }
 
 // loadConfigMap loads a _config.yaml file and returns its contents as a map.
@@ -123,6 +124,9 @@ func applySiteSettings(m map[string]interface{}, defaults siteSettings) siteSett
 	}
 	if idx, ok := configIndex(m, "index"); ok {
 		s.Index = idx
+	}
+	if v, ok := configInt(m, "max-body-bytes", 0); ok && v > 0 {
+		s.MaxBodyBytes = int64(v)
 	}
 	return s
 }

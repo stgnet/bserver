@@ -10,6 +10,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -40,15 +41,17 @@ var Version = "dev"
 
 // config holds runtime configuration.
 type config struct {
-	Base     string // web content root (www directory)
-	HTTPAddr string
+	Base      string // web content root (www directory)
+	HTTPAddr  string
 	HTTPSAddr string
-	CacheDir string
-	LEEmail  string
-	PHPCGI   string // path to php-cgi
-	Cache    *renderCache
-	Site     siteSettings // server-wide defaults (per-vhost _config.yaml can override)
+	CacheDir  string
+	LEEmail   string
+	PHPCGI    string // path to php-cgi
+	Cache     *renderCache
+	Site      siteSettings // server-wide defaults (per-vhost _config.yaml can override)
 }
+
+var errRequestBodyTooLarge = errors.New("request body too large")
 
 // virtualHostMux dynamically serves based on cwd directories.
 type virtualHostMux struct {
@@ -132,7 +135,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if strings.HasSuffix(strings.ToLower(fsPath), ".php") {
 		if st, err := os.Stat(fsPath); err == nil && !st.IsDir() {
-			m.handlePHP(w, r, host, root, fsPath)
+			m.handlePHP(w, r, host, root, fsPath, site)
 			return
 		}
 		// PHP file doesn't exist — fall through to 404
@@ -192,7 +195,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if info != nil && info.IsDir() {
 		indexPHP := filepath.Join(fsPath, "index.php")
 		if st, err := os.Stat(indexPHP); err == nil && !st.IsDir() {
-			m.handlePHP(w, r, host, root, indexPHP)
+			m.handlePHP(w, r, host, root, indexPHP, site)
 			return
 		}
 	}
@@ -200,7 +203,17 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.serveErrorPage(w, r, root, http.StatusNotFound, "", site)
 }
 
-func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host, docroot, scriptFilename string) {
+func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host, docroot, scriptFilename string, site siteSettings) {
+	body, err := bufferRequestBody(w, r, site.MaxBodyBytes)
+	if err != nil {
+		if errors.Is(err, errRequestBodyTooLarge) {
+			http.Error(w, "Request Entity Too Large", http.StatusRequestEntityTooLarge)
+			return
+		}
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
 	// Compute SCRIPT_NAME and PATH_INFO from the URL
 	scriptName := r.URL.Path
 	pathInfo := ""
@@ -253,10 +266,7 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 	// may be -1 (unknown/chunked), which would prevent php-cgi from
 	// reading POST data.
 	var bodyBuf bytes.Buffer
-	if r.Body != nil {
-		io.Copy(&bodyBuf, r.Body)
-		r.Body.Close()
-	}
+	bodyBuf.Write(body)
 	if bodyBuf.Len() > 0 {
 		env = append(env, fmt.Sprintf("CONTENT_LENGTH=%d", bodyBuf.Len()))
 	} else if r.ContentLength >= 0 {
@@ -308,7 +318,7 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 		return
 	}
 
-	body := output[headerEnd+len(sep):]
+	bodyResp := output[headerEnd+len(sep):]
 
 	// Parse CGI headers
 	statusCode := http.StatusOK
@@ -338,10 +348,19 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 	}
 
 	w.WriteHeader(statusCode)
-	w.Write(body)
+	w.Write(bodyResp)
 }
 
 func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docRoot, yamlPath string, site siteSettings) {
+	if _, err := bufferRequestBody(w, r, site.MaxBodyBytes); err != nil {
+		if errors.Is(err, errRequestBodyTooLarge) {
+			http.Error(w, "Request Entity Too Large", http.StatusRequestEntityTooLarge)
+			return
+		}
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
 	_, debug := r.URL.Query()["debug"]
 	key := cacheKey(docRoot, yamlPath)
 
@@ -375,6 +394,15 @@ func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docR
 }
 
 func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, docRoot, mdPath string, site siteSettings) {
+	if _, err := bufferRequestBody(w, r, site.MaxBodyBytes); err != nil {
+		if errors.Is(err, errRequestBodyTooLarge) {
+			http.Error(w, "Request Entity Too Large", http.StatusRequestEntityTooLarge)
+			return
+		}
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
 	_, debug := r.URL.Query()["debug"]
 	key := cacheKey(docRoot, mdPath)
 
@@ -564,6 +592,20 @@ func main() {
 		}
 		return def
 	}
+	resolveIntEnv := func(yamlKey, envVar string, def int) int {
+		if v, ok := configInt(yamlCfg, yamlKey, 0); ok {
+			def = v
+		}
+		if envVar != "" {
+			if v := os.Getenv(envVar); v != "" {
+				if i, err := strconv.Atoi(v); err == nil {
+					return i
+				}
+				log.Printf("Warning: ignoring invalid %s=%q (must be integer)", envVar, v)
+			}
+		}
+		return def
+	}
 
 	httpAddr := resolve("http", "HTTP_ADDR", ":80")
 	httpsAddr := resolve("https", "HTTPS_ADDR", ":443")
@@ -573,6 +615,7 @@ func main() {
 	cacheMaxAgeSec := resolveInt("cache-age", int(defaultCacheMaxAge.Seconds()))
 	maxStaticAgeSec := resolveInt("static-age", 86400)
 	maxParentLvls := resolveInt("parent-levels", DefaultMaxParentLevels)
+	maxBodyBytes := resolveIntEnv("max-body-bytes", "MAX_BODY_BYTES", 1<<20)
 
 	// PHP: _config.yaml > PHP_CGI env > auto-detect
 	phpcgi := resolve("php", "PHP_CGI", "")
@@ -620,18 +663,19 @@ func main() {
 	}
 
 	cfg := &config{
-		Base:     base,
-		HTTPAddr: httpAddr,
+		Base:      base,
+		HTTPAddr:  httpAddr,
 		HTTPSAddr: httpsAddr,
-		CacheDir: cacheDir,
-		LEEmail:  leEmail,
-		PHPCGI:   phpcgi,
-		Cache:    cache,
+		CacheDir:  cacheDir,
+		LEEmail:   leEmail,
+		PHPCGI:    phpcgi,
+		Cache:     cache,
 		Site: siteSettings{
 			CacheAge:     cacheMaxAge,
 			StaticAge:    maxStaticAge,
 			ParentLevels: maxParentLvls,
 			Index:        indexPriority,
+			MaxBodyBytes: int64(maxBodyBytes),
 		},
 	}
 
@@ -659,25 +703,9 @@ func main() {
 	// Try to start HTTPS server
 	httpsOK := false
 	httpsSrv := &http.Server{
-		Addr:    cfg.HTTPSAddr,
-		Handler: handler,
-		TLSConfig: &tls.Config{
-			GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-				if !isPublicDomain(hello.ServerName) {
-					return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
-				}
-				if !isKnownVhost(hello.ServerName, cfg.Base) {
-					return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
-				}
-				cert, err := m.GetCertificate(hello)
-				if err != nil {
-					log.Printf("Let's Encrypt failed for %s, falling back to self-signed: %v", hello.ServerName, err)
-					return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
-				}
-				return cert, nil
-			},
-			NextProtos: []string{"h2", "http/1.1", acmeALPNProto},
-		},
+		Addr:              cfg.HTTPSAddr,
+		Handler:           handler,
+		TLSConfig:         hardenedTLSConfig(cfg, m),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      120 * time.Second,
@@ -778,6 +806,38 @@ func main() {
 
 const acmeALPNProto = "acme-tls/1"
 
+func hardenedTLSConfig(cfg *config, m *autocert.Manager) *tls.Config {
+	return &tls.Config{
+		MinVersion: tls.VersionTLS12,
+		CurvePreferences: []tls.CurveID{
+			tls.X25519,
+			tls.CurveP256,
+		},
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+		},
+		GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			if !isPublicDomain(hello.ServerName) {
+				return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
+			}
+			if !isKnownVhost(hello.ServerName, cfg.Base) {
+				return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
+			}
+			cert, err := m.GetCertificate(hello)
+			if err != nil {
+				log.Printf("Let's Encrypt failed for %s, falling back to self-signed: %v", hello.ServerName, err)
+				return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
+			}
+			return cert, nil
+		},
+		NextProtos: []string{"h2", "http/1.1", acmeALPNProto},
+	}
+}
 
 // findPHPCGI searches for the php-cgi executable. It first checks $PATH
 // via exec.LookPath, then tries common installation locations.
@@ -798,6 +858,48 @@ func findPHPCGI() string {
 		}
 	}
 	return ""
+}
+
+func methodMayHaveBody(method string) bool {
+	switch method {
+	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+		return true
+	default:
+		return false
+	}
+}
+
+func isRequestBodyTooLarge(err error) bool {
+	var maxErr *http.MaxBytesError
+	return errors.As(err, &maxErr)
+}
+
+// bufferRequestBody enforces an optional request body limit and buffers the
+// body so downstream handlers/scripts can read it repeatedly.
+func bufferRequestBody(w http.ResponseWriter, r *http.Request, maxBodyBytes int64) ([]byte, error) {
+	if r == nil || r.Body == nil || !methodMayHaveBody(r.Method) {
+		return nil, nil
+	}
+	if maxBodyBytes > 0 && r.ContentLength > maxBodyBytes {
+		return nil, errRequestBodyTooLarge
+	}
+
+	reader := io.Reader(r.Body)
+	if maxBodyBytes > 0 {
+		reader = http.MaxBytesReader(w, r.Body, maxBodyBytes)
+	}
+	body, err := io.ReadAll(reader)
+	r.Body.Close()
+	if err != nil {
+		if isRequestBodyTooLarge(err) {
+			return nil, errRequestBodyTooLarge
+		}
+		return nil, err
+	}
+
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	r.ContentLength = int64(len(body))
+	return body, nil
 }
 
 func hostOnly(h string) string {

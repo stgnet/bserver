@@ -8,17 +8,27 @@ import (
 
 // formatDef describes how a name should be rendered as HTML (from ^name keys).
 type formatDef struct {
-	Tag               string      // HTML tag to use
-	Params            *OrderedMap // HTML attributes (may contain $key, $value, $varname); values are strings
-	ParamsWildcard    bool        // if true, params: '$*' means use content entries as attributes
-	Contents          string      // how to render inner content ("$*" = as-is, "" = iterate)
-	ContentWrap       interface{} // structured content wrapper (e.g., {card-body: '$*'})
-	ContentWrapPlural bool        // true when "contents:" (plural) was used: wrap each iterable individually
-	Script            string      // script language: "python", "javascript", "php", "sh"
-	Code              string      // inline script code (per-record body)
-	File              string      // script file to load code from (relative to docRoot)
-	Markup            string      // markup language for content: "markdown"
+	Tag               string       // HTML tag to use
+	Params            *OrderedMap  // HTML attributes (may contain $key, $value, $varname); values are strings
+	ParamsWildcard    bool         // if true, params: '$*' means use content entries as attributes
+	Contents          string       // how to render inner content ("$*" = as-is, "" = iterate)
+	ContentWrap       interface{}  // structured content wrapper (e.g., {card-body: '$*'})
+	ContentWrapPlural bool         // true when "contents:" (plural) was used: wrap each iterable individually
+	Script            string       // script language: "python", "javascript", "php", "sh"
+	Code              string       // inline script code (per-record body)
+	File              string       // script file to load code from (relative to docRoot)
+	Markup            string       // markup language for content: "markdown"
 	Sequence          []*formatDef // array format: multiple tags rendered in sequence
+	Layout            string       // layout primitive: flex, grid, stack
+	Gap               string       // layout gap (e.g. "1rem")
+	Columns           string       // grid template columns
+	Align             string       // align-items value
+	Justify           string       // justify-content value
+	Wrap              bool         // flex-wrap: wrap
+	Variants          *OrderedMap  // variants map: name -> params map
+	Slots             *OrderedMap  // slots map: slotName -> default content
+	Defaults          *OrderedMap  // default vars: key -> value
+	Required          []string     // required vars/props
 }
 
 // parseFormatDef parses a ^name value into a formatDef struct.
@@ -100,7 +110,161 @@ func parseFormatDef(v interface{}) *formatDef {
 			fd.Markup = markup
 		}
 	}
+	if layoutVal, ok := m.Get("layout"); ok {
+		if layout, ok := layoutVal.(string); ok {
+			fd.Layout = strings.ToLower(layout)
+		}
+	}
+	if gapVal, ok := m.Get("gap"); ok {
+		fd.Gap = fmt.Sprintf("%v", gapVal)
+	}
+	if colsVal, ok := m.Get("columns"); ok {
+		fd.Columns = fmt.Sprintf("%v", colsVal)
+	}
+	if alignVal, ok := m.Get("align"); ok {
+		fd.Align = fmt.Sprintf("%v", alignVal)
+	}
+	if justifyVal, ok := m.Get("justify"); ok {
+		fd.Justify = fmt.Sprintf("%v", justifyVal)
+	}
+	if wrapVal, ok := m.Get("wrap"); ok {
+		if b, ok := wrapVal.(bool); ok {
+			fd.Wrap = b
+		}
+	}
+	if variantsVal, ok := m.Get("variants"); ok {
+		if variants, ok := variantsVal.(*OrderedMap); ok {
+			fd.Variants = variants
+		}
+	}
+	if slotsVal, ok := m.Get("slots"); ok {
+		if slots, ok := slotsVal.(*OrderedMap); ok {
+			fd.Slots = slots
+		}
+	}
+	if defaultsVal, ok := m.Get("defaults"); ok {
+		if defaults, ok := defaultsVal.(*OrderedMap); ok {
+			fd.Defaults = defaults
+		}
+	}
+	if requiredVal, ok := m.Get("required"); ok {
+		if arr, ok := requiredVal.([]interface{}); ok {
+			for _, item := range arr {
+				if s, ok := item.(string); ok && s != "" {
+					fd.Required = append(fd.Required, s)
+				}
+			}
+		}
+	}
 	return fd
+}
+
+func mergedFormatParams(fd *formatDef, vars map[string]string) *OrderedMap {
+	if fd == nil {
+		return nil
+	}
+	out := NewOrderedMap()
+	if fd.Params != nil {
+		fd.Params.Range(func(k string, v interface{}) bool {
+			out.Set(k, v)
+			return true
+		})
+	}
+	if fd.Variants != nil && vars != nil {
+		if variant, ok := vars["variant"]; ok && variant != "" {
+			if vv, ok := fd.Variants.Get(variant); ok {
+				if vm, ok := vv.(*OrderedMap); ok {
+					vm.Range(func(k string, v interface{}) bool {
+						out.Set(k, v)
+						return true
+					})
+				}
+			}
+		}
+	}
+	style := computeLayoutStyle(fd)
+	if style != "" {
+		existing := ""
+		if ev, ok := out.Get("style"); ok {
+			existing = fmt.Sprintf("%v", ev)
+		}
+		if existing != "" {
+			style = strings.TrimSpace(existing)
+			if !strings.HasSuffix(style, ";") {
+				style += ";"
+			}
+			style += " " + computeLayoutStyle(fd)
+		}
+		out.Set("style", style)
+	}
+	if out.Len() == 0 {
+		return nil
+	}
+	return out
+}
+
+func computeLayoutStyle(fd *formatDef) string {
+	if fd == nil {
+		return ""
+	}
+	parts := []string{}
+	switch fd.Layout {
+	case "flex", "stack":
+		parts = append(parts, "display:flex")
+		if fd.Layout == "stack" {
+			parts = append(parts, "flex-direction:column")
+		}
+		if fd.Wrap {
+			parts = append(parts, "flex-wrap:wrap")
+		}
+	case "grid":
+		parts = append(parts, "display:grid")
+		if fd.Columns != "" {
+			parts = append(parts, "grid-template-columns:"+fd.Columns)
+		}
+	}
+	if fd.Gap != "" {
+		parts = append(parts, "gap:"+fd.Gap)
+	}
+	if fd.Align != "" {
+		parts = append(parts, "align-items:"+fd.Align)
+	}
+	if fd.Justify != "" {
+		parts = append(parts, "justify-content:"+fd.Justify)
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return strings.Join(parts, "; ") + ";"
+}
+
+func fillDefaultVars(fd *formatDef, vars map[string]string) map[string]string {
+	if vars == nil {
+		vars = make(map[string]string)
+	}
+	if fd == nil || fd.Defaults == nil {
+		return vars
+	}
+	fd.Defaults.Range(func(k string, v interface{}) bool {
+		if _, ok := vars[k]; !ok {
+			vars[k] = fmt.Sprintf("%v", v)
+		}
+		return true
+	})
+	return vars
+}
+
+func missingRequiredVars(fd *formatDef, vars map[string]string) []string {
+	if fd == nil || len(fd.Required) == 0 {
+		return nil
+	}
+	var missing []string
+	for _, k := range fd.Required {
+		if vars == nil || vars[k] == "" {
+			missing = append(missing, k)
+		}
+	}
+	return missing
 }
 
 // hasVarSubstitution checks if a format def uses $key/$value in params or ParamsWildcard.
