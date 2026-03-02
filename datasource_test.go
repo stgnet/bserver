@@ -11,7 +11,7 @@ func TestDataSourceBasic(t *testing.T) {
 	dir := setupMinimalSite(t, map[string]string{
 		"index.yaml": "main:\n - items\n",
 		"items.yaml": "$items:\n  script: python\n  code: |\n    import json\n    print(json.dumps({\"alpha\": \"one\", \"beta\": \"two\"}))\n",
-		"^items": "", // no format needed, will render as name refs
+		"^items":     "", // no format needed, will render as name refs
 	})
 
 	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
@@ -68,7 +68,7 @@ func TestDataSourcePreloadedFile(t *testing.T) {
 	// resolveAll), the data source must still execute. This tests the
 	// fallback data source check at the end of findDefinition.
 	dir := setupMinimalSite(t, map[string]string{
-		"index.yaml": "main:\n - navlinks\n",
+		"index.yaml":    "main:\n - navlinks\n",
 		"navlinks.yaml": "$navlinks:\n  script: python\n  code: |\n    import json\n    print(json.dumps({\"key1\": \"val1\"}))\n",
 	})
 
@@ -97,5 +97,41 @@ func TestDataSourceNavlinksIntegration(t *testing.T) {
 		if !strings.Contains(output, link) {
 			t.Errorf("expected navlink %q in output", link)
 		}
+	}
+}
+
+func TestDataSourcePipelineFilterSortPaginate(t *testing.T) {
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n - items\n",
+		"items.yaml": `$items:
+  script: python
+  code: |
+    import json
+    print(json.dumps([
+      {"name": "Charlie", "kind": "post"},
+      {"name": "Alpha", "kind": "post"},
+      {"name": "Bravo", "kind": "note"},
+      {"name": "Delta", "kind": "post"}
+    ]))
+  where:
+    kind: post
+  sort: name
+  order: asc
+  page: 1
+  per-page: 2
+
+^items:
+  script: python
+  code: |
+    print(f'<li>{record["name"]}</li>')
+`,
+	})
+
+	out, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	if !strings.Contains(out, "<li>Alpha</li>") || !strings.Contains(out, "<li>Charlie</li>") {
+		t.Fatalf("expected first paginated filtered/sorted results, got:\n%s", out)
+	}
+	if strings.Contains(out, "<li>Delta</li>") || strings.Contains(out, "<li>Bravo</li>") {
+		t.Fatalf("unexpected item in paginated output, got:\n%s", out)
 	}
 }

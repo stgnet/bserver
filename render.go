@@ -804,8 +804,8 @@ func (ctx *renderContext) renderName(sb *strings.Builder, name string, depth int
 			converted := ctx.processMarkup(fd.Markup, str)
 			if tag != "" {
 				attrs := ""
-				if fd.Params != nil {
-					attrs = formatParamsWithVars(fd.Params, nil)
+				if fd != nil {
+					attrs = formatParamsWithVars(mergedFormatParams(fd, nil), nil)
 				}
 				writeTagWithContent(sb, tag, attrs, converted, depth)
 			} else {
@@ -829,8 +829,8 @@ func (ctx *renderContext) renderName(sb *strings.Builder, name string, depth int
 	// We have a tag (either from ^name or because name is an HTML tag)
 	if tag != "" {
 		attrs := ""
-		if fd != nil && fd.Params != nil {
-			attrs = formatParamsWithVars(fd.Params, nil)
+		if fd != nil {
+			attrs = formatParamsWithVars(mergedFormatParams(fd, nil), nil)
 		}
 		if found {
 			ctx.resolving[name] = true
@@ -1049,8 +1049,8 @@ func (ctx *renderContext) renderInlineTag(sb *strings.Builder, name, tag string,
 			converted := ctx.processMarkup(fd.Markup, str)
 			if tag != "" {
 				attrs := ""
-				if fd.Params != nil {
-					attrs = formatParamsWithVars(fd.Params, nil)
+				if fd != nil {
+					attrs = formatParamsWithVars(mergedFormatParams(fd, nil), nil)
 				}
 				writeTagWithContent(sb, tag, attrs, converted, depth)
 			} else {
@@ -1086,6 +1086,7 @@ func (ctx *renderContext) renderInlineTag(sb *strings.Builder, name, tag string,
 		// Map it to $* and also to all named $vars in params and contents (e.g., $url, $contents).
 		if str, ok := content.(string); ok {
 			vars := map[string]string{"*": str}
+			vars = fillDefaultVars(fd, vars)
 			fd.Params.Range(func(_ string, pvRaw interface{}) bool {
 				pv := fmt.Sprintf("%v", pvRaw)
 				for _, vn := range extractVarNames(pv) {
@@ -1103,7 +1104,11 @@ func (ctx *renderContext) renderInlineTag(sb *strings.Builder, name, tag string,
 					}
 				}
 			}
-			attrs := formatParamsWithVars(fd.Params, vars)
+			if missing := missingRequiredVars(fd, vars); len(missing) > 0 {
+				fmt.Fprintf(sb, "<!-- %s: missing required props: %s -->\n", name, strings.Join(missing, ", "))
+				return
+			}
+			attrs := formatParamsWithVars(mergedFormatParams(fd, vars), vars)
 			contentsVal := substituteVars(fd.Contents, vars)
 			if voidElements[tag] {
 				fmt.Fprintf(sb, "%s<%s%s>\n", indent(depth), tag, attrs)
@@ -1134,8 +1139,28 @@ func (ctx *renderContext) renderInlineTag(sb *strings.Builder, name, tag string,
 	}
 
 	attrs := ""
-	if fd != nil && fd.Params != nil {
-		attrs = formatParamsWithVars(fd.Params, nil)
+	if fd != nil {
+		attrs = formatParamsWithVars(mergedFormatParams(fd, nil), nil)
+	}
+
+	if fd != nil && fd.Slots != nil {
+		if m, ok := content.(*OrderedMap); ok {
+			m.Range(func(k string, v interface{}) bool {
+				if _, exists := ctx.defs[k]; !exists {
+					ctx.defs[k] = v
+				}
+				return true
+			})
+			fd.Slots.Range(func(slot string, def interface{}) bool {
+				if !m.Has(slot) {
+					m.Set(slot, def)
+				}
+				if _, exists := ctx.defs[slot]; !exists {
+					ctx.defs[slot] = def
+				}
+				return true
+			})
+		}
 	}
 
 	if content == nil {
@@ -1223,7 +1248,7 @@ func (ctx *renderContext) renderInlineTag(sb *strings.Builder, name, tag string,
 
 	// Otherwise render children recursively
 	// For list-type tags (ul, ol), auto-wrap list items in <li>
-	if (tag == "ul" || tag == "ol") {
+	if tag == "ul" || tag == "ol" {
 		if items, ok := content.([]interface{}); ok {
 			fmt.Fprintf(sb, "%s<%s%s>\n", indent(depth), tag, attrs)
 			for _, item := range items {
@@ -1491,8 +1516,13 @@ func (ctx *renderContext) renderFormattedEntry(sb *strings.Builder, name string,
 		vars[k] = fmt.Sprintf("%v", v)
 		return true
 	})
+	vars = fillDefaultVars(fd, vars)
+	if missing := missingRequiredVars(fd, vars); len(missing) > 0 {
+		fmt.Fprintf(sb, "<!-- %s: missing required props: %s -->\n", name, strings.Join(missing, ", "))
+		return
+	}
 
-	attrs := formatParamsWithVars(fd.Params, vars)
+	attrs := formatParamsWithVars(mergedFormatParams(fd, vars), vars)
 	contentsVal := substituteVars(fd.Contents, vars)
 
 	if ctx.debug {
@@ -1639,4 +1669,3 @@ func computeRequestURI(docRoot, reqPath string) string {
 	}
 	return "/" + rel
 }
-
