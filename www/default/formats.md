@@ -375,3 +375,80 @@ main:
 
 - [Built-in Components](/components) - See all pre-defined formats
 - [Server-Side Scripts](/scripts) - Dynamic rendering with code
+
+## Layout Primitives (New)
+
+Format definitions can now apply common layout behavior directly with format
+fields, without manually writing `style:` everywhere.
+
+### Supported layout fields
+
+- `layout`: `flex`, `grid`, or `stack`
+- `gap`: spacing between children (for example `1rem`)
+- `columns`: grid template columns (for example `repeat(3, 1fr)`)
+- `align`: maps to `align-items`
+- `justify`: maps to `justify-content`
+- `wrap`: `true` enables `flex-wrap: wrap` for flex/stack layouts
+
+Example:
+
+```yaml
+^cards:
+  tag: section
+  layout: grid
+  columns: repeat(3, minmax(0, 1fr))
+  gap: 1rem
+  content: '$*'
+```
+
+## Component Props: variants, defaults, required (New)
+
+Formats can now model reusable component APIs.
+
+### defaults
+
+Provide fallback values for variables used in params/content:
+
+```yaml
+^button:
+  tag: a
+  defaults:
+    variant: primary
+```
+
+### variants
+
+Map `variant` names to attribute sets (typically classes):
+
+```yaml
+^button:
+  tag: a
+  variants:
+    primary:
+      class: btn btn-primary
+    ghost:
+      class: btn btn-outline-secondary
+  params:
+    href: '$url'
+  content: '$label'
+```
+
+Use by passing `variant` in content data:
+
+```yaml
+- button:
+    url: /contact
+    label: Contact
+    variant: ghost
+```
+
+### required
+
+Declare required props. If missing, bserver emits an HTML comment describing
+missing props so template errors are visible in page output/debugging:
+
+```yaml
+^button:
+  tag: a
+  required: [url, label]
+```
