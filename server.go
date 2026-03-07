@@ -205,6 +205,22 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Fallback: if the requested file has an extension and doesn't exist,
+	// try replacing the extension with .yaml or .md
+	if ext := filepath.Ext(fsPath); ext != "" {
+		base := strings.TrimSuffix(fsPath, ext)
+		yamlPath := base + ".yaml"
+		if st, err := os.Stat(yamlPath); err == nil && !st.IsDir() {
+			m.handleYAML(w, r, root, yamlPath, site)
+			return
+		}
+		mdPath := base + ".md"
+		if st, err := os.Stat(mdPath); err == nil && !st.IsDir() {
+			m.handleMarkdown(w, r, root, mdPath, site)
+			return
+		}
+	}
+
 	m.serveErrorPage(w, r, root, http.StatusNotFound, "", site)
 }
 
