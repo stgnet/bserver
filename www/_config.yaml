@@ -69,3 +69,48 @@
 #  - index.php
 #  - index.html
 #  - index.htm
+
+# Allowed file types. Only files whose extension appears in this list will be
+# served. Requests for unlisted extensions return 404, even if the file exists.
+# This is a security measure to prevent accidentally exposing configuration
+# files, secrets, or other sensitive data (e.g., .json, .env, .sql, .log).
+# Extensions are matched case-insensitively; leading dots are optional.
+# Can be a YAML list or a comma-separated string.
+# Env: TYPES
+# Default:
+#types:
+#  - yaml
+#  - md
+#  - php
+#  - html
+#  - htm
+#  - css
+#  - js
+#  - map
+#  - wasm
+#  - gif
+#  - jpg
+#  - jpeg
+#  - png
+#  - svg
+#  - ico
+#  - webp
+#  - avif
+#  - bmp
+#  - woff
+#  - woff2
+#  - ttf
+#  - eot
+#  - otf
+#  - pdf
+#  - txt
+#  - xml
+#  - csv
+#  - mp3
+#  - mp4
+#  - webm
+#  - ogg
+#  - wav
+#  - mp2
+#  - zip
+#  - gz
