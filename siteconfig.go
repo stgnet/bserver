@@ -19,6 +19,7 @@ type siteSettings struct {
 	StaticAge    time.Duration
 	ParentLevels int
 	Index        []string
+	Types        []string // allowed file extensions (without dots), e.g. ["html", "css", "jpg"]
 }
 
 // loadConfigMap loads a _config.yaml file and returns its contents as a map.
@@ -124,7 +125,41 @@ func applySiteSettings(m map[string]interface{}, defaults siteSettings) siteSett
 	if idx, ok := configIndex(m, "index"); ok {
 		s.Index = idx
 	}
+	if types, ok := configIndex(m, "types"); ok {
+		s.Types = normalizeTypes(types)
+	}
 	return s
+}
+
+// normalizeTypes lowercases each entry and strips any leading dot.
+func normalizeTypes(raw []string) []string {
+	out := make([]string, 0, len(raw))
+	for _, t := range raw {
+		t = strings.TrimSpace(strings.ToLower(t))
+		t = strings.TrimPrefix(t, ".")
+		if t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+// isAllowedType checks whether a file extension (with or without leading dot)
+// is in the allowed types list. Returns true if the list is empty (no filtering).
+func isAllowedType(ext string, types []string) bool {
+	if len(types) == 0 {
+		return true
+	}
+	ext = strings.TrimPrefix(strings.ToLower(ext), ".")
+	if ext == "" {
+		return true // no extension — handled elsewhere (sibling lookup etc.)
+	}
+	for _, t := range types {
+		if t == ext {
+			return true
+		}
+	}
+	return false
 }
 
 // --- Per-vhost config caching ---

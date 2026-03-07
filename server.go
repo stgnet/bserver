@@ -130,6 +130,14 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Block file types not in the allowed types list
+	if ext := filepath.Ext(fsPath); ext != "" {
+		if !isAllowedType(ext, site.Types) {
+			m.serveErrorPage(w, r, root, http.StatusNotFound, "", site)
+			return
+		}
+	}
+
 	if strings.HasSuffix(strings.ToLower(fsPath), ".php") {
 		if st, err := os.Stat(fsPath); err == nil && !st.IsDir() {
 			m.handlePHP(w, r, host, root, fsPath)
@@ -595,6 +603,31 @@ func main() {
 		indexPriority = []string{"index.yaml", "index.md", "index.php", "index.html", "index.htm"}
 	}
 
+	// Allowed file types: _config.yaml > TYPES env > default
+	var allowedTypes []string
+	if types, ok := configIndex(yamlCfg, "types"); ok {
+		allowedTypes = normalizeTypes(types)
+	} else if v := os.Getenv("TYPES"); v != "" {
+		var raw []string
+		for _, p := range strings.Split(v, ",") {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				raw = append(raw, p)
+			}
+		}
+		allowedTypes = normalizeTypes(raw)
+	} else {
+		allowedTypes = []string{
+			"yaml", "md", "php", "html", "htm",
+			"css", "js", "map", "wasm",
+			"gif", "jpg", "jpeg", "png", "svg", "ico", "webp", "avif", "bmp",
+			"woff", "woff2", "ttf", "eot", "otf",
+			"pdf", "txt", "xml", "csv",
+			"mp3", "mp4", "webm", "ogg", "wav", "mp2",
+			"zip", "gz",
+		}
+	}
+
 	// Warn if php-cgi was not found
 	if phpcgi == "" {
 		log.Printf("Warning: php-cgi not found in PATH or common locations; .php files will not work (set php in _config.yaml or PHP_CGI env)")
@@ -632,6 +665,7 @@ func main() {
 			StaticAge:    maxStaticAge,
 			ParentLevels: maxParentLvls,
 			Index:        indexPriority,
+			Types:        allowedTypes,
 		},
 	}
 
