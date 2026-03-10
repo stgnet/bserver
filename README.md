@@ -29,6 +29,7 @@ Names resolve by searching upward through directories — your site's `navlinks.
 - **Markdown support** — `.md` files render with full site chrome (navbar, header, footer, styles)
 - **Format definitions** — Reusable HTML templates via the `^name` prefix, with variable substitution
 - **Cascading name resolution** — Definitions resolve upward through directories, child overrides parent
+- **Proxy mode** — Reverse-proxy a vhost to a backend server with a one-line `index.yaml`
 - **Virtual hosting** — Serve multiple domains from subdirectories, with a `default/` fallback
 - **Automatic HTTPS** — Let's Encrypt certificates with self-signed fallback for local development
 - **Bootstrap 5** — Pre-configured CSS and Font Awesome out of the box
@@ -139,6 +140,17 @@ bserver/
 ```
 
 The shared YAML definitions in `www/` are readable and can be copied into any virtual host directory to customize behavior.
+
+## Proxy Mode
+
+Any virtual host can act as a reverse proxy instead of serving files. Create a vhost directory with an `index.yaml` containing an `http:` key:
+
+```yaml
+# www/app.example.com/index.yaml
+http: '192.168.1.2:8080'
+```
+
+All requests to that domain are forwarded to the backend. The proxy configuration is cached and automatically reloaded when `index.yaml` changes. If the backend is unreachable, a `502 Bad Gateway` is returned.
 
 ## Installing as a Service
 
