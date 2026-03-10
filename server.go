@@ -18,6 +18,8 @@ import (
 	"mime"
 	"net"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -56,6 +58,75 @@ type virtualHostMux struct {
 	sync.Mutex
 }
 
+// proxyEntry caches a reverse proxy for a vhost whose index.yaml defines
+// an http: backend target.
+type proxyEntry struct {
+	proxy   *httputil.ReverseProxy // nil if not a proxy vhost
+	modTime time.Time              // mtime of index.yaml (zero if absent)
+}
+
+var proxyCache sync.Map // docRoot -> *proxyEntry
+
+// getProxyForVhost checks whether the vhost at docRoot is a proxy vhost
+// by reading its index.yaml for an "http:" key. Results are cached with
+// mtime-based invalidation. Returns nil if not a proxy vhost.
+func getProxyForVhost(docRoot string) *httputil.ReverseProxy {
+	indexPath := filepath.Join(docRoot, "index.yaml")
+
+	var currentMtime time.Time
+	info, err := os.Stat(indexPath)
+	if err != nil {
+		// No index.yaml — not a proxy vhost; cache the absence.
+		if cached, ok := proxyCache.Load(docRoot); ok {
+			entry := cached.(*proxyEntry)
+			if entry.modTime.IsZero() {
+				return nil
+			}
+		}
+		proxyCache.Store(docRoot, &proxyEntry{modTime: time.Time{}})
+		return nil
+	}
+	currentMtime = info.ModTime()
+
+	// Return cached proxy if mtime matches
+	if cached, ok := proxyCache.Load(docRoot); ok {
+		entry := cached.(*proxyEntry)
+		if entry.modTime.Equal(currentMtime) {
+			return entry.proxy
+		}
+	}
+
+	// Read and parse index.yaml
+	m := loadConfigMap(indexPath)
+	backend, ok := configString(m, "http", "")
+	if !ok || backend == "" {
+		proxyCache.Store(docRoot, &proxyEntry{modTime: currentMtime})
+		return nil
+	}
+
+	// Ensure the backend has a scheme
+	if !strings.Contains(backend, "://") {
+		backend = "http://" + backend
+	}
+
+	target, err := url.Parse(backend)
+	if err != nil {
+		log.Printf("Warning: invalid proxy backend %q in %s: %v", backend, indexPath, err)
+		proxyCache.Store(docRoot, &proxyEntry{modTime: currentMtime})
+		return nil
+	}
+
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+		log.Printf("proxy error for %s -> %s: %v", r.Host, target, err)
+		http.Error(w, "Bad Gateway", http.StatusBadGateway)
+	}
+
+	log.Printf("Proxy vhost %s -> %s", docRoot, target)
+	proxyCache.Store(docRoot, &proxyEntry{proxy: proxy, modTime: currentMtime})
+	return proxy
+}
+
 func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	host := r.Host
 	if h, _, err := net.SplitHostPort(host); err == nil {
@@ -80,6 +151,12 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		root = defaultRoot
+	}
+
+	// Check if this vhost is a proxy (index.yaml with http: backend)
+	if proxy := getProxyForVhost(root); proxy != nil {
+		proxy.ServeHTTP(w, r)
+		return
 	}
 
 	// Resolve per-vhost settings (cached, mtime-invalidated)
