@@ -105,7 +105,12 @@ func (ctx *renderContext) buildScriptEnv(scriptFile string) []string {
 	}
 	if len(ctx.postBody) > 0 {
 		env = append(env, fmt.Sprintf("CONTENT_LENGTH=%d", len(ctx.postBody)))
-		env = append(env, "_POST_DATA="+string(ctx.postBody))
+		// Cap _POST_DATA at 1MB to stay within OS environment block limits
+		// (Linux ARG_MAX is typically ~2MB for combined args+env).
+		// Larger POST bodies are still available to PHP-CGI via stdin.
+		if len(ctx.postBody) <= 1<<20 {
+			env = append(env, "_POST_DATA="+string(ctx.postBody))
+		}
 	} else if r.ContentLength >= 0 {
 		env = append(env, fmt.Sprintf("CONTENT_LENGTH=%d", r.ContentLength))
 	}

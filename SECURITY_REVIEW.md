@@ -4,6 +4,18 @@
 **Reviewer:** Claude (automated security analysis)
 **Scope:** Full source review of all `.go` files, shell scripts, CI config, and YAML templates.
 
+## Remediation Status
+
+| # | Finding | Status |
+|---|---------|--------|
+| 1 | Script execution from YAML | Accepted (trusted authors) |
+| 2 | POST body in env var | **FIXED** — capped at 1MB |
+| 3 | No request body size limit | **FIXED** — configurable `max-body-size` (default 10MB) |
+| 4 | Path traversal in vhost | **FIXED** — Host header validated |
+| 5 | PHP-CGI header injection | **FIXED** — header names/values sanitized |
+| 6 | SSRF via proxy mode | Accepted (same trust model as #1) |
+| 7 | Script PATH/HOME inheritance | Accepted (intentional; needed for macOS launchd) |
+
 ---
 
 ## Executive Summary
