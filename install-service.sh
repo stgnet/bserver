@@ -237,9 +237,13 @@ EOF
 
     systemctl daemon-reload
     systemctl enable "$SERVICE_NAME"
-    systemctl start  "$SERVICE_NAME"
-
-    info "Service installed and started."
+    if systemctl is-active --quiet "$SERVICE_NAME"; then
+        systemctl restart "$SERVICE_NAME"
+        info "Service reinstalled and restarted."
+    else
+        systemctl start "$SERVICE_NAME"
+        info "Service installed and started."
+    fi
     info "Useful commands:"
     echo "    sudo systemctl status  $SERVICE_NAME"
     echo "    sudo systemctl restart $SERVICE_NAME"
@@ -328,6 +332,7 @@ install_launchd() {
 EOF
 
     chmod 644 "$PLIST_FILE"
+    launchctl unload "$PLIST_FILE" 2>/dev/null || true
     launchctl load -w "$PLIST_FILE"
 
     info "Service installed and loaded."
