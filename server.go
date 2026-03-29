@@ -495,6 +495,8 @@ func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docR
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if !debug && !dynamic && len(scriptHeaders) == 0 {
 		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
+	} else if len(scriptHeaders) > 0 {
+		w.Header().Set("Cache-Control", "no-store")
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(output))
@@ -536,6 +538,8 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if !debug && !dynamic && len(scriptHeaders) == 0 {
 		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
+	} else if len(scriptHeaders) > 0 {
+		w.Header().Set("Cache-Control", "no-store")
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(output))
