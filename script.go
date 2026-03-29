@@ -422,6 +422,10 @@ func phpScriptWrapper(userCode string) string {
 	sb.WriteString("$_POST = []; $_postData = getenv('_POST_DATA'); if ($_postData !== false && getenv('REQUEST_METHOD') === 'POST') { $_ct = getenv('CONTENT_TYPE') ?: ''; if (stripos($_ct, 'application/x-www-form-urlencoded') !== false) { parse_str($_postData, $_POST); } elseif (stripos($_ct, 'application/json') !== false) { $_POST = json_decode($_postData, true) ?: []; } }\n")
 	// Populate $_REQUEST from merged GET+POST+COOKIE
 	sb.WriteString("$_REQUEST = array_merge($_COOKIE, $_GET, $_POST);\n")
+	// In CLI mode the default session.save_path (e.g. /var/lib/php/sessions)
+	// may not be writable by the bserver process user. Use the system temp dir
+	// which is universally writable.
+	sb.WriteString("if (session_save_path() === '' || !is_writable(session_save_path())) { session_save_path(sys_get_temp_dir()); }\n")
 	// In CLI mode, session_start() doesn't read $_COOKIE, so pre-set the
 	// session ID from the cookie so an existing session is resumed.
 	sb.WriteString("if (isset($_COOKIE[session_name()])) { session_id($_COOKIE[session_name()]); }\n")
@@ -434,17 +438,22 @@ func phpScriptWrapper(userCode string) string {
 	sb.WriteString("\n}\n")
 	// Flush buffered output, then emit headers and body with sentinel markers
 	sb.WriteString("$_body = ob_get_clean();\n")
-	// Flush session data to disk before we finish
-	sb.WriteString("$_bserver_sid = session_id();\n")
-	sb.WriteString("if ($_bserver_sid !== '' && $_bserver_sid !== false) { session_write_close(); }\n")
+	// Only flush and emit session cookie if session_start() was actually
+	// called by user code.  Checking session_status() avoids false positives
+	// from session_id() being pre-set from cookies above.
+	sb.WriteString("$_bserver_session_active = (session_status() === PHP_SESSION_ACTIVE);\n")
+	sb.WriteString("$_bserver_sid = $_bserver_session_active ? session_id() : '';\n")
+	sb.WriteString("if ($_bserver_session_active) { session_write_close(); }\n")
 	// In CLI mode, headers_list() returns empty, so we manually build
 	// the Set-Cookie header for session persistence.
 	sb.WriteString("$_hdrs = headers_list();\n")
-	sb.WriteString("if ($_bserver_sid !== '' && $_bserver_sid !== false) {\n")
+	sb.WriteString("if ($_bserver_sid !== '') {\n")
 	sb.WriteString("  $_hasSessCookie = false;\n")
 	sb.WriteString("  foreach ($_hdrs as $_h) { if (stripos($_h, 'Set-Cookie') === 0 && stripos($_h, session_name()) !== false) { $_hasSessCookie = true; break; } }\n")
 	sb.WriteString("  if (!$_hasSessCookie) {\n")
-	sb.WriteString("    $_hdrs[] = 'Set-Cookie: ' . session_name() . '=' . urlencode($_bserver_sid) . '; path=/; HttpOnly; SameSite=Lax';\n")
+	sb.WriteString("    $_bserver_cookie = 'Set-Cookie: ' . session_name() . '=' . urlencode($_bserver_sid) . '; path=/; HttpOnly; SameSite=Lax';\n")
+	sb.WriteString("    if (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] === '443') { $_bserver_cookie .= '; Secure'; }\n")
+	sb.WriteString("    $_hdrs[] = $_bserver_cookie;\n")
 	sb.WriteString("  }\n")
 	sb.WriteString("}\n")
 	sb.WriteString("if (!empty($_hdrs)) {\n")
