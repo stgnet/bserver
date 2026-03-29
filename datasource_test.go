@@ -14,7 +14,7 @@ func TestDataSourceBasic(t *testing.T) {
 		"^items": "", // no format needed, will render as name refs
 	})
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	// The data source should produce an OrderedMap with alpha and beta keys.
 	// Without a format, they'll be rendered as name references (and show as undefined).
 	// The key test is that the data source executed and didn't error.
@@ -29,7 +29,7 @@ func TestDataSourceList(t *testing.T) {
 		"items.yaml": "$items:\n  script: python\n  code: |\n    import json\n    print(json.dumps([{\"key\": \"/a\", \"value\": \"Alpha\"}, {\"key\": \"/b\", \"value\": \"Beta\"}]))\n\n^items:\n  script: python\n  code: |\n    print(f'<li>{record[\"value\"]}</li>')\n",
 	})
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if !strings.Contains(output, "<li>Alpha</li>") {
 		t.Errorf("expected Alpha in output, got: %s", output)
 	}
@@ -44,7 +44,7 @@ func TestDataSourceDebug(t *testing.T) {
 		"items.yaml": "$items:\n  script: python\n  code: |\n    import json\n    print(json.dumps([\"hello\"]))\n",
 	})
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), true, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), true, 1, nil)
 	if !strings.Contains(output, "resolve") {
 		t.Log("Debug output:", output)
 	}
@@ -57,7 +57,7 @@ func TestDataSourceErrorHandled(t *testing.T) {
 	})
 
 	// Should not panic; data source fails so the name is output as plain text
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if !strings.Contains(output, "items") {
 		t.Log("output:", output)
 	}
@@ -82,7 +82,7 @@ func TestDataSourceNavlinksIntegration(t *testing.T) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "www", "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
-	output, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
+	output, _, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
 
 	// The data source should auto-generate navlinks from directory contents
 	expectedLinks := []string{

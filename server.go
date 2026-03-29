@@ -477,10 +477,17 @@ func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docR
 		}
 	}
 
-	output, sourceFiles := renderYAMLPage(docRoot, yamlPath, debug, site.ParentLevels, r)
+	output, sourceFiles, scriptHeaders := renderYAMLPage(docRoot, yamlPath, debug, site.ParentLevels, r)
 
 	if !debug && !dynamic && m.cfg.Cache != nil {
 		m.cfg.Cache.Put(key, output, sourceFiles)
+	}
+
+	// Apply any HTTP headers emitted by PHP scripts (e.g., Set-Cookie for sessions)
+	for key, vals := range scriptHeaders {
+		for _, v := range vals {
+			w.Header().Add(key, v)
+		}
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -509,10 +516,17 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 		}
 	}
 
-	output, sourceFiles := renderMarkdownPage(docRoot, mdPath, debug, site.ParentLevels, r)
+	output, sourceFiles, scriptHeaders := renderMarkdownPage(docRoot, mdPath, debug, site.ParentLevels, r)
 
 	if !debug && !dynamic && m.cfg.Cache != nil {
 		m.cfg.Cache.Put(key, output, sourceFiles)
+	}
+
+	// Apply any HTTP headers emitted by PHP scripts (e.g., Set-Cookie for sessions)
+	for key, vals := range scriptHeaders {
+		for _, v := range vals {
+			w.Header().Add(key, v)
+		}
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

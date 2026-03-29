@@ -247,7 +247,32 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 		return "<!-- script timeout (30s) -->\n"
 	}
 
-	return stdout.String()
+	output := stdout.String()
+
+	// Parse headers emitted by PHP wrapper (session cookies, custom headers).
+	// Format: \x00--BSERVER-HEADERS--\x00\nHeader: val\n...\x00--BSERVER-BODY--\x00\nbody
+	const headerStart = "\x00--BSERVER-HEADERS--\x00\n"
+	const bodyStart = "\x00--BSERVER-BODY--\x00\n"
+	if strings.HasPrefix(output, headerStart) {
+		rest := output[len(headerStart):]
+		if idx := strings.Index(rest, bodyStart); idx >= 0 {
+			headerBlock := rest[:idx]
+			output = rest[idx+len(bodyStart):]
+			// Parse each header line and store on the render context
+			if ctx.responseHeaders == nil {
+				ctx.responseHeaders = make(http.Header)
+			}
+			for _, line := range strings.Split(strings.TrimRight(headerBlock, "\n"), "\n") {
+				if colon := strings.Index(line, ":"); colon > 0 {
+					key := strings.TrimSpace(line[:colon])
+					val := strings.TrimSpace(line[colon+1:])
+					ctx.responseHeaders.Add(key, val)
+				}
+			}
+		}
+	}
+
+	return output
 }
 
 // findScriptInterpreter locates a script language interpreter.
@@ -375,21 +400,43 @@ func shScriptWrapper(userCode string) string {
 // The user code has $record (an associative array) available for each iteration.
 // PHP CLI mode doesn't auto-populate $_GET/$_POST/$_SERVER from CGI env vars,
 // so we parse them manually from the environment.
+//
+// Session and header support: output is buffered with ob_start() so that
+// session_start(), header(), and setcookie() work. After user code runs,
+// any headers PHP has queued are emitted in a special block before the body:
+//
+//	\x00--BSERVER-HEADERS--\x00
+//	Header-Name: value
+//	\x00--BSERVER-BODY--\x00
+//	<html body here>
 func phpScriptWrapper(userCode string) string {
 	var sb strings.Builder
 	// Populate $_SERVER from CGI environment variables
 	sb.WriteString("foreach (['REQUEST_METHOD','REQUEST_URI','QUERY_STRING','CONTENT_TYPE','CONTENT_LENGTH','DOCUMENT_ROOT','SCRIPT_FILENAME','SCRIPT_NAME','PHP_SELF','SERVER_NAME','SERVER_PORT','SERVER_PROTOCOL','SERVER_SOFTWARE','GATEWAY_INTERFACE','REMOTE_ADDR','HTTP_HOST','REDIRECT_STATUS','SERVER_ADDR','PATH_INFO'] as $_k) { $_v = getenv($_k); if ($_v !== false) $_SERVER[$_k] = $_v; }\n")
 	sb.WriteString("foreach ($_SERVER as $_k => $_v) { if (strpos($_k, 'HTTP_') === 0) $_SERVER[$_k] = $_v; }\n")
+	// Populate $_COOKIE from HTTP_COOKIE env var
+	sb.WriteString("$_COOKIE = []; $_rawCookie = getenv('HTTP_COOKIE'); if ($_rawCookie !== false) { foreach (explode(';', $_rawCookie) as $_c) { $_c = trim($_c); if ($_c === '') continue; $_eq = strpos($_c, '='); if ($_eq !== false) { $_COOKIE[urldecode(substr($_c, 0, $_eq))] = urldecode(substr($_c, $_eq + 1)); } } }\n")
 	// Populate $_GET from QUERY_STRING
 	sb.WriteString("parse_str(getenv('QUERY_STRING') ?: '', $_GET);\n")
 	// Populate $_POST from _POST_DATA env var (body passed by bserver)
 	sb.WriteString("$_POST = []; $_postData = getenv('_POST_DATA'); if ($_postData !== false && getenv('REQUEST_METHOD') === 'POST') { $_ct = getenv('CONTENT_TYPE') ?: ''; if (stripos($_ct, 'application/x-www-form-urlencoded') !== false) { parse_str($_postData, $_POST); } elseif (stripos($_ct, 'application/json') !== false) { $_POST = json_decode($_postData, true) ?: []; } }\n")
-	// Populate $_REQUEST from merged GET+POST
-	sb.WriteString("$_REQUEST = array_merge($_GET, $_POST);\n")
+	// Populate $_REQUEST from merged GET+POST+COOKIE
+	sb.WriteString("$_REQUEST = array_merge($_COOKIE, $_GET, $_POST);\n")
+	// Buffer output so session_start()/header()/setcookie() can send headers
+	sb.WriteString("ob_start();\n")
 	sb.WriteString("$_data = json_decode(file_get_contents('php://stdin'), true);\n")
 	sb.WriteString("if (!is_array($_data)) $_data = [$_data];\n")
 	sb.WriteString("foreach ($_data as $record) {\n")
 	sb.WriteString(userCode)
 	sb.WriteString("\n}\n")
+	// Flush buffered output, then emit headers and body with sentinel markers
+	sb.WriteString("$_body = ob_get_clean();\n")
+	sb.WriteString("$_hdrs = headers_list();\n")
+	sb.WriteString("if (!empty($_hdrs)) {\n")
+	sb.WriteString("  echo \"\\x00--BSERVER-HEADERS--\\x00\\n\";\n")
+	sb.WriteString("  foreach ($_hdrs as $_h) echo $_h . \"\\n\";\n")
+	sb.WriteString("  echo \"\\x00--BSERVER-BODY--\\x00\\n\";\n")
+	sb.WriteString("}\n")
+	sb.WriteString("echo $_body;\n")
 	return sb.String()
 }
