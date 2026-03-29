@@ -226,6 +226,31 @@ func substituteContentWrap(wrap interface{}, content interface{}) interface{} {
 	}
 }
 
+// buildVarsFromString creates a variable map from a string value, mapping it
+// to $* and to all $varname tokens found in the format def's params and contents.
+func buildVarsFromString(fd *formatDef, str string) map[string]string {
+	vars := map[string]string{"*": str}
+	if fd.Params != nil {
+		fd.Params.Range(func(_ string, pvRaw interface{}) bool {
+			pv := fmt.Sprintf("%v", pvRaw)
+			for _, vn := range extractVarNames(pv) {
+				if _, exists := vars[vn]; !exists {
+					vars[vn] = str
+				}
+			}
+			return true
+		})
+	}
+	if fd.Contents != "" {
+		for _, vn := range extractVarNames(fd.Contents) {
+			if _, exists := vars[vn]; !exists {
+				vars[vn] = str
+			}
+		}
+	}
+	return vars
+}
+
 // substituteVars replaces $varname tokens in s using the vars map.
 func substituteVars(s string, vars map[string]string) string {
 	if !strings.Contains(s, "$") || vars == nil {
