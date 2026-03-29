@@ -422,6 +422,9 @@ func phpScriptWrapper(userCode string) string {
 	sb.WriteString("$_POST = []; $_postData = getenv('_POST_DATA'); if ($_postData !== false && getenv('REQUEST_METHOD') === 'POST') { $_ct = getenv('CONTENT_TYPE') ?: ''; if (stripos($_ct, 'application/x-www-form-urlencoded') !== false) { parse_str($_postData, $_POST); } elseif (stripos($_ct, 'application/json') !== false) { $_POST = json_decode($_postData, true) ?: []; } }\n")
 	// Populate $_REQUEST from merged GET+POST+COOKIE
 	sb.WriteString("$_REQUEST = array_merge($_COOKIE, $_GET, $_POST);\n")
+	// In CLI mode, session_start() doesn't read $_COOKIE, so pre-set the
+	// session ID from the cookie so an existing session is resumed.
+	sb.WriteString("if (isset($_COOKIE[session_name()])) { session_id($_COOKIE[session_name()]); }\n")
 	// Buffer output so session_start()/header()/setcookie() can send headers
 	sb.WriteString("ob_start();\n")
 	sb.WriteString("$_data = json_decode(file_get_contents('php://stdin'), true);\n")
@@ -431,7 +434,19 @@ func phpScriptWrapper(userCode string) string {
 	sb.WriteString("\n}\n")
 	// Flush buffered output, then emit headers and body with sentinel markers
 	sb.WriteString("$_body = ob_get_clean();\n")
+	// Flush session data to disk before we finish
+	sb.WriteString("$_bserver_sid = session_id();\n")
+	sb.WriteString("if ($_bserver_sid !== '' && $_bserver_sid !== false) { session_write_close(); }\n")
+	// In CLI mode, headers_list() returns empty, so we manually build
+	// the Set-Cookie header for session persistence.
 	sb.WriteString("$_hdrs = headers_list();\n")
+	sb.WriteString("if ($_bserver_sid !== '' && $_bserver_sid !== false) {\n")
+	sb.WriteString("  $_hasSessCookie = false;\n")
+	sb.WriteString("  foreach ($_hdrs as $_h) { if (stripos($_h, 'Set-Cookie') === 0 && stripos($_h, session_name()) !== false) { $_hasSessCookie = true; break; } }\n")
+	sb.WriteString("  if (!$_hasSessCookie) {\n")
+	sb.WriteString("    $_hdrs[] = 'Set-Cookie: ' . session_name() . '=' . urlencode($_bserver_sid) . '; path=/; HttpOnly; SameSite=Lax';\n")
+	sb.WriteString("  }\n")
+	sb.WriteString("}\n")
 	sb.WriteString("if (!empty($_hdrs)) {\n")
 	sb.WriteString("  echo \"\\x00--BSERVER-HEADERS--\\x00\\n\";\n")
 	sb.WriteString("  foreach ($_hdrs as $_h) echo $_h . \"\\n\";\n")
