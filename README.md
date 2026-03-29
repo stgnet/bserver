@@ -49,11 +49,11 @@ Requires [Go](https://go.dev/dl/) 1.24 or later.
 ```sh
 git clone https://github.com/stgnet/bserver.git
 cd bserver
-go build -o bserver
-./bserver -http :8080 -https ""
+go build
+./bserver
 ```
 
-Then visit `http://localhost:8080` to see the built-in documentation site.
+Then visit localhost (port 80 or as shown on startup) to see the built-in documentation site.
 
 A minimal page needs just an `index.yaml`:
 
@@ -141,23 +141,12 @@ bserver/
 
 The shared YAML definitions in `www/` are readable and can be copied into any virtual host directory to customize behavior.
 
-## Proxy Mode
-
-Any virtual host can act as a reverse proxy instead of serving files. Create a vhost directory with an `index.yaml` containing an `http:` key:
-
-```yaml
-# www/app.example.com/index.yaml
-http: '192.168.1.2:8080'
-```
-
-All requests to that domain are forwarded to the backend. The proxy configuration is cached and automatically reloaded when `index.yaml` changes. If the backend is unreachable, a `502 Bad Gateway` is returned.
-
 ## Installing as a Service
 
 ```sh
 git clone https://github.com/stgnet/bserver.git
 cd bserver
-go build -o bserver
+go build
 sudo ./install-service.sh
 ```
 
@@ -167,7 +156,7 @@ To update and restart after pulling new changes:
 
 ```sh
 git pull
-go build -o bserver
+go build
 sudo ./install-service.sh restart
 ```
 
