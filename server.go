@@ -18,6 +18,8 @@ import (
 	"mime"
 	"net"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -40,14 +42,15 @@ var Version = "dev"
 
 // config holds runtime configuration.
 type config struct {
-	Base     string // web content root (www directory)
-	HTTPAddr string
-	HTTPSAddr string
-	CacheDir string
-	LEEmail  string
-	PHPCGI   string // path to php-cgi
-	Cache    *renderCache
-	Site     siteSettings // server-wide defaults (per-vhost _config.yaml can override)
+	Base        string // web content root (www directory)
+	HTTPAddr    string
+	HTTPSAddr   string
+	CacheDir    string
+	LEEmail     string
+	PHPCGI      string // path to php-cgi
+	Cache       *renderCache
+	MaxBodySize int64        // max request body size in bytes (0 = unlimited)
+	Site        siteSettings // server-wide defaults (per-vhost _config.yaml can override)
 }
 
 // virtualHostMux dynamically serves based on cwd directories.
@@ -56,12 +59,88 @@ type virtualHostMux struct {
 	sync.Mutex
 }
 
+// proxyEntry caches a reverse proxy for a vhost whose index.yaml defines
+// an http: backend target.
+type proxyEntry struct {
+	proxy   *httputil.ReverseProxy // nil if not a proxy vhost
+	modTime time.Time              // mtime of index.yaml (zero if absent)
+}
+
+var proxyCache sync.Map // docRoot -> *proxyEntry
+
+// getProxyForVhost checks whether the vhost at docRoot is a proxy vhost
+// by reading its index.yaml for an "http:" key. Results are cached with
+// mtime-based invalidation. Returns nil if not a proxy vhost.
+func getProxyForVhost(docRoot string) *httputil.ReverseProxy {
+	indexPath := filepath.Join(docRoot, "index.yaml")
+
+	var currentMtime time.Time
+	info, err := os.Stat(indexPath)
+	if err != nil {
+		// No index.yaml — not a proxy vhost; cache the absence.
+		if cached, ok := proxyCache.Load(docRoot); ok {
+			entry := cached.(*proxyEntry)
+			if entry.modTime.IsZero() {
+				return nil
+			}
+		}
+		proxyCache.Store(docRoot, &proxyEntry{modTime: time.Time{}})
+		return nil
+	}
+	currentMtime = info.ModTime()
+
+	// Return cached proxy if mtime matches
+	if cached, ok := proxyCache.Load(docRoot); ok {
+		entry := cached.(*proxyEntry)
+		if entry.modTime.Equal(currentMtime) {
+			return entry.proxy
+		}
+	}
+
+	// Read and parse index.yaml
+	m := loadConfigMap(indexPath)
+	backend, ok := configString(m, "http", "")
+	if !ok || backend == "" {
+		proxyCache.Store(docRoot, &proxyEntry{modTime: currentMtime})
+		return nil
+	}
+
+	// Ensure the backend has a scheme
+	if !strings.Contains(backend, "://") {
+		backend = "http://" + backend
+	}
+
+	target, err := url.Parse(backend)
+	if err != nil {
+		log.Printf("Warning: invalid proxy backend %q in %s: %v", backend, indexPath, err)
+		proxyCache.Store(docRoot, &proxyEntry{modTime: currentMtime})
+		return nil
+	}
+
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+		log.Printf("proxy error for %s -> %s: %v", r.Host, target, err)
+		http.Error(w, "Bad Gateway", http.StatusBadGateway)
+	}
+
+	log.Printf("Proxy vhost %s -> %s", docRoot, target)
+	proxyCache.Store(docRoot, &proxyEntry{proxy: proxy, modTime: currentMtime})
+	return proxy
+}
+
 func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	host := r.Host
 	if h, _, err := net.SplitHostPort(host); err == nil {
 		host = h
 	}
 	host = strings.ToLower(host)
+
+	// Reject Host headers containing path separators or traversal sequences
+	// to prevent filesystem path manipulation (e.g., Host: ../../etc).
+	if strings.ContainsAny(host, "/\\") || strings.Contains(host, "..") {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
 
 	root := filepath.Join(m.cfg.Base, host)
 	if st, err := os.Stat(root); err != nil || !st.IsDir() {
@@ -80,6 +159,12 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		root = defaultRoot
+	}
+
+	// Check if this vhost is a proxy (index.yaml with http: backend)
+	if proxy := getProxyForVhost(root); proxy != nil {
+		proxy.ServeHTTP(w, r)
+		return
 	}
 
 	// Resolve per-vhost settings (cached, mtime-invalidated)
@@ -334,7 +419,8 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 
 	body := output[headerEnd+len(sep):]
 
-	// Parse CGI headers
+	// Parse CGI headers, sanitizing names and values to prevent
+	// HTTP response splitting via injected \r\n sequences.
 	statusCode := http.StatusOK
 	for _, line := range strings.Split(string(output[:headerEnd]), "\n") {
 		line = strings.TrimRight(line, "\r")
@@ -344,6 +430,13 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 		}
 		key := strings.TrimSpace(line[:colon])
 		val := strings.TrimSpace(line[colon+1:])
+
+		// Reject header names with invalid characters (RFC 7230: token)
+		if !isValidHeaderName(key) {
+			continue
+		}
+		// Strip \r and \n from values to prevent response splitting
+		val = sanitizeHeaderValue(val)
 
 		if strings.EqualFold(key, "Status") {
 			if parts := strings.SplitN(val, " ", 2); len(parts) > 0 {
@@ -597,6 +690,7 @@ func main() {
 	cacheMaxAgeSec := resolveInt("cache-age", int(defaultCacheMaxAge.Seconds()))
 	maxStaticAgeSec := resolveInt("static-age", 86400)
 	maxParentLvls := resolveInt("parent-levels", DefaultMaxParentLevels)
+	maxBodySizeMB := resolveInt("max-body-size", 10) // default 10 MB
 
 	// PHP: _config.yaml > PHP_CGI env > auto-detect
 	phpcgi := resolve("php", "PHP_CGI", "")
@@ -668,14 +762,17 @@ func main() {
 		log.Printf("Render cache disabled (cache-size: 0)")
 	}
 
+	maxBodySize := int64(maxBodySizeMB) * (1 << 20) // MB to bytes
+
 	cfg := &config{
-		Base:     base,
-		HTTPAddr: httpAddr,
-		HTTPSAddr: httpsAddr,
-		CacheDir: cacheDir,
-		LEEmail:  leEmail,
-		PHPCGI:   phpcgi,
-		Cache:    cache,
+		Base:        base,
+		HTTPAddr:    httpAddr,
+		HTTPSAddr:   httpsAddr,
+		CacheDir:    cacheDir,
+		LEEmail:     leEmail,
+		PHPCGI:      phpcgi,
+		Cache:       cache,
+		MaxBodySize: maxBodySize,
 		Site: siteSettings{
 			CacheAge:     cacheMaxAge,
 			StaticAge:    maxStaticAge,
@@ -688,9 +785,12 @@ func main() {
 	mux := &virtualHostMux{cfg: cfg}
 	rl := newRateLimiter()
 
-	// Wrap mux with logging, security headers, and rate limiting
+	// Wrap mux with logging, security headers, body size limit, and rate limiting
 	var handler http.Handler = mux
 	handler = securityHeadersMiddleware(handler)
+	if maxBodySize > 0 {
+		handler = maxBodySizeMiddleware(maxBodySize, handler)
+	}
 	handler = loggingMiddleware(handler)
 	handler = rateLimitMiddleware(rl, handler)
 
@@ -979,4 +1079,44 @@ func securityHeadersMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		next.ServeHTTP(w, r)
 	})
+}
+
+// maxBodySizeMiddleware limits the size of request bodies to prevent
+// memory exhaustion from oversized POST requests.
+func maxBodySizeMiddleware(maxBytes int64, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Body != nil && r.ContentLength > maxBytes {
+			http.Error(w, "Request Entity Too Large", http.StatusRequestEntityTooLarge)
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+		next.ServeHTTP(w, r)
+	})
+}
+
+// isValidHeaderName checks if s is a valid HTTP header field name (RFC 7230 token).
+func isValidHeaderName(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		// RFC 7230 token characters: !#$%&'*+-.^_`|~ DIGIT ALPHA
+		if c <= ' ' || c >= 0x7f || c == ':' || c == '"' || c == '/' ||
+			c == '(' || c == ')' || c == ',' || c == ';' || c == '<' ||
+			c == '=' || c == '>' || c == '?' || c == '@' || c == '[' ||
+			c == ']' || c == '{' || c == '}' || c == '\\' {
+			return false
+		}
+	}
+	return true
+}
+
+// sanitizeHeaderValue removes \r and \n from a header value to prevent
+// HTTP response splitting attacks.
+func sanitizeHeaderValue(s string) string {
+	if !strings.ContainsAny(s, "\r\n") {
+		return s
+	}
+	replacer := strings.NewReplacer("\r", "", "\n", "")
+	return replacer.Replace(s)
 }
