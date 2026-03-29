@@ -305,7 +305,9 @@ func (ctx *renderContext) renderListToHTML(list []interface{}) string {
 		if s, ok := elem.(string); ok {
 			tag, fd := ctx.tagForName(s)
 			if tag != "" && fd != nil {
-				ctx.renderInlineTag(&sb, s, tag, fd, nil, 0)
+				var buf strings.Builder
+				ctx.renderInlineTag(&buf, s, tag, fd, nil, 0)
+				sb.WriteString(strings.TrimRight(buf.String(), "\n"))
 				continue
 			}
 			sb.WriteString(html.EscapeString(s))

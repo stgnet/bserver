@@ -1103,6 +1103,10 @@ func TestNavlinksListIconFirst(t *testing.T) {
 	if iconIdx < 0 || textIdx < 0 || iconIdx > textIdx {
 		t.Errorf("expected icon before text (matching YAML order), got: %s", output)
 	}
+	// Icon and text must be on the same line (no newline between </i> and text)
+	if strings.Contains(output, "</i>\nLocation") {
+		t.Errorf("icon and text should be on the same line, got newline between them: %s", output)
+	}
 }
 
 func TestNavlinksListPlainStringsRendered(t *testing.T) {
@@ -1129,6 +1133,37 @@ func TestNavlinksListPlainStringsRendered(t *testing.T) {
 	}
 	if !strings.Contains(output, "Location") {
 		t.Errorf("expected text label in rendered HTML, got: %s", output)
+	}
+}
+
+func TestNavlinksIconTextNoNewline(t *testing.T) {
+	// Reproduces the real-world bug: icon and text in navlinks list must
+	// render on the same line with no newline between </i> and text.
+	dir := setupMinimalSite(t, map[string]string{
+		"index.yaml": "main:\n - navlinks\n",
+		"navlinks.yaml": "navlinks:\n  /: Home\n  /calendar:\n    - cal-icon\n    - Calendar\n",
+	})
+	os.WriteFile(filepath.Join(dir, "html.yaml"),
+		[]byte("html:\n - body\n\n"+
+			"^cal-icon:\n  tag: i\n  params:\n    class: fa-regular fa-calendar-days\n\n"+
+			"^navlinks:\n  script: python\n  code: |\n"+
+			"    import html as _html\n"+
+			"    key = record.get('key', '')\n"+
+			"    value = record.get('value', '')\n"+
+			"    if isinstance(value, dict) and '_html' in value:\n"+
+			"        label = value['_html']\n"+
+			"        print(f'<li class=\"nav-item\"><a class=\"nav-link\" href=\"{_html.escape(str(key))}\">{label}</a></li>')\n"+
+			"    else:\n"+
+			"        print(f'<li class=\"nav-item\"><a class=\"nav-link\" href=\"{_html.escape(str(key))}\">{_html.escape(str(value))}</a></li>')\n"), 0644)
+
+	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+
+	// Icon and text must be on same line, no newline between </i> and Calendar
+	if strings.Contains(output, "</i>\nCalendar") {
+		t.Errorf("newline between icon and text in navlink:\n%s", output)
+	}
+	if !strings.Contains(output, `<i class="fa-regular fa-calendar-days"></i>Calendar`) {
+		t.Errorf("expected icon immediately followed by text, got:\n%s", output)
 	}
 }
 
