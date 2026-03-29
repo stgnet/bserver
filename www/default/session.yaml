@@ -9,7 +9,7 @@ main:
     - p: "This page demonstrates PHP session support in bserver. Use the form to set session values, and they will persist across page loads."
     - php: |
         session_start();
-        echo '<pre>$_SESSION = '.print_r($_SESSION, true).'</pre>'."\n";
+        echo '<pre>$_SESSION = '.print_r($GLOBALS, true).'</pre>'."\n";
 
         // Handle form actions
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
