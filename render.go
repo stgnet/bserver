@@ -641,14 +641,12 @@ func (ctx *renderContext) resolveContent(val interface{}, depth int) {
 
 	case *OrderedMap:
 		v.Range(func(key string, child interface{}) bool {
-			// Trigger file loading first (e.g. jumbo.yaml for ^jumbo and +style)
-			// before checking tagForName, so formats are available.
 			ctx.findDefinition(key)
 
 			tag, _ := ctx.tagForName(key)
 			if tag != "" {
-				// It's a tag with inline content - resolve children
-				ctx.resolveInlineContent(child, depth+1)
+				// It's a tag with inline content - resolve children recursively
+				ctx.resolveContent(child, depth+1)
 			} else {
 				// Name reference: store inline content only if no file-based def exists
 				if child != nil {
@@ -664,39 +662,6 @@ func (ctx *renderContext) resolveContent(val interface{}, depth int) {
 	case []interface{}:
 		for _, item := range v {
 			ctx.resolveContent(item, depth+1)
-		}
-	}
-}
-
-// resolveInlineContent resolves names within inline tag content.
-func (ctx *renderContext) resolveInlineContent(val interface{}, depth int) {
-	if depth > maxRenderDepth {
-		return
-	}
-	switch v := val.(type) {
-	case *OrderedMap:
-		v.Range(func(key string, child interface{}) bool {
-			ctx.findDefinition(key)
-			tag, _ := ctx.tagForName(key)
-			if tag != "" {
-				ctx.resolveInlineContent(child, depth+1)
-			} else {
-				if child != nil {
-					if _, exists := ctx.defs[key]; !exists {
-						ctx.defs[key] = child
-					}
-				}
-				ctx.resolveAll(key, depth+1)
-			}
-			return true
-		})
-	case []interface{}:
-		for _, item := range v {
-			ctx.resolveContent(item, depth+1)
-		}
-	case string:
-		if isNameRef(v) {
-			ctx.resolveAll(v, depth+1)
 		}
 	}
 }
@@ -1085,24 +1050,7 @@ func (ctx *renderContext) renderInlineTag(sb *strings.Builder, name, tag string,
 		// String content: the inline value IS the primary parameter value.
 		// Map it to $* and also to all named $vars in params and contents (e.g., $url, $contents).
 		if str, ok := content.(string); ok {
-			vars := map[string]string{"*": str}
-			fd.Params.Range(func(_ string, pvRaw interface{}) bool {
-				pv := fmt.Sprintf("%v", pvRaw)
-				for _, vn := range extractVarNames(pv) {
-					if _, exists := vars[vn]; !exists {
-						vars[vn] = str
-					}
-				}
-				return true
-			})
-			// Also resolve var names from fd.Contents so that e.g. $contents gets the string value
-			if fd.Contents != "" {
-				for _, vn := range extractVarNames(fd.Contents) {
-					if _, exists := vars[vn]; !exists {
-						vars[vn] = str
-					}
-				}
-			}
+			vars := buildVarsFromString(fd, str)
 			attrs := formatParamsWithVars(fd.Params, vars)
 			contentsVal := substituteVars(fd.Contents, vars)
 			if voidElements[tag] {
@@ -1139,11 +1087,7 @@ func (ctx *renderContext) renderInlineTag(sb *strings.Builder, name, tag string,
 	}
 
 	if content == nil {
-		if voidElements[tag] {
-			fmt.Fprintf(sb, "%s<%s%s>\n", indent(depth), tag, attrs)
-		} else {
-			fmt.Fprintf(sb, "%s<%s%s></%s>\n", indent(depth), tag, attrs, tag)
-		}
+		writeSimpleTag(sb, tag, attrs, "", depth)
 		return
 	}
 
@@ -1300,13 +1244,7 @@ func (ctx *renderContext) renderDirectTag(sb *strings.Builder, tagName string, m
 		}
 	}
 
-	if voidElements[tagName] {
-		fmt.Fprintf(sb, "%s<%s%s>\n", indent(depth), tagName, attrs)
-	} else if text != "" {
-		fmt.Fprintf(sb, "%s<%s%s>%s</%s>\n", indent(depth), tagName, attrs, html.EscapeString(text), tagName)
-	} else {
-		fmt.Fprintf(sb, "%s<%s%s></%s>\n", indent(depth), tagName, attrs, tagName)
-	}
+	writeSimpleTag(sb, tagName, attrs, html.EscapeString(text), depth)
 }
 
 // tryRenderContainer checks if a map has a "container" entry — a formatted key
@@ -1350,21 +1288,11 @@ func (ctx *renderContext) tryRenderContainer(sb *strings.Builder, m *OrderedMap,
 	}
 
 	// Build vars from the container's own value (the primary parameter value)
-	vars := make(map[string]string)
+	var vars map[string]string
 	if str, ok := containerVal.(string); ok {
-		vars["*"] = str
-		// Map the value to all named $vars in params
-		if containerFd.Params != nil {
-			containerFd.Params.Range(func(_ string, pvRaw interface{}) bool {
-				pv := fmt.Sprintf("%v", pvRaw)
-				for _, vn := range extractVarNames(pv) {
-					if _, exists := vars[vn]; !exists {
-						vars[vn] = str
-					}
-				}
-				return true
-			})
-		}
+		vars = buildVarsFromString(containerFd, str)
+	} else {
+		vars = make(map[string]string)
 	}
 
 	attrs := formatParamsWithVars(containerFd.Params, vars)
@@ -1430,11 +1358,7 @@ func (ctx *renderContext) renderIterated(sb *strings.Builder, name string, fd *f
 					if ctx.debug {
 						fmt.Fprintf(sb, "<!-- ^%s wildcard params -->\n", name)
 					}
-					if voidElements[tag] {
-						fmt.Fprintf(sb, "%s<%s%s>\n", indent(depth), tag, attrs)
-					} else {
-						fmt.Fprintf(sb, "%s<%s%s></%s>\n", indent(depth), tag, attrs, tag)
-					}
+					writeSimpleTag(sb, tag, attrs, "", depth)
 				}
 			}
 		} else if contentMap, ok := content.(*OrderedMap); ok {
@@ -1443,11 +1367,7 @@ func (ctx *renderContext) renderIterated(sb *strings.Builder, name string, fd *f
 			if ctx.debug {
 				fmt.Fprintf(sb, "<!-- ^%s wildcard params (single map) -->\n", name)
 			}
-			if voidElements[tag] {
-				fmt.Fprintf(sb, "%s<%s%s>\n", indent(depth), tag, attrs)
-			} else {
-				fmt.Fprintf(sb, "%s<%s%s></%s>\n", indent(depth), tag, attrs, tag)
-			}
+			writeSimpleTag(sb, tag, attrs, "", depth)
 		}
 		return
 	}
@@ -1463,11 +1383,7 @@ func (ctx *renderContext) renderIterated(sb *strings.Builder, name string, fd *f
 				fmt.Fprintf(sb, "<!-- ^%s iterate: key=%q value=%q -->\n", name, key, valStr)
 			}
 
-			if voidElements[tag] {
-				fmt.Fprintf(sb, "%s<%s%s>\n", indent(depth), tag, attrs)
-			} else {
-				fmt.Fprintf(sb, "%s<%s%s>%s</%s>\n", indent(depth), tag, attrs, html.EscapeString(valStr), tag)
-			}
+			writeSimpleTag(sb, tag, attrs, html.EscapeString(valStr), depth)
 			return true
 		})
 		return
@@ -1566,6 +1482,18 @@ func (ctx *renderContext) renderContentWrapPluralMap(sb *strings.Builder, conten
 		ctx.renderContent(sb, wrapped, depth)
 		return true
 	})
+}
+
+// writeSimpleTag writes a simple HTML tag. Void elements are self-closing.
+// Non-void elements include inline content if provided, or are empty.
+func writeSimpleTag(sb *strings.Builder, tag, attrs, content string, depth int) {
+	if voidElements[tag] {
+		fmt.Fprintf(sb, "%s<%s%s>\n", indent(depth), tag, attrs)
+	} else if content != "" {
+		fmt.Fprintf(sb, "%s<%s%s>%s</%s>\n", indent(depth), tag, attrs, content, tag)
+	} else {
+		fmt.Fprintf(sb, "%s<%s%s></%s>\n", indent(depth), tag, attrs, tag)
+	}
 }
 
 // indent returns the indentation string for the given depth.
