@@ -451,7 +451,7 @@ func phpScriptWrapper(userCode string) string {
 	sb.WriteString("  $_hasSessCookie = false;\n")
 	sb.WriteString("  foreach ($_hdrs as $_h) { if (stripos($_h, 'Set-Cookie') === 0 && stripos($_h, session_name()) !== false) { $_hasSessCookie = true; break; } }\n")
 	sb.WriteString("  if (!$_hasSessCookie) {\n")
-	sb.WriteString("    $_bserver_cookie = 'Set-Cookie: ' . session_name() . '=' . urlencode($_bserver_sid) . '; path=/; HttpOnly; SameSite=Lax';\n")
+	sb.WriteString("    $_bserver_cookie = 'Set-Cookie: ' . session_name() . '=' . urlencode($_bserver_sid) . '; Path=/; Max-Age=' . (int)ini_get('session.gc_maxlifetime') . '; HttpOnly; SameSite=Lax';\n")
 	sb.WriteString("    if (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] === '443') { $_bserver_cookie .= '; Secure'; }\n")
 	sb.WriteString("    $_hdrs[] = $_bserver_cookie;\n")
 	sb.WriteString("  }\n")
