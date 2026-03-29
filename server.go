@@ -479,7 +479,9 @@ func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docR
 
 	output, sourceFiles, scriptHeaders := renderYAMLPage(docRoot, yamlPath, debug, site.ParentLevels, r)
 
-	if !debug && !dynamic && m.cfg.Cache != nil {
+	// Don't cache pages that emit per-request HTTP headers (e.g., Set-Cookie
+	// for sessions) — each visitor needs their own headers.
+	if !debug && !dynamic && len(scriptHeaders) == 0 && m.cfg.Cache != nil {
 		m.cfg.Cache.Put(key, output, sourceFiles)
 	}
 
@@ -491,7 +493,7 @@ func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docR
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if !debug && !dynamic {
+	if !debug && !dynamic && len(scriptHeaders) == 0 {
 		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
 	}
 	w.WriteHeader(http.StatusOK)
@@ -518,7 +520,9 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 
 	output, sourceFiles, scriptHeaders := renderMarkdownPage(docRoot, mdPath, debug, site.ParentLevels, r)
 
-	if !debug && !dynamic && m.cfg.Cache != nil {
+	// Don't cache pages that emit per-request HTTP headers (e.g., Set-Cookie
+	// for sessions) — each visitor needs their own headers.
+	if !debug && !dynamic && len(scriptHeaders) == 0 && m.cfg.Cache != nil {
 		m.cfg.Cache.Put(key, output, sourceFiles)
 	}
 
@@ -530,7 +534,7 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if !debug && !dynamic {
+	if !debug && !dynamic && len(scriptHeaders) == 0 {
 		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
 	}
 	w.WriteHeader(http.StatusOK)
