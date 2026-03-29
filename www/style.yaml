@@ -11,11 +11,10 @@ style:
     max-height: 100%
     padding: 4px
   .navbar-nav .nav-link.active:
-    background-color: rgba(0, 0, 0, 0.2) !important
+    background-color: rgba(255, 255, 255, 0.2) !important
     border-radius: 0.75rem
   .navbar-nav .nav-link:hover:
-    background-color: rgba(0, 0, 0, 0.1) !important
+    background-color: rgba(255, 255, 255, 0.1) !important
     border-radius: 0.75rem
   .navbar-nav .nav-link:
     color: rgba(255, 255, 255) !important
-
