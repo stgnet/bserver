@@ -90,8 +90,14 @@ These settings go in `_config.yaml` (in the www directory):
 | `cache-size` | `1024` | Maximum cache size in MB (0 to disable) |
 | `cache-age` | `900` | Maximum entry age in seconds (15 minutes) |
 | `static-age` | `86400` | Maximum Cache-Control age for static files in seconds (24 hours) |
+| `max-body-size` | `10` | Maximum request body size in MB (0 to disable) |
 
 Set `cache-size: 0` to disable caching entirely.
+
+Set `max-body-size: 0` to allow unlimited request bodies (not recommended).
+POST bodies larger than 1 MB are not passed to inline scripts via the
+`_POST_DATA` environment variable due to OS limits; PHP-CGI always receives
+the full body via stdin regardless of this setting.
 
 ## Cache-Control Headers
 
