@@ -89,12 +89,13 @@ type renderContext struct {
 	postBody        []byte                 // buffered POST body (read once, reused across scripts)
 	postBodyRead    bool                   // whether postBody has been read from httpRequest
 	sourceFile      string                 // primary source file for this page (e.g., index.yaml, page.md)
+	responseHeaders http.Header            // HTTP headers collected from script output (e.g., Set-Cookie)
 }
 
 // renderYAMLPage is the entry point: given a request for a path within docRoot,
 // produce a complete HTML page. Returns the HTML and the list of source files
 // loaded during rendering (for cache dependency tracking).
-func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, r *http.Request) (string, []string) {
+func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, r *http.Request) (string, []string, http.Header) {
 	ctx := &renderContext{
 		docRoot:         docRoot,
 		requestDir:      reqPath,
@@ -173,7 +174,7 @@ func renderYAMLPage(docRoot, reqPath string, debug bool, maxParentLevels int, r 
 		}
 	}
 
-	return output, ctx.sourceFilesList()
+	return output, ctx.sourceFilesList(), ctx.responseHeaders
 }
 
 // renderErrorPage renders an error page through the YAML rendering pipeline.
@@ -258,7 +259,7 @@ func renderErrorPage(docRoot string, statusCode int, message string, debug bool,
 // renderMarkdownPage renders a markdown file within the full YAML page structure.
 // The markdown content becomes the "main" definition, so it gets the same
 // header, navbar, styles, footer, etc. as YAML pages.
-func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int, r *http.Request) (string, []string) {
+func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int, r *http.Request) (string, []string, http.Header) {
 	ctx := &renderContext{
 		docRoot:         docRoot,
 		requestDir:      filepath.Dir(mdPath),
@@ -280,11 +281,11 @@ func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int,
 	ctx.filesLoaded[mdPath] = true
 	mdData, err := os.ReadFile(mdPath)
 	if err != nil {
-		return fmt.Sprintf("<!-- error reading %s: %v -->\n", mdPath, err), nil
+		return fmt.Sprintf("<!-- error reading %s: %v -->\n", mdPath, err), nil, nil
 	}
 	var buf bytes.Buffer
 	if err := mdRenderer.Convert(mdData, &buf); err != nil {
-		return fmt.Sprintf("<!-- error converting markdown %s: %v -->\n", mdPath, err), nil
+		return fmt.Sprintf("<!-- error converting markdown %s: %v -->\n", mdPath, err), nil, nil
 	}
 
 	// Inject the rendered markdown as the "main" content.
@@ -298,7 +299,7 @@ func renderMarkdownPage(docRoot, mdPath string, debug bool, maxParentLevels int,
 	var sb strings.Builder
 	sb.WriteString("<!DOCTYPE html>\n")
 	ctx.renderName(&sb, "html", 0)
-	return sb.String(), ctx.sourceFilesList()
+	return sb.String(), ctx.sourceFilesList(), ctx.responseHeaders
 }
 
 // sourceFilesList returns the list of files loaded during rendering.

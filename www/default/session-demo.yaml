@@ -1,0 +1,62 @@
+^php:
+  script: php
+
+title: Session Demo
+
+main:
+  - card:
+    - h1: PHP Session Demo
+    - p: "This page demonstrates PHP session support in bserver. Use the form to set session values, and they will persist across page loads."
+    - php: |
+        session_start();
+
+        // Handle form actions
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (isset($_POST['action'])) {
+                if ($_POST['action'] === 'set' && isset($_POST['key']) && $_POST['key'] !== '') {
+                    $_SESSION[$_POST['key']] = $_POST['value'];
+                } elseif ($_POST['action'] === 'delete' && isset($_POST['key'])) {
+                    unset($_SESSION[$_POST['key']]);
+                } elseif ($_POST['action'] === 'clear') {
+                    session_destroy();
+                    session_start();
+                }
+            }
+        }
+
+        echo '<h5>Current Session Contents</h5>';
+        if (empty($_SESSION)) {
+            echo '<p class="text-muted">Session is empty. Add a value below.</p>';
+        } else {
+            echo '<table class="table table-striped">';
+            echo '<thead><tr><th>Key</th><th>Value</th><th>Action</th></tr></thead>';
+            echo '<tbody>';
+            foreach ($_SESSION as $k => $v) {
+                $ek = htmlspecialchars($k);
+                $ev = htmlspecialchars($v);
+                echo "<tr><td>{$ek}</td><td>{$ev}</td><td>";
+                echo '<form method="post" style="display:inline">';
+                echo "<input type=\"hidden\" name=\"action\" value=\"delete\">";
+                echo "<input type=\"hidden\" name=\"key\" value=\"{$ek}\">";
+                echo '<button type="submit" class="btn btn-sm btn-danger">Delete</button>';
+                echo '</form></td></tr>';
+            }
+            echo '</tbody></table>';
+        }
+
+        echo '<hr>';
+        echo '<h5>Add a Session Value</h5>';
+        echo '<form method="post" class="row g-2 align-items-end mb-3">';
+        echo '<input type="hidden" name="action" value="set">';
+        echo '<div class="col-auto"><label class="form-label">Key</label><input type="text" name="key" class="form-control" required></div>';
+        echo '<div class="col-auto"><label class="form-label">Value</label><input type="text" name="value" class="form-control"></div>';
+        echo '<div class="col-auto"><button type="submit" class="btn btn-primary">Set</button></div>';
+        echo '</form>';
+
+        echo '<form method="post">';
+        echo '<input type="hidden" name="action" value="clear">';
+        echo '<button type="submit" class="btn btn-warning">Clear All Sessions</button>';
+        echo '</form>';
+
+        echo '<hr>';
+        echo '<p class="text-muted small">Session ID: ' . htmlspecialchars(session_id()) . '</p>';

@@ -35,7 +35,7 @@ func TestHomepageContent(t *testing.T) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "www", "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
-	output, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
+	output, _, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
 
 	if !strings.Contains(output, "bserver Documentation") {
 		t.Errorf("Homepage missing 'bserver Documentation' heading.\nFirst 2000 chars:\n%s", output[:min(len(output), 2000)])
@@ -67,7 +67,7 @@ func TestFooterContent(t *testing.T) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "www", "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
-	output, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
+	output, _, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
 
 	if !strings.Contains(output, "<footer>") {
 		t.Error("Page missing <footer> tag")
@@ -87,7 +87,7 @@ func TestNavbarPresent(t *testing.T) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "www", "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
-	output, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
+	output, _, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
 
 	if !strings.Contains(output, "navbar") {
 		t.Error("Homepage missing navbar")
@@ -128,7 +128,7 @@ func TestMarkdownGettingStarted(t *testing.T) {
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("getting-started.md not found")
 	}
-	output, _ := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
+	output, _, _ := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
 
 	if !strings.Contains(output, "<!DOCTYPE html>") {
 		t.Error("Markdown page missing DOCTYPE")
@@ -160,7 +160,7 @@ func TestMarkdownDefinitions(t *testing.T) {
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("definitions.md not found")
 	}
-	output, _ := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
+	output, _, _ := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
 
 	if !strings.Contains(output, "Content Definitions") {
 		t.Error("Definitions page missing heading")
@@ -180,7 +180,7 @@ func TestMarkdownFormats(t *testing.T) {
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("formats.md not found")
 	}
-	output, _ := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
+	output, _, _ := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
 
 	if !strings.Contains(output, "Format Definitions") {
 		t.Error("Formats page missing heading")
@@ -203,7 +203,7 @@ func TestMarkdownComponents(t *testing.T) {
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("components.md not found")
 	}
-	output, _ := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
+	output, _, _ := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
 
 	if !strings.Contains(output, "Built-in Components") {
 		t.Error("Components page missing heading")
@@ -223,7 +223,7 @@ func TestMarkdownScripts(t *testing.T) {
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("scripts.md not found")
 	}
-	output, _ := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
+	output, _, _ := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
 
 	if !strings.Contains(output, "Server-Side Scripts") {
 		t.Error("Scripts page missing heading")
@@ -249,7 +249,7 @@ func TestMarkdownAdvanced(t *testing.T) {
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatal("advanced.md not found")
 	}
-	output, _ := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
+	output, _, _ := renderMarkdownPage(docRoot, mdPath, false, 1, nil)
 
 	if !strings.Contains(output, "Advanced Features") {
 		t.Error("Advanced page missing heading")
@@ -290,7 +290,7 @@ func TestInlineLinksIteration(t *testing.T) {
 	os.WriteFile(filepath.Join(tmpDir, "links.yaml"), []byte("^links:\n  tag: a\n  params:\n    href: '$key'\n  contents: '$value'\n"), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  links:\n    About: about\n    Contact: contact\n"), 0644)
 
-	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
 
 	if !strings.Contains(output, `href="About"`) {
 		t.Errorf("Missing <a> tag with href=\"About\" from links iteration.\nOutput:\n%s", output)
@@ -316,7 +316,7 @@ func TestUlistWrappingLinks(t *testing.T) {
 	os.WriteFile(filepath.Join(tmpDir, "links.yaml"), []byte("^links:\n  tag: a\n  params:\n    href: '$key'\n  contents: '$value'\n"), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  ulist:\n    links:\n      About: about\n      Contact: contact\n"), 0644)
 
-	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
 
 	if !strings.Contains(output, "<li>") {
 		t.Errorf("Missing <li> tags from ulist-wrapped links.\nOutput:\n%s", output)
@@ -335,7 +335,7 @@ func TestContentWrapPlural(t *testing.T) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "www", "default")
 	indexPath := filepath.Join(docRoot, "index.yaml")
-	output, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
+	output, _, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
 
 	// The index.yaml uses ulist which has contents: (plural) with li: '$*'
 	if !strings.Contains(output, "<ul>") {
@@ -359,7 +359,7 @@ func TestContentWrapSingular(t *testing.T) {
 	os.WriteFile(filepath.Join(tmpDir, "wrapper.yaml"), []byte("^wrapper:\n  tag: div\n  content:\n    span: '$*'\n"), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  wrapper:\n    - item one\n    - item two\n    - item three\n"), 0644)
 
-	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
 
 	if !strings.Contains(output, "<div>") {
 		t.Errorf("Missing <div> tag from wrapper format.\nOutput:\n%s", output)
@@ -383,7 +383,7 @@ func TestDefaultFormatWrapsSingular(t *testing.T) {
 	os.WriteFile(filepath.Join(tmpDir, "body.yaml"), []byte("body:\n - main\n^main:\n  tag: div\n  params:\n    class: p-1\n"), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  - h1: \"Title\"\n  - p: \"Paragraph\"\n  - h2: \"Subtitle\"\n"), 0644)
 
-	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
 
 	// Should have exactly 1 <div class="p-1"> wrapping all content
 	divCount := strings.Count(output, `<div class="p-1">`)
@@ -405,7 +405,7 @@ func TestExplicitContentsPluralWrapsEach(t *testing.T) {
 	os.WriteFile(filepath.Join(tmpDir, "body.yaml"), []byte("body:\n - main\n^wrapper:\n  tag: div\n  params:\n    class: item\n  contents: '$*'\n"), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  wrapper:\n    - h1: \"Title\"\n    - p: \"Text\"\n    - h2: \"Sub\"\n"), 0644)
 
-	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
 
 	// Should have 3 <div class="item"> tags (one per list item)
 	divCount := strings.Count(output, `<div class="item">`)
@@ -422,7 +422,7 @@ func TestPreTagNoIndent(t *testing.T) {
 	os.WriteFile(filepath.Join(tmpDir, "body.yaml"), []byte("body:\n - main\n"), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  pre: \"line one\\n  indented line\"\n"), 0644)
 
-	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
 
 	idx := strings.Index(output, "<pre>")
 	if idx < 0 {
@@ -467,7 +467,7 @@ func TestContentsWrapPluralList(t *testing.T) {
 	os.WriteFile(filepath.Join(tmpDir, "items.yaml"), []byte("^items:\n  tag: div\n  contents:\n    span: '$*'\n"), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  items:\n    - first\n    - second\n    - third\n"), 0644)
 
-	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
 
 	if !strings.Contains(output, "<div>") {
 		t.Errorf("Missing <div> tag from items format.\nOutput:\n%s", output)
@@ -495,7 +495,7 @@ func TestMissingHTMLYAMLProducesOutput(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, "index.yaml"), []byte("main:\n  p: hello\n"), 0644)
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if output == "" {
 		t.Error("expected non-empty output even without html.yaml")
 	}
@@ -511,7 +511,7 @@ func TestMalformedYAMLDoesNotPanic(t *testing.T) {
 	})
 
 	// Should not panic when encountering malformed YAML
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if !strings.Contains(output, "hello") {
 		t.Error("valid content should still render despite bad sibling YAML file")
 	}
@@ -524,7 +524,7 @@ func TestYAMLParseErrorDisplayed(t *testing.T) {
 	})
 
 	// When a YAML file has a parse error, it should show a visible error
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if !strings.Contains(output, "YAML error") {
 		t.Error("expected visible YAML error message in output")
 	}
@@ -541,7 +541,7 @@ func TestYAMLParseErrorPageFile(t *testing.T) {
 		"index.yaml": "main:\n\t- invalid yaml\n  mixed indent",
 	})
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if !strings.Contains(output, "YAML error") {
 		t.Errorf("expected YAML error block for page file parse error, got: %s", output)
 	}
@@ -562,7 +562,7 @@ func TestYAMLParseErrorWithScript(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "html.yaml"),
 		[]byte("html:\n - body\n\n^items:\n  script: python\n  code: |\n    print('should not run')\n"), 0644)
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if !strings.Contains(output, "YAML error") {
 		t.Errorf("expected YAML error block instead of running script, got: %s", output)
 	}
@@ -575,7 +575,7 @@ func TestYAMLParseErrorInDebug(t *testing.T) {
 	})
 
 	// In debug mode, YAML parse errors should appear in HTML comments
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), true, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), true, 1, nil)
 	if !strings.Contains(output, "YAML parse error") {
 		t.Error("expected YAML parse error in debug comment")
 	}
@@ -588,7 +588,7 @@ func TestYAMLParseErrorDashPrefix(t *testing.T) {
 		"index.yaml": "main:\n  - h1: Service Information\n  - p: - To get on our schedule.\n",
 	})
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if !strings.Contains(output, "YAML error") {
 		t.Errorf("expected visible YAML error for unquoted dash prefix, got: %s", output)
 	}
@@ -602,7 +602,7 @@ func TestYAMLParseErrorDashPrefixSeparateFile(t *testing.T) {
 		"service.yaml": "service:\n  - h1: Service\n  - p: - To get on our schedule.\n",
 	})
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if !strings.Contains(output, "YAML error") {
 		t.Errorf("expected visible YAML error for separate file, got: %s", output)
 	}
@@ -619,7 +619,7 @@ func TestYAMLParseErrorAtTopOfBody(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "html.yaml"),
 		[]byte("html:\n - body\n\nbody:\n - navbar\n - main\n\nnavbar:\n - nav\n\nnav:\n - navitem\n\nnavitem: Home\n"), 0644)
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if !strings.Contains(output, "YAML error") {
 		t.Fatalf("expected YAML error in output, got: %s", output)
 	}
@@ -645,7 +645,7 @@ func TestCircularReferenceHandled(t *testing.T) {
 		"beta.yaml":  "beta:\n - alpha\n",
 	})
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	// Should produce output without hanging
 	if output == "" {
 		t.Error("expected non-empty output for circular reference")
@@ -664,7 +664,7 @@ func TestCircularReferenceHandled(t *testing.T) {
 func TestDebugModeProducesComments(t *testing.T) {
 	docRoot := defaultDocRoot(t)
 	indexPath := filepath.Join(docRoot, "index.yaml")
-	output, _ := renderYAMLPage(docRoot, indexPath, true, 1, nil)
+	output, _, _ := renderYAMLPage(docRoot, indexPath, true, 1, nil)
 
 	if !strings.Contains(output, "<!-- resolve") {
 		t.Error("debug mode should produce resolve comments")
@@ -831,7 +831,7 @@ func TestMarkupMarkdownNamed(t *testing.T) {
 		"markdown.yaml": "^markdown:\n  markup: markdown\nmarkdown: |\n  # Hello World\n  This is **bold** text.\n",
 	})
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if !strings.Contains(output, "<h1>Hello World</h1>") {
 		t.Errorf("expected <h1> from markdown heading, got: %s", output)
 	}
@@ -847,7 +847,7 @@ func TestMarkupMarkdownInline(t *testing.T) {
 		"markdown.yaml": "^markdown:\n  markup: markdown\n",
 	})
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if !strings.Contains(output, "<h1>Inline Heading</h1>") {
 		t.Errorf("expected <h1> from inline markdown, got: %s", output)
 	}
@@ -863,7 +863,7 @@ func TestMarkupMarkdownWithTag(t *testing.T) {
 		"article.yaml": "^article:\n  tag: article\n  markup: markdown\n",
 	})
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if !strings.Contains(output, "<article>") {
 		t.Errorf("expected <article> tag wrapper, got: %s", output)
 	}
@@ -879,7 +879,7 @@ func TestPhpContentAsCode(t *testing.T) {
 		"php.yaml":   "^php:\n  script: php\n",
 	})
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if !strings.Contains(output, "<p>Hello from PHP</p>") {
 		t.Errorf("expected PHP output, got: %s", output)
 	}
@@ -892,7 +892,7 @@ func TestPhpContentAsCodeStripTags(t *testing.T) {
 		"php.yaml":   "^php:\n  script: php\n",
 	})
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if !strings.Contains(output, "<p>tagged</p>") {
 		t.Errorf("expected PHP output from tagged code, got: %s", output)
 	}
@@ -924,7 +924,7 @@ func TestDuplicateMarkdownInList(t *testing.T) {
   markup: markdown
 `,
 	})
-	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
 
 	test1Count := strings.Count(output, "TEST1")
 	test2Count := strings.Count(output, "TEST2")
@@ -950,7 +950,7 @@ func TestRawHTMLPassthrough(t *testing.T) {
   markup: html
 `,
 	})
-	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
 
 	if !strings.Contains(output, `<div class="custom"><span>hello</span></div>`) {
 		t.Errorf("raw HTML not passed through verbatim.\nOutput:\n%s", output)
@@ -967,7 +967,7 @@ func TestScriptNestedOrderedMapAsDict(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "html.yaml"),
 		[]byte("html:\n - body\n\n^items:\n  script: python\n  code: |\n    key = record.get('key', '')\n    value = record.get('value', '')\n    if isinstance(value, dict):\n        for link, text in value.items():\n            print(f'<a href=\"{link}\">{text}</a>')\n    else:\n        print(f'<span>{value}</span>')\n"), 0644)
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 	if !strings.Contains(output, `<a href="/link1">First</a>`) {
 		t.Errorf("expected nested map rendered as dict links, got: %s", output)
 	}
@@ -985,7 +985,7 @@ func TestNavlinksrightDropdown(t *testing.T) {
 	// dropdown menu. Verify it renders Bootstrap 5 dropdown markup.
 	docRoot := defaultDocRoot(t)
 	indexPath := filepath.Join(docRoot, "index.yaml")
-	output, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
+	output, _, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
 
 	if !strings.Contains(output, "nav-item dropdown") {
 		t.Errorf("expected Bootstrap dropdown in navlinksright, got output without 'nav-item dropdown'")
@@ -1028,7 +1028,7 @@ func TestNavlinksDropdownWithListValue(t *testing.T) {
 			"        echo htmlspecialchars(strval($value)).\"\\n\";\n"+
 			"    }\n"), 0644)
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 
 	if !strings.Contains(output, `<i class="fa-brands fa-github"></i>`) {
 		t.Errorf("expected pre-rendered icon inside dropdown item, got: %s", output)
@@ -1061,7 +1061,7 @@ func TestNavlinksListWithFormatRef(t *testing.T) {
 			"    else:\n"+
 			"        print(f'<a href=\"{_html.escape(str(key))}\">{_html.escape(str(value))}</a>')\n"), 0644)
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 
 	if !strings.Contains(output, `<i class="fa-solid fa-location-dot"></i>`) {
 		t.Errorf("expected pre-rendered icon tag in output, got: %s", output)
@@ -1095,7 +1095,7 @@ func TestNavlinksListIconFirst(t *testing.T) {
 			"    else:\n"+
 			"        print(f'<a href=\"{_html.escape(str(key))}\">{_html.escape(str(value))}</a>')\n"), 0644)
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 
 	// Icon should come before text since YAML listed it first
 	iconIdx := strings.Index(output, `<i class="fa-solid fa-location-dot">`)
@@ -1125,7 +1125,7 @@ func TestNavlinksListPlainStringsRendered(t *testing.T) {
 			"    else:\n"+
 			"        print(str(value))\n"), 0644)
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 
 	// Both plain strings should appear in the rendered HTML
 	if !strings.Contains(output, "not-a-format") {
@@ -1156,7 +1156,7 @@ func TestNavlinksIconTextNoNewline(t *testing.T) {
 			"    else:\n"+
 			"        print(f'<li class=\"nav-item\"><a class=\"nav-link\" href=\"{_html.escape(str(key))}\">{_html.escape(str(value))}</a></li>')\n"), 0644)
 
-	output, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(dir, filepath.Join(dir, "index.yaml"), false, 1, nil)
 
 	// Icon and text must be on same line, no newline between </i> and Calendar
 	if strings.Contains(output, "</i>\nCalendar") {
@@ -1189,7 +1189,7 @@ func TestParamsWildcardInlineTag(t *testing.T) {
 	os.WriteFile(filepath.Join(tmpDir, "body.yaml"), []byte("body:\n - main\n^input:\n  tag: input\n  params: '$*'\n"), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  - input:\n      type: text\n      name: username\n      placeholder: Enter name\n"), 0644)
 
-	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
 
 	// All three attributes must appear on a single <input> tag, not repeated tags
 	if !strings.Contains(output, `type="text"`) {
@@ -1235,7 +1235,7 @@ func TestArrayFormatDefinition(t *testing.T) {
     content: '$label'
 `), 0644)
 
-	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
 
 	// Should produce an <input> tag with the field attributes
 	if !strings.Contains(output, "<input") {
@@ -1290,7 +1290,7 @@ myfield:
     content: '$label'
 `), 0644)
 
-	output, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+	output, _, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
 
 	if !strings.Contains(output, "<input") {
 		t.Errorf("Missing <input> tag from top-level array format.\nOutput:\n%s", output)
