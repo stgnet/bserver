@@ -39,6 +39,15 @@
 # has limited RAM (see server-features.md for details).
 #cache-size: 1024
 
+# Maximum allowed request body size in megabytes. POST requests larger than
+# this limit are rejected with 413 Request Entity Too Large. Protects against
+# memory exhaustion from oversized uploads. Set to 0 to disable the limit.
+# Note: POST bodies larger than 1 MB are not passed to inline scripts via
+# the _POST_DATA environment variable (OS env block limits). PHP-CGI always
+# receives the full body via stdin regardless of this setting.
+# Default: 10
+#max-body-size: 10
+
 # ---- Per-site settings (overridable by vhost _config.yaml) ----
 
 # Render cache and Cache-Control max-age for rendered pages, in seconds.
