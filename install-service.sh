@@ -219,15 +219,15 @@ RestartSec=5
 #Environment=HTTPS_ADDR=:443
 #Environment=CERT_CACHE=./cert-cache
 
-# Logging goes to journalctl
-StandardOutput=journal
-StandardError=journal
+# Logging
+StandardOutput=append:/var/log/$SERVICE_NAME.log
+StandardError=append:/var/log/$SERVICE_NAME.log
 SyslogIdentifier=$SERVICE_NAME
 
 # Hardening
 NoNewPrivileges=yes
 ProtectSystem=strict
-ReadWritePaths=$SCRIPT_DIR/www/cert-cache $SCRIPT_DIR/www
+ReadWritePaths=$SCRIPT_DIR/cert-cache $SCRIPT_DIR/www /var/log/$SERVICE_NAME.log /tmp
 ProtectHome=read-only
 PrivateTmp=yes
 
@@ -276,8 +276,14 @@ remove_systemd() {
 }
 
 log_systemd() {
-    info "Following $SERVICE_NAME logs (Ctrl-C to stop)…"
-    exec journalctl -u "$SERVICE_NAME" -f
+    local logfile="/var/log/${SERVICE_NAME}.log"
+    if [ -f "$logfile" ]; then
+        info "Following $SERVICE_NAME logs (Ctrl-C to stop)…"
+        exec tail -f "$logfile"
+    else
+        info "Log file not found, falling back to journalctl…"
+        exec journalctl -u "$SERVICE_NAME" -f
+    fi
 }
 
 # ── launchd (macOS) ─────────────────────────────────────────────────────

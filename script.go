@@ -38,8 +38,17 @@ func (ctx *renderContext) buildScriptEnv(scriptFile string) []string {
 	if scriptFile != "" {
 		env = append(env, "SCRIPT_FILENAME="+scriptFile)
 	}
-	env = append(env, "SCRIPT_NAME="+ctx.requestURI)
-	env = append(env, "PHP_SELF="+ctx.requestURI)
+	// SCRIPT_NAME must be the path to the actual script (or the YAML file
+	// it is embedded in), not the bare request URI which may be "/" when an
+	// index file was resolved implicitly.
+	scriptName := ctx.requestURI
+	if scriptFile != "" {
+		if rel, err := filepath.Rel(ctx.docRoot, scriptFile); err == nil {
+			scriptName = "/" + filepath.ToSlash(rel)
+		}
+	}
+	env = append(env, "SCRIPT_NAME="+scriptName)
+	env = append(env, "PHP_SELF="+scriptName)
 
 	r := ctx.httpRequest
 	if r == nil {
@@ -51,8 +60,10 @@ func (ctx *renderContext) buildScriptEnv(scriptFile string) []string {
 		host = h
 	}
 	port := "80"
+	scheme := "http"
 	if r.TLS != nil {
 		port = "443"
+		scheme = "https"
 	}
 	remoteAddr := r.RemoteAddr
 	if h, _, err := net.SplitHostPort(remoteAddr); err == nil {
@@ -76,6 +87,7 @@ func (ctx *renderContext) buildScriptEnv(scriptFile string) []string {
 		"SERVER_NAME="+host,
 		"SERVER_ADDR="+serverAddr,
 		"SERVER_PORT="+port,
+		"REQUEST_SCHEME="+scheme,
 		"REQUEST_METHOD="+r.Method,
 		"QUERY_STRING="+r.URL.RawQuery,
 		"REMOTE_ADDR="+remoteAddr,
@@ -412,7 +424,7 @@ func shScriptWrapper(userCode string) string {
 func phpScriptWrapper(userCode string) string {
 	var sb strings.Builder
 	// Populate $_SERVER from CGI environment variables
-	sb.WriteString("foreach (['REQUEST_METHOD','REQUEST_URI','QUERY_STRING','CONTENT_TYPE','CONTENT_LENGTH','DOCUMENT_ROOT','SCRIPT_FILENAME','SCRIPT_NAME','PHP_SELF','SERVER_NAME','SERVER_PORT','SERVER_PROTOCOL','SERVER_SOFTWARE','GATEWAY_INTERFACE','REMOTE_ADDR','HTTP_HOST','REDIRECT_STATUS','SERVER_ADDR','PATH_INFO'] as $_k) { $_v = getenv($_k); if ($_v !== false) $_SERVER[$_k] = $_v; }\n")
+	sb.WriteString("foreach (['REQUEST_SCHEME','REQUEST_METHOD','REQUEST_URI','QUERY_STRING','CONTENT_TYPE','CONTENT_LENGTH','DOCUMENT_ROOT','SCRIPT_FILENAME','SCRIPT_NAME','PHP_SELF','SERVER_NAME','SERVER_PORT','SERVER_PROTOCOL','SERVER_SOFTWARE','GATEWAY_INTERFACE','REMOTE_ADDR','HTTP_HOST','REDIRECT_STATUS','SERVER_ADDR','PATH_INFO'] as $_k) { $_v = getenv($_k); if ($_v !== false) $_SERVER[$_k] = $_v; }\n")
 	sb.WriteString("foreach ($_SERVER as $_k => $_v) { if (strpos($_k, 'HTTP_') === 0) $_SERVER[$_k] = $_v; }\n")
 	// Populate $_COOKIE from HTTP_COOKIE env var
 	sb.WriteString("$_COOKIE = []; $_rawCookie = getenv('HTTP_COOKIE'); if ($_rawCookie !== false) { foreach (explode(';', $_rawCookie) as $_c) { $_c = trim($_c); if ($_c === '') continue; $_eq = strpos($_c, '='); if ($_eq !== false) { $_COOKIE[urldecode(substr($_c, 0, $_eq))] = urldecode(substr($_c, $_eq + 1)); } } }\n")

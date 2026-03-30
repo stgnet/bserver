@@ -316,12 +316,20 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 	if i := strings.Index(strings.ToLower(scriptName), ".php"); i != -1 {
 		pathInfo = scriptName[i+4:]
 		scriptName = scriptName[:i+4]
+	} else {
+		// URL has no .php (e.g. "/" resolved to index.php) — derive
+		// SCRIPT_NAME from the actual script path relative to docroot.
+		if rel, err := filepath.Rel(docroot, scriptFilename); err == nil {
+			scriptName = "/" + filepath.ToSlash(rel)
+		}
 	}
 
-	// Determine server port
+	// Determine server port and scheme
 	port := "80"
+	scheme := "http"
 	if r.TLS != nil {
 		port = "443"
+		scheme = "https"
 	}
 	remoteAddr := r.RemoteAddr
 	if h, _, err := net.SplitHostPort(remoteAddr); err == nil {
@@ -336,6 +344,7 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 		"SERVER_PROTOCOL=" + r.Proto,
 		"SERVER_NAME=" + host,
 		"SERVER_PORT=" + port,
+		"REQUEST_SCHEME=" + scheme,
 		"REQUEST_METHOD=" + r.Method,
 		"REQUEST_URI=" + r.URL.RequestURI(),
 		"QUERY_STRING=" + r.URL.RawQuery,
@@ -380,7 +389,7 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, m.cfg.PHPCGI)
+	cmd := exec.CommandContext(ctx, m.cfg.PHPCGI, "-d", "session.save_path=/tmp")
 	cmd.Dir = docroot
 	cmd.Env = env
 	cmd.Stdin = &bodyBuf
@@ -549,11 +558,30 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 // If no error template is found, it falls back to a plain-text response.
 func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, docRoot string, statusCode int, message string, site siteSettings) {
 	_, debug := r.URL.Query()["debug"]
-	output, _ := renderErrorPage(docRoot, statusCode, message, debug, site.ParentLevels, r)
+
+	// Cache rendered error pages per docRoot+statusCode (skip for debug mode
+	// or custom messages which are request-specific).
+	useCache := !debug && message == "" && m.cfg.Cache != nil
+	key := fmt.Sprintf("%s:error:%d", docRoot, statusCode)
+	if useCache {
+		if cached, ok := m.cfg.Cache.Get(key); ok {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.WriteHeader(statusCode)
+			w.Write([]byte(cached))
+			return
+		}
+	}
+
+	output, sourceFiles := renderErrorPage(docRoot, statusCode, message, debug, site.ParentLevels, r)
 	if output == "" {
 		http.Error(w, fmt.Sprintf("%d %s", statusCode, http.StatusText(statusCode)), statusCode)
 		return
 	}
+
+	if useCache {
+		m.cfg.Cache.Put(key, output, sourceFiles)
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(statusCode)
 	w.Write([]byte(output))
@@ -707,6 +735,9 @@ func main() {
 	httpAddr := resolve("http", "HTTP_ADDR", ":80")
 	httpsAddr := resolve("https", "HTTPS_ADDR", ":443")
 	leEmail := resolve("email", "LE_EMAIL", "")
+	if leEmail == "" {
+		leEmail = defaultLEEmail(base)
+	}
 	cacheDir := resolve("cert-cache", "CERT_CACHE", "./cert-cache")
 	cacheMaxSizeMB := resolveInt("cache-size", 1024)
 	cacheMaxAgeSec := resolveInt("cache-age", int(defaultCacheMaxAge.Seconds()))
@@ -828,6 +859,10 @@ func main() {
 		},
 	}
 
+	// leFailCache tracks domains where Let's Encrypt recently failed,
+	// so we don't retry on every TLS handshake (which spams LE and logs).
+	var leFailCache sync.Map // host -> time.Time (retry-after)
+
 	// Try to start HTTPS server
 	httpsOK := false
 	httpsSrv := &http.Server{
@@ -841,9 +876,17 @@ func main() {
 				if !isKnownVhost(hello.ServerName, cfg.Base) {
 					return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
 				}
+				// Skip LE if we recently failed for this host
+				if retryAfter, ok := leFailCache.Load(hello.ServerName); ok {
+					if time.Now().Before(retryAfter.(time.Time)) {
+						return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
+					}
+					leFailCache.Delete(hello.ServerName)
+				}
 				cert, err := m.GetCertificate(hello)
 				if err != nil {
 					log.Printf("Let's Encrypt failed for %s, falling back to self-signed: %v", hello.ServerName, err)
+					leFailCache.Store(hello.ServerName, time.Now().Add(1*time.Hour))
 					return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
 				}
 				return cert, nil
@@ -854,6 +897,7 @@ func main() {
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      120 * time.Second,
 		IdleTimeout:       120 * time.Second,
+		ErrorLog:          newTLSErrorLogger(),
 	}
 
 	httpsListener, httpsErr := net.Listen("tcp", cfg.HTTPSAddr)
@@ -950,6 +994,26 @@ func main() {
 
 const acmeALPNProto = "acme-tls/1"
 
+// newTLSErrorLogger creates a logger that suppresses the noisy TLS handshake
+// errors that Go's net/http server logs for every failed TLS connection.
+// These are almost entirely from port scanners, bots, and clients that
+// disconnect mid-handshake — normal internet noise that floods the logs.
+func newTLSErrorLogger() *log.Logger {
+	w := &tlsErrorLogWriter{}
+	return log.New(w, "", 0)
+}
+
+type tlsErrorLogWriter struct{}
+
+func (w *tlsErrorLogWriter) Write(p []byte) (int, error) {
+	msg := string(p)
+	if strings.Contains(msg, "TLS handshake error") {
+		return len(p), nil // suppress
+	}
+	// Pass non-TLS errors through to the standard logger
+	log.Print(strings.TrimRight(msg, "\n"))
+	return len(p), nil
+}
 
 // findPHPCGI searches for the php-cgi executable. It first checks $PATH
 // via exec.LookPath, then tries common installation locations.
@@ -977,6 +1041,30 @@ func hostOnly(h string) string {
 		return host
 	}
 	return h
+}
+
+// defaultLEEmail derives a Let's Encrypt contact email from the first
+// public domain found in the vhost directories. Returns "" if none found.
+func defaultLEEmail(base string) string {
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		return ""
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if name == "default" || name == "old" || strings.HasPrefix(name, ".") {
+			continue
+		}
+		if isPublicDomain(name) {
+			email := "admin@" + name
+			log.Printf("No LE email configured; using default: %s", email)
+			return email
+		}
+	}
+	return ""
 }
 
 // isPublicDomain returns true if the domain looks like a real public domain
