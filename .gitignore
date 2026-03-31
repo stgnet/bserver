@@ -5,3 +5,6 @@ cert-cache/
 *.crt
 .env
 __pycache__/
+www/*
+!www/default/
+!www/*.yaml
