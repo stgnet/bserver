@@ -55,7 +55,7 @@ go build
 
 Then visit localhost (port 80 or as shown on startup) to see the built-in documentation site.
 
-A minimal page needs just an `index.yaml`:
+A minimal page needs just an `index.yaml` in `www/example.com`:
 
 ```yaml
 main:
@@ -83,38 +83,6 @@ This produces:
   </body>
 </html>
 ```
-
-## Configuration
-
-### CLI Flags
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `-email` | | Let's Encrypt contact email |
-| `-http` | `:80` | HTTP listen address |
-| `-https` | `:443` | HTTPS listen address |
-| `-cache` | `./cert-cache` | Certificate cache directory |
-| `-php` | auto-detected | Path to php-cgi |
-| `-index` | `index.yaml,index.md,index.php,index.html,index.htm` | Index file priority |
-| `-parent-levels` | `1` | Max directory levels above docroot for YAML search |
-| `-base` | `www` | Web content root directory |
-| `-version` | | Print version and exit |
-
-### Environment Variables
-
-All flags can also be set via environment variables:
-
-| Variable | Flag equivalent |
-|----------|----------------|
-| `LE_EMAIL` | `-email` |
-| `HTTP_ADDR` | `-http` |
-| `HTTPS_ADDR` | `-https` |
-| `CERT_CACHE` | `-cache` |
-| `PHP_CGI` | `-php` |
-| `BASE_DIR` | `-base` |
-| `INDEX` | `-index` |
-
-CLI flags take precedence over environment variables.
 
 ## Directory Structure
 
@@ -165,6 +133,19 @@ To uninstall:
 ```sh
 sudo ./install-service.sh remove
 ```
+
+## Documentation
+
+- [Getting Started](getting-started) — Installation, directory layout, first page
+- [Content Definitions](definitions) — How `main:` and named definitions work
+- [Format Definitions](formats) — Custom HTML templates with `^name` prefix
+- [Built-in Components](components) — Pre-defined YAML files (html, head, body, navbar, etc.)
+- [Server-Side Scripts](scripts) — Dynamic content via Python, JavaScript, PHP, Shell
+- [Error Handling](errors) — Custom error pages
+- [Server Features](features) — Caching, security headers, rate limiting, TLS, and more
+- [Proxy Mode](proxy) — Reverse-proxy a vhost to a backend
+- [Advanced Features](advanced) — Virtual hosting, HTTPS, debug mode
+- [Tips & Recipes](tips) — Common patterns and practical examples
 
 ## License
 

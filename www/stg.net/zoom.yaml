@@ -1,0 +1,96 @@
+main:
+  - jumbotron:
+      - display-4: Monday Mod Meetup
+      - lead: Join us every Monday at 8:00 PM EST on Zoom!
+  - card bg-secondary-subtle:
+      - card-body text-center:
+          - countdown-section:
+              - h4 display-6 mb-4: "Next Meetup In:"
+              - d-flex justify-content-center gap-4 mb-4:
+                  - raw: <div><span id="days" class="display-3 fw-bold">--</span><div class="text-muted">Days</div></div>
+                  - raw: <div><span id="time" class="display-3 fw-bold">--:--:--</span><div class="text-muted">HH:MM:SS</div></div>
+          - active-section:
+              - raw: <h4 class="display-6 mb-4 text-success"><i class="fa-solid fa-circle-check me-2"></i>The Meetup Is Live Now!</h4>
+              - p lead mb-4: The Monday Mod Meetup is active until 9:00 PM EST.
+          - raw: |
+              <a href="https://us06web.zoom.us/j/2565806090?pwd=Tk1FVjZyVGwxYWc2UkhTU0ErdmloQT09"
+                 class="btn btn-primary btn-lg px-5 py-3 fs-4" target="_blank" rel="noopener">
+              <i class="fa-solid fa-video me-2"></i>Join Monday Mod Meetup Zoom</a>
+              <script>
+              function updateCountdown() {
+                var now = new Date();
+                var eastern = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+                var day = eastern.getDay();
+                var hrs = eastern.getHours();
+                var isActive = (day === 1 && hrs >= 20 && hrs < 21);
+                document.getElementById('countdown').style.display = isActive ? 'none' : '';
+                document.getElementById('active').style.display = isActive ? '' : 'none';
+                if (isActive) return;
+                var daysUntil = (1 - day + 7) % 7;
+                if (daysUntil === 0 && hrs >= 20) daysUntil = 7;
+                var target = new Date(eastern);
+                target.setDate(target.getDate() + daysUntil);
+                target.setHours(20, 0, 0, 0);
+                var diff = Math.max(0, target - eastern);
+                var s = Math.floor(diff / 1000);
+                var d = Math.floor(s / 86400); s %= 86400;
+                var h = Math.floor(s / 3600); s %= 3600;
+                var m = Math.floor(s / 60); s %= 60;
+                document.getElementById('days').textContent = d;
+                document.getElementById('time').textContent =
+                  String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+              }
+              updateCountdown();
+              setInterval(updateCountdown, 1000);
+              </script>
+
+^jumbotron:
+  tag: div
+  params:
+    class: jumbotron mb-4 text-center
+^display-4:
+  tag: h1
+  params:
+    class: display-4
+  content: $*
+^lead:
+  tag: p
+  params:
+    class: lead
+  content: $*
+^card bg-secondary-subtle:
+  tag: div
+  params:
+    class: card bg-secondary-subtle mb-4
+^card-body text-center:
+  tag: div
+  params:
+    class: card-body text-center
+^countdown-section:
+  tag: div
+  params:
+    id: countdown
+^active-section:
+  tag: div
+  params:
+    id: active
+    style: "display:none"
+^h4 display-6 mb-4:
+  tag: h4
+  params:
+    class: display-6 mb-4
+  content: $*
+^h4 display-6 mb-4 text-success:
+  tag: h4
+  params:
+    class: display-6 mb-4 text-success
+  content: $*
+^p lead mb-4:
+  tag: p
+  params:
+    class: lead mb-4
+  content: $*
+^d-flex justify-content-center gap-4 mb-4:
+  tag: div
+  params:
+    class: d-flex justify-content-center gap-4 mb-4
