@@ -1,0 +1,5 @@
+^redirect:
+  tag: meta
+  params:
+    http-equiv: refresh
+    content: "0;url=$*"

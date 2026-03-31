@@ -5,16 +5,17 @@ Practical patterns for common web development tasks using bserver's YAML system.
 ## Redirects
 
 To redirect an entire site (or page) to another URL, create an `index.yaml`
-that injects a meta refresh into the head:
+that uses the built-in `redirect` format to inject a meta refresh into the head:
 
 ```yaml
-head:
-  - raw: <meta http-equiv="refresh" content="0;url=https://example.com/new-location">
++head:
+  - redirect: https://example.com/new-location
 main:
-  - raw: <p>Redirecting to <a href="https://example.com/new-location">example.com</a>...</p>
+  - p: "Redirecting..."
+  - links:
+      https://example.com/new-location: example.com
 ```
 
-The `0` in `content="0;url=..."` is the delay in seconds before redirecting.
 The `main:` content is a fallback for clients that don't follow meta refresh.
 
 This is useful for retiring a virtual host and pointing it to a new location,

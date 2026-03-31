@@ -1,4 +1,6 @@
-head:
-  - raw: <meta http-equiv="refresh" content="0;url=https://stg.net/zoom">
++head:
+  - redirect: https://stg.net/zoom
 main:
-  - raw: <p>Redirecting to <a href="https://stg.net/zoom">stg.net/zoom</a>...</p>
+  - p: "Redirecting..."
+  - links:
+      https://stg.net/zoom: stg.net/zoom
