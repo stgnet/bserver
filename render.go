@@ -944,13 +944,6 @@ func (ctx *renderContext) renderContent(sb *strings.Builder, val interface{}, de
 			}
 		}
 
-		// Check for container entry: a formatted key whose format has
-		// contents with $var (like ^link's contents: '$contents').
-		// Siblings are rendered as children of the container.
-		if ctx.tryRenderContainer(sb, v, depth+1) {
-			return
-		}
-
 		v.Range(func(key string, child interface{}) bool {
 			if ctx.debug {
 				fmt.Fprintf(sb, "<!-- key %q -->\n", key)
@@ -1246,100 +1239,6 @@ func (ctx *renderContext) renderDirectTag(sb *strings.Builder, tagName string, m
 	}
 
 	writeSimpleTag(sb, tagName, attrs, html.EscapeString(text), depth)
-}
-
-// tryRenderContainer checks if a map has a "container" entry — a formatted key
-// whose format has contents with $var (like ^link's contents: '$contents').
-// If found, siblings are rendered as children of that container tag.
-// Returns true if a container was rendered.
-func (ctx *renderContext) tryRenderContainer(sb *strings.Builder, m *OrderedMap, depth int) bool {
-	// Find the container key: a formatted name with $var in contents
-	var containerKey string
-	var containerTag string
-	var containerFd *formatDef
-	var containerVal interface{}
-
-	m.Range(func(key string, val interface{}) bool {
-		tag, fd := ctx.tagForName(key)
-		if tag != "" && fd != nil && fd.Contents != "" && fd.Contents != "$*" && hasUnreplacedVars(fd.Contents) {
-			containerKey = key
-			containerTag = tag
-			containerFd = fd
-			containerVal = val
-			return false // stop
-		}
-		return true
-	})
-
-	if containerKey == "" {
-		return false
-	}
-
-	// A container needs siblings to provide child content.
-	// A single-entry map (no siblings) should be handled by renderInlineTag instead.
-	if m.Len() <= 1 {
-		return false
-	}
-
-	// If the container value is a map, it provides variable substitutions
-	// (e.g., {link: {url: /service, contents: "text"}}), not sibling children.
-	// Let renderInlineTag/renderFormattedEntry handle this case instead.
-	if _, isMap := containerVal.(*OrderedMap); isMap {
-		return false
-	}
-
-	// Build vars from the container's own value (the primary parameter value)
-	var vars map[string]string
-	if str, ok := containerVal.(string); ok {
-		vars = buildVarsFromString(containerFd, str)
-	} else {
-		vars = make(map[string]string)
-	}
-
-	attrs := formatParamsWithVars(containerFd.Params, vars)
-
-	// Render sibling entries as children
-	var childSb strings.Builder
-	m.Range(func(key string, child interface{}) bool {
-		if key == containerKey {
-			return true // continue
-		}
-		// "text" key provides literal text content
-		if key == "text" {
-			if str, ok := child.(string); ok {
-				fmt.Fprintf(&childSb, "%s%s\n", indent(depth+1), html.EscapeString(str))
-				return true
-			}
-		}
-		tag, fd := ctx.tagForName(key)
-		if tag != "" {
-			ctx.renderInlineTag(&childSb, key, tag, fd, child, depth+1)
-		} else {
-			if child != nil {
-				if _, exists := ctx.defs[key]; !exists {
-					ctx.defs[key] = child
-				}
-			}
-			ctx.renderName(&childSb, key, depth+1)
-		}
-		return true
-	})
-
-	childContent := childSb.String()
-
-	if ctx.debug {
-		fmt.Fprintf(sb, "<!-- container %q -> <%s> with %d siblings -->\n", containerKey, containerTag, m.Len()-1)
-	}
-
-	if voidElements[containerTag] {
-		fmt.Fprintf(sb, "%s<%s%s>\n", indent(depth), containerTag, attrs)
-	} else if childContent != "" {
-		fmt.Fprintf(sb, "%s<%s%s>\n%s%s</%s>\n", indent(depth), containerTag, attrs, childContent, indent(depth), containerTag)
-	} else {
-		fmt.Fprintf(sb, "%s<%s%s></%s>\n", indent(depth), containerTag, attrs, containerTag)
-	}
-
-	return true
 }
 
 // renderIterated handles ^name definitions that use variable substitution.

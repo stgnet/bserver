@@ -260,28 +260,6 @@ If a variable in params can't be resolved (no matching key in the content
 data), the entire attribute is omitted. This prevents broken HTML output
 from partially-resolved templates.
 
-## The Container Pattern
-
-When a map has a formatted key whose format uses `$var` in content (like
-`^link`), and there are sibling entries in the map, the siblings become
-children of that container element:
-
-```yaml
-- link: /about
-  text: Read more about us
-```
-
-Here, `^link` defines `content: '$contents'`. Since there's no `contents`
-key but there is a `text` sibling, bserver renders the text as a child of
-the link:
-
-```html
-<a href="/about">Read more about us</a>
-```
-
-This works because `text` is recognized as literal content to place inside
-the container element.
-
 ## Iteration with Lists of Maps
 
 When content is a list of maps and the format uses named variables, each

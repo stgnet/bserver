@@ -217,13 +217,6 @@ Usage:
 
 Renders: `<a href="/about">About Us</a>`
 
-With the container pattern, siblings provide content:
-
-```yaml
-- link: /about
-  text: About Us
-```
-
 ### links.yaml
 
 Multiple links from a map, using `$key`/`$value` iteration:
@@ -309,17 +302,6 @@ Unordered list of links, combining `ulist` and `link` patterns:
 ```
 
 ## Layout Components
-
-### container.yaml
-
-Bootstrap container:
-
-```yaml
-^container:
-  tag: div
-  params:
-    class: container
-```
 
 ### row.yaml
 

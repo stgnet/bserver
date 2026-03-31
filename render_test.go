@@ -34,31 +34,26 @@ func setupMinimalSite(t *testing.T, files map[string]string) string {
 func TestHomepageContent(t *testing.T) {
 	base, _ := os.Getwd()
 	docRoot := filepath.Join(base, "www", "default")
-	indexPath := filepath.Join(docRoot, "index.yaml")
-	output, _, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
+	// Homepage is now index.md (symlink to README.md), rendered as markdown
+	indexPath := filepath.Join(docRoot, "index.md")
+	output, _, _ := renderMarkdownPage(docRoot, indexPath, false, 1, nil)
 
-	if !strings.Contains(output, "bserver Documentation") {
-		t.Errorf("Homepage missing 'bserver Documentation' heading.\nFirst 2000 chars:\n%s", output[:min(len(output), 2000)])
-	}
 	if !strings.Contains(output, "YAML-driven") {
 		t.Error("Homepage missing YAML-driven description")
 	}
-	if !strings.Contains(output, "Key Features") {
-		t.Error("Homepage missing 'Key Features' section")
+	if !strings.Contains(output, "Features") {
+		t.Error("Homepage missing 'Features' section")
 	}
 	if !strings.Contains(output, "<li>") {
-		t.Error("Homepage missing list items from ulist")
+		t.Error("Homepage missing list items")
 	}
-	if !strings.Contains(output, "Quick Example") {
-		t.Error("Homepage missing 'Quick Example' section")
+	if !strings.Contains(output, "Quick Start") {
+		t.Error("Homepage missing 'Quick Start' section")
 	}
-	if !strings.Contains(output, "<pre>") {
-		t.Error("Homepage missing code example in <pre> tag")
-	}
-	if !strings.Contains(output, `href="/getting-started"`) {
+	if !strings.Contains(output, `href="getting-started"`) {
 		t.Error("Homepage missing link to Getting Started")
 	}
-	if !strings.Contains(output, `href="/formats"`) {
+	if !strings.Contains(output, `href="formats"`) {
 		t.Error("Homepage missing link to Formats")
 	}
 }
@@ -331,22 +326,24 @@ func TestUlistWrappingLinks(t *testing.T) {
 
 func TestContentWrapPlural(t *testing.T) {
 	// Test that "contents:" (plural) in a format definition wraps each
-	// list item individually.
-	base, _ := os.Getwd()
-	docRoot := filepath.Join(base, "www", "default")
-	indexPath := filepath.Join(docRoot, "index.yaml")
-	output, _, _ := renderYAMLPage(docRoot, indexPath, false, 1, nil)
+	// list item individually, using a self-contained fixture.
+	tmpDir := t.TempDir()
 
-	// The index.yaml uses ulist which has contents: (plural) with li: '$*'
+	os.WriteFile(filepath.Join(tmpDir, "html.yaml"), []byte("html:\n - body\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "body.yaml"), []byte("body:\n - main\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "ulist.yaml"), []byte("^ulist:\n  tag: ul\n  contents:\n    li: '$*'\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "index.yaml"), []byte("main:\n  - ulist:\n      - First item\n      - Second item\n      - Third item\n"), 0644)
+
+	output, _, _ := renderYAMLPage(tmpDir, filepath.Join(tmpDir, "index.yaml"), false, 1, nil)
+
 	if !strings.Contains(output, "<ul>") {
-		t.Error("Missing <ul> tag from ulist format")
+		t.Errorf("Missing <ul> tag from ulist format.\nOutput:\n%s", output)
 	}
 	if !strings.Contains(output, "<li>") {
-		t.Error("Missing <li> tags from ulist format")
+		t.Errorf("Missing <li> tags from ulist format.\nOutput:\n%s", output)
 	}
-	// Verify individual items are wrapped
-	if !strings.Contains(output, "YAML-driven page generation") {
-		t.Error("Missing first feature list item")
+	if !strings.Contains(output, "First item") {
+		t.Errorf("Missing first list item.\nOutput:\n%s", output)
 	}
 }
 

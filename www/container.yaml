@@ -1,4 +1,0 @@
-^container:
-  tag: div
-  params:
-    class: container
