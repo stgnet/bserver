@@ -144,11 +144,11 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	root := filepath.Join(m.cfg.Base, host)
 	if st, err := os.Stat(root); err != nil || !st.IsDir() {
-		// Only fall back to "default" for known vhosts (direct match or
-		// one subdomain deeper). Reject unknown domains so that bogus
-		// deeply-nested domains don't get served real content.
-		// 421 Misdirected Request: server is not configured for this host.
-		if !isKnownVhost(host, m.cfg.Base) {
+		// Base domains (single dot, e.g. "b-haven.net") fall through to
+		// default so that any domain pointed at this server gets content.
+		// Subdomains (multiple dots) are only allowed if they match a
+		// known vhost, to reject bogus deeply-nested scanner domains.
+		if strings.Count(host, ".") > 1 && !isKnownVhost(host, m.cfg.Base) {
 			http.Error(w, "Misdirected Request", http.StatusMisdirectedRequest)
 			return
 		}
@@ -600,6 +600,15 @@ func (m *virtualHostMux) serveFavicon(w http.ResponseWriter, r *http.Request, do
 	w.Write(data)
 }
 
+// selfSignedEntry holds a self-signed certificate with an expiry time
+// so it doesn't permanently shadow a newly-issued LE cert.
+type selfSignedEntry struct {
+	cert    *tls.Certificate
+	created time.Time
+}
+
+const selfSignedTTL = 10 * time.Minute
+
 // self-signed certificate cache
 var selfSignedCache sync.Map
 
@@ -608,9 +617,13 @@ func getOrCreateSelfSignedCert(host, cacheDir string) (*tls.Certificate, error) 
 	certFile := filepath.Join(cacheDir, host+".crt")
 	keyFile := filepath.Join(cacheDir, host+".key")
 
-	// return cached in memory
+	// return cached in memory if not expired
 	if v, ok := selfSignedCache.Load(host); ok {
-		return v.(*tls.Certificate), nil
+		entry := v.(*selfSignedEntry)
+		if time.Since(entry.created) < selfSignedTTL {
+			return entry.cert, nil
+		}
+		selfSignedCache.Delete(host)
 	}
 
 	// try disk cache
@@ -618,7 +631,7 @@ func getOrCreateSelfSignedCert(host, cacheDir string) (*tls.Certificate, error) 
 		if keyPEM, err2 := os.ReadFile(keyFile); err2 == nil {
 			cert, err := tls.X509KeyPair(certPEM, keyPEM)
 			if err == nil {
-				selfSignedCache.Store(host, &cert)
+				selfSignedCache.Store(host, &selfSignedEntry{cert: &cert, created: time.Now()})
 				return &cert, nil
 			}
 		}
@@ -662,7 +675,7 @@ func getOrCreateSelfSignedCert(host, cacheDir string) (*tls.Certificate, error) 
 	if err != nil {
 		return nil, err
 	}
-	selfSignedCache.Store(host, &cert)
+	selfSignedCache.Store(host, &selfSignedEntry{cert: &cert, created: time.Now()})
 	return &cert, nil
 }
 
@@ -852,6 +865,10 @@ func main() {
 		Prompt: autocert.AcceptTOS,
 		Email:  cfg.LEEmail,
 		HostPolicy: func(ctx context.Context, host string) error {
+			// Allow base domains (single dot) — they fall through to default
+			if strings.Count(host, ".") <= 1 {
+				return nil
+			}
 			if isKnownVhost(host, cfg.Base) {
 				return nil
 			}
@@ -873,7 +890,7 @@ func main() {
 				if !isPublicDomain(hello.ServerName) {
 					return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
 				}
-				if !isKnownVhost(hello.ServerName, cfg.Base) {
+				if strings.Count(hello.ServerName, ".") > 1 && !isKnownVhost(hello.ServerName, cfg.Base) {
 					return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
 				}
 				// Skip LE if we recently failed for this host

@@ -1,0 +1,6 @@
+^buttonlinks:
+  tag: a
+  params:
+    class: btn btn-primary mb-2 me-2
+    href: '$key'
+  contents: '$value'

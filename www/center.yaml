@@ -1,0 +1,5 @@
+^center:
+  tag: div
+  params:
+    class: d-flex justify-content-center my-3
+  content: '$*'

@@ -241,8 +241,10 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 		// scripts can discover which file generated the current page.
 		scriptFile = ctx.sourceFile
 	}
-	cmd.Env = ctx.buildScriptEnv(scriptFile)
-	cmd.Stdin = bytes.NewReader(jsonData)
+	env := ctx.buildScriptEnv(scriptFile)
+	env = append(env, "_SCRIPT_DATA="+string(jsonData))
+	cmd.Env = env
+	cmd.Stdin = nil // no stdin — data passed via _SCRIPT_DATA env var
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -365,7 +367,8 @@ func (ctx *renderContext) renderListToHTML(list []interface{}) string {
 func pythonScriptWrapper(userCode string) string {
 	var sb strings.Builder
 	sb.WriteString("import json, sys\n")
-	sb.WriteString("_data = json.loads(sys.stdin.read())\n")
+	sb.WriteString("import os\n")
+	sb.WriteString("_data = json.loads(os.environ.get('_SCRIPT_DATA', '[]'))\n")
 	sb.WriteString("if not isinstance(_data, list): _data = [_data]\n")
 	sb.WriteString("for record in _data:\n")
 	// Indent user code by 4 spaces to be inside the for loop
@@ -383,7 +386,7 @@ func pythonScriptWrapper(userCode string) string {
 // The user code has `record` (an object) available for each iteration.
 func jsScriptWrapper(userCode string) string {
 	var sb strings.Builder
-	sb.WriteString("const _data = JSON.parse(require('fs').readFileSync(0, 'utf8'));\n")
+	sb.WriteString("const _data = JSON.parse(process.env._SCRIPT_DATA || '[]');\n")
 	sb.WriteString("const _records = Array.isArray(_data) ? _data : [_data];\n")
 	sb.WriteString("for (const record of _records) {\n")
 	sb.WriteString(userCode)
@@ -396,7 +399,7 @@ func jsScriptWrapper(userCode string) string {
 // If jq is available, individual fields are also exported as $RECORD_<KEY>.
 func shScriptWrapper(userCode string) string {
 	var sb strings.Builder
-	sb.WriteString("_INPUT=$(cat)\n")
+	sb.WriteString("_INPUT=\"$_SCRIPT_DATA\"\n")
 	sb.WriteString("_COUNT=$(printf '%s' \"$_INPUT\" | jq -r 'if type==\"array\" then length else 1 end' 2>/dev/null || echo 1)\n")
 	sb.WriteString("_IDX=0\n")
 	sb.WriteString("while [ \"$_IDX\" -lt \"$_COUNT\" ]; do\n")
@@ -443,7 +446,7 @@ func phpScriptWrapper(userCode string) string {
 	sb.WriteString("if (isset($_COOKIE[session_name()])) { session_id($_COOKIE[session_name()]); }\n")
 	// Buffer output so session_start()/header()/setcookie() can send headers
 	sb.WriteString("ob_start();\n")
-	sb.WriteString("$_data = json_decode(file_get_contents('php://stdin'), true);\n")
+	sb.WriteString("$_data = json_decode(getenv('_SCRIPT_DATA') ?: '[]', true);\n")
 	sb.WriteString("if (!is_array($_data)) $_data = [$_data];\n")
 	sb.WriteString("foreach ($_data as $record) {\n")
 	sb.WriteString(userCode)
