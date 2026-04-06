@@ -18,3 +18,9 @@ style:
     border-radius: 0.75rem
   .navbar-nav .nav-link:
     color: rgba(255, 255, 255) !important
+#  '@media (min-width: 992px)':
+#    '.navbar-nav .nav-item:not(:last-child) .nav-link':
+#      border-right: 1px solid #ccc
+#      padding-right: 1rem
+#      margin-right: 1rem
+

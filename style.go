@@ -20,6 +20,7 @@ func renderStyleYAML(val interface{}, depth int) string {
 			return true
 		}
 		// Try collapsing single-property rules onto one line
+		// (skip when the value is a nested block like @media > selector)
 		if propMap.Len() == 1 {
 			var prop string
 			var pval interface{}
@@ -28,16 +29,25 @@ func renderStyleYAML(val interface{}, depth int) string {
 				pval = v
 				return false
 			})
-			line := fmt.Sprintf("%s%s { %s: %v; }", indent(depth), selector, prop, pval)
-			if len(line) <= maxInlineTagLength {
-				sb.WriteString(line)
-				sb.WriteByte('\n')
-				return true
+			if _, nested := pval.(*OrderedMap); !nested {
+				line := fmt.Sprintf("%s%s { %s: %v; }", indent(depth), selector, prop, pval)
+				if len(line) <= maxInlineTagLength {
+					sb.WriteString(line)
+					sb.WriteByte('\n')
+					return true
+				}
 			}
 		}
 		fmt.Fprintf(&sb, "%s%s {\n", indent(depth), selector)
 		propMap.Range(func(prop string, pval interface{}) bool {
-			fmt.Fprintf(&sb, "%s%s: %v;\n", indent(depth+1), prop, pval)
+			if nested, ok := pval.(*OrderedMap); ok {
+				// Nested CSS block (e.g., @media > selector)
+				inner := NewOrderedMap()
+				inner.Set(prop, nested)
+				sb.WriteString(renderStyleYAML(inner, depth+1))
+			} else {
+				fmt.Fprintf(&sb, "%s%s: %v;\n", indent(depth+1), prop, pval)
+			}
 			return true
 		})
 		fmt.Fprintf(&sb, "%s}\n", indent(depth))

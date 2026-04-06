@@ -357,6 +357,20 @@ func (ctx *renderContext) renderListToHTML(list []interface{}) string {
 			sb.WriteString(html.EscapeString(s))
 			continue
 		}
+		if om, ok := elem.(*OrderedMap); ok {
+			// Render map elements through renderContent so that inline
+			// tags like {php: "code"} are handled by the format system.
+			var buf strings.Builder
+			om.Range(func(key string, child interface{}) bool {
+				tag, fd := ctx.tagForName(key)
+				if tag != "" || fd != nil {
+					ctx.renderInlineTag(&buf, key, tag, fd, child, 0)
+				}
+				return true
+			})
+			sb.WriteString(strings.TrimRight(buf.String(), "\n"))
+			continue
+		}
 		sb.WriteString(html.EscapeString(fmt.Sprintf("%v", elem)))
 	}
 	return strings.TrimSpace(sb.String())

@@ -5,10 +5,11 @@ navbar:
         - navbar-toggler-icon
         - brand
     navbar-collapse:
-      navbar-nav:
-        - navlinks
-      navbar-nav-right:
-        - navlinksright
+      - navbar-nav:
+          - navlinks
+      - navform
+      - navbar-nav-right:
+          - navlinksright
 ^navbar:
   tag: nav
   params:
@@ -40,10 +41,14 @@ navbar:
   tag: ul
   params:
     class: navbar-nav
+^navform:
+  tag: form
+  params:
+    class: d-flex ms-auto me-2
 ^navbar-nav-right:
   tag: ul
   params:
-    class: navbar-nav ms-auto
+    class: navbar-nav
 ^navlinks:
   script: python
   code: |
