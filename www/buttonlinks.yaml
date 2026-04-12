@@ -3,4 +3,5 @@
   params:
     class: btn btn-primary mb-2 me-2
     href: '$key'
+    rel: noopener noreferrer
   contents: '$value'
