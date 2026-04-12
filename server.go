@@ -63,6 +63,7 @@ type virtualHostMux struct {
 // an http: backend target.
 type proxyEntry struct {
 	proxy   *httputil.ReverseProxy // nil if not a proxy vhost
+	apiKey  string                 // if set, requires Authorization: Bearer <key>
 	modTime time.Time              // mtime of index.yaml (zero if absent)
 }
 
@@ -71,7 +72,7 @@ var proxyCache sync.Map // docRoot -> *proxyEntry
 // getProxyForVhost checks whether the vhost at docRoot is a proxy vhost
 // by reading its index.yaml for an "http:" key. Results are cached with
 // mtime-based invalidation. Returns nil if not a proxy vhost.
-func getProxyForVhost(docRoot string) *httputil.ReverseProxy {
+func getProxyForVhost(docRoot string) *proxyEntry {
 	indexPath := filepath.Join(docRoot, "index.yaml")
 
 	var currentMtime time.Time
@@ -89,11 +90,11 @@ func getProxyForVhost(docRoot string) *httputil.ReverseProxy {
 	}
 	currentMtime = info.ModTime()
 
-	// Return cached proxy if mtime matches
+	// Return cached entry if mtime matches
 	if cached, ok := proxyCache.Load(docRoot); ok {
 		entry := cached.(*proxyEntry)
 		if entry.modTime.Equal(currentMtime) {
-			return entry.proxy
+			return entry
 		}
 	}
 
@@ -118,14 +119,21 @@ func getProxyForVhost(docRoot string) *httputil.ReverseProxy {
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
+	defaultDirector := proxy.Director
+	proxy.Director = func(r *http.Request) {
+		defaultDirector(r)
+		r.Host = target.Host
+	}
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		log.Printf("proxy error for %s -> %s: %v", r.Host, target, err)
 		http.Error(w, "Bad Gateway", http.StatusBadGateway)
 	}
 
+	apiKey, _ := configString(m, "api-key", "")
 	log.Printf("Proxy vhost %s -> %s", docRoot, target)
-	proxyCache.Store(docRoot, &proxyEntry{proxy: proxy, modTime: currentMtime})
-	return proxy
+	entry := &proxyEntry{proxy: proxy, apiKey: apiKey, modTime: currentMtime}
+	proxyCache.Store(docRoot, entry)
+	return entry
 }
 
 func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -162,8 +170,16 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if this vhost is a proxy (index.yaml with http: backend)
-	if proxy := getProxyForVhost(root); proxy != nil {
-		proxy.ServeHTTP(w, r)
+	if entry := getProxyForVhost(root); entry != nil && entry.proxy != nil {
+		if entry.apiKey != "" {
+			auth := r.Header.Get("Authorization")
+			if auth != "Bearer "+entry.apiKey {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			r.Header.Del("Authorization")
+		}
+		entry.proxy.ServeHTTP(w, r)
 		return
 	}
 
