@@ -559,10 +559,10 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, docRoot string, statusCode int, message string, site siteSettings) {
 	_, debug := r.URL.Query()["debug"]
 
-	// Cache rendered error pages per docRoot+statusCode (skip for debug mode
-	// or custom messages which are request-specific).
+	// Cache rendered error pages per docRoot+statusCode+path (skip for debug
+	// mode or custom messages which are request-specific).
 	useCache := !debug && message == "" && m.cfg.Cache != nil
-	key := fmt.Sprintf("%s:error:%d", docRoot, statusCode)
+	key := fmt.Sprintf("%s:error:%d:%s", docRoot, statusCode, r.URL.Path)
 	if useCache {
 		if cached, ok := m.cfg.Cache.Get(key); ok {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
