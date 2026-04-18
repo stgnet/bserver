@@ -241,7 +241,7 @@ SyslogIdentifier=$SERVICE_NAME
 # Hardening
 NoNewPrivileges=yes
 ProtectSystem=strict
-ReadWritePaths=$SCRIPT_DIR/cert-cache $SCRIPT_DIR/www /var/log/$SERVICE_NAME.log /tmp $session_dir
+ReadWritePaths=$SCRIPT_DIR/cert-cache $SCRIPT_DIR/www /var/log/$SERVICE_NAME.log /tmp $session_dir /var/spool/postfix/maildrop /var/spool/postfix/public
 ProtectHome=read-only
 PrivateTmp=yes
 
