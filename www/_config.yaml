@@ -48,6 +48,26 @@
 # Default: 10
 #max-body-size: 10
 
+# Idle timeout in seconds for php-cgi. If php-cgi produces no output for
+# this long, the server kills it and (if headers haven't been flushed yet)
+# returns 504 Gateway Timeout. Total script runtime is NOT capped — as long
+# as output keeps arriving, the script may run indefinitely. Scripts wanting
+# progress visibility should echo periodically (e.g., inside long loops).
+# Overridable per-vhost.
+# Env: (none)
+# Default: 60
+#php-timeout: 60
+
+# How long (seconds) to buffer php-cgi output before switching to chunked
+# streaming. Scripts that complete within this window get a single buffered
+# response (with Content-Length, no streaming overhead). Scripts still
+# running past it switch to chunked transfer encoding so the user sees
+# incremental output instead of a spinner. Set to 0 to stream immediately.
+# Overridable per-vhost.
+# Env: (none)
+# Default: 5
+#php-stream-after: 5
+
 # ---- Per-site settings (overridable by vhost _config.yaml) ----
 
 # Render cache and Cache-Control max-age for rendered pages, in seconds.

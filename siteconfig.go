@@ -15,11 +15,13 @@ import (
 // siteSettings holds per-site configuration that can be overridden by each
 // virtual host's _config.yaml. Server-wide defaults come from www/_config.yaml.
 type siteSettings struct {
-	CacheAge     time.Duration
-	StaticAge    time.Duration
-	ParentLevels int
-	Index        []string
-	Types        []string // allowed file extensions (without dots), e.g. ["html", "css", "jpg"]
+	CacheAge       time.Duration
+	StaticAge      time.Duration
+	ParentLevels   int
+	Index          []string
+	Types          []string      // allowed file extensions (without dots), e.g. ["html", "css", "jpg"]
+	PHPTimeout     time.Duration // idle timeout: kill php-cgi if no output for this long
+	PHPStreamAfter time.Duration // buffer php-cgi output for this long before switching to chunked streaming
 }
 
 // loadConfigMap loads a _config.yaml file and returns its contents as a map.
@@ -127,6 +129,12 @@ func applySiteSettings(m map[string]interface{}, defaults siteSettings) siteSett
 	}
 	if types, ok := configIndex(m, "types"); ok {
 		s.Types = normalizeTypes(types)
+	}
+	if v, ok := configInt(m, "php-timeout", 0); ok && v > 0 {
+		s.PHPTimeout = time.Duration(v) * time.Second
+	}
+	if v, ok := configInt(m, "php-stream-after", 0); ok && v >= 0 {
+		s.PHPStreamAfter = time.Duration(v) * time.Second
 	}
 	return s
 }

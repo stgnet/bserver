@@ -195,6 +195,20 @@ UNIT_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
 install_systemd() {
     need_root
+
+    # PHP session storage. bserver runs php-cgi as "nobody" after dropping
+    # privileges, and PrivateTmp=yes wipes /tmp on every restart — so we
+    # use a persistent per-service directory owned by nobody. Sessions
+    # (including the Google OAuth access/refresh token for crm.stg.net)
+    # survive restarts as long as the session cookie is still valid.
+    local session_dir="/var/lib/${SERVICE_NAME}-sessions"
+    if [ ! -d "$session_dir" ]; then
+        info "Creating session directory $session_dir"
+        mkdir -p "$session_dir"
+    fi
+    chown nobody:nogroup "$session_dir"
+    chmod 0700 "$session_dir"
+
     info "Installing systemd unit → $UNIT_FILE"
 
     cat > "$UNIT_FILE" <<EOF
@@ -227,7 +241,7 @@ SyslogIdentifier=$SERVICE_NAME
 # Hardening
 NoNewPrivileges=yes
 ProtectSystem=strict
-ReadWritePaths=$SCRIPT_DIR/cert-cache $SCRIPT_DIR/www /var/log/$SERVICE_NAME.log /tmp
+ReadWritePaths=$SCRIPT_DIR/cert-cache $SCRIPT_DIR/www /var/log/$SERVICE_NAME.log /tmp $session_dir
 ProtectHome=read-only
 PrivateTmp=yes
 

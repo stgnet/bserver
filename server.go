@@ -241,7 +241,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if strings.HasSuffix(strings.ToLower(fsPath), ".php") {
 		if st, err := os.Stat(fsPath); err == nil && !st.IsDir() {
-			m.handlePHP(w, r, host, root, fsPath)
+			m.handlePHP(w, r, host, root, fsPath, site)
 			return
 		}
 		// PHP file doesn't exist — fall through to 404
@@ -301,7 +301,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if info != nil && info.IsDir() {
 		indexPHP := filepath.Join(fsPath, "index.php")
 		if st, err := os.Stat(indexPHP); err == nil && !st.IsDir() {
-			m.handlePHP(w, r, host, root, indexPHP)
+			m.handlePHP(w, r, host, root, indexPHP, site)
 			return
 		}
 	}
@@ -325,7 +325,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.serveErrorPage(w, r, root, http.StatusNotFound, "", site)
 }
 
-func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host, docroot, scriptFilename string) {
+func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host, docroot, scriptFilename string, site siteSettings) {
 	// Compute SCRIPT_NAME and PATH_INFO from the URL
 	scriptName := r.URL.Path
 	pathInfo := ""
@@ -402,52 +402,148 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 		env = append(env, "PATH="+p)
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
-	defer cancel()
+	phpTimeout := site.PHPTimeout
+	if phpTimeout <= 0 {
+		phpTimeout = 60 * time.Second
+	}
+	streamAfter := site.PHPStreamAfter
+	if streamAfter < 0 {
+		streamAfter = 0
+	}
 
-	cmd := exec.CommandContext(ctx, m.cfg.PHPCGI, "-d", "session.save_path=/tmp")
+	// Pipe php-cgi stdout through os.Pipe so we can SetReadDeadline on the
+	// reader (cmd.StdoutPipe gives an io.ReadCloser that doesn't expose it).
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		log.Printf("php-cgi pipe error for %s: %v", scriptFilename, err)
+		http.Error(w, "CGI Error", http.StatusInternalServerError)
+		return
+	}
+	defer pr.Close()
+
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel() // kills php-cgi on return
+
+	// -d output_buffering=0 -d implicit_flush=1 makes every echo flush to
+	// stdout immediately so the grace-period buffering and subsequent
+	// streaming reflect script progress rather than SAPI-level buffering.
+	cmd := exec.CommandContext(ctx, m.cfg.PHPCGI,
+		"-d", "session.save_path=/var/lib/bserver-sessions",
+		"-d", "output_buffering=0",
+		"-d", "implicit_flush=1",
+	)
 	cmd.Dir = docroot
 	cmd.Env = env
 	cmd.Stdin = &bodyBuf
+	cmd.Stdout = pw
+	cmd.Stderr = os.Stderr
 
-	var stdoutBuf bytes.Buffer
-	cmd.Stdout = &stdoutBuf
-	cmd.Stderr = os.Stderr // PHP warnings/errors go to server log
+	if err := cmd.Start(); err != nil {
+		pw.Close()
+		log.Printf("php-cgi start error for %s: %v", scriptFilename, err)
+		http.Error(w, "CGI Error", http.StatusInternalServerError)
+		return
+	}
+	pw.Close() // parent's write end; child keeps its dup, we'll see EOF when it exits
 
-	if err := cmd.Run(); err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			log.Printf("php-cgi timeout after 30s for %s", scriptFilename)
-			http.Error(w, "Gateway Timeout", http.StatusGatewayTimeout)
-			return
+	var waitErr error
+	var waited bool
+	waitProc := func() {
+		if !waited {
+			waitErr = cmd.Wait()
+			waited = true
 		}
-		log.Printf("php-cgi error for %s (cwd=%s): %v", scriptFilename, docroot, err)
-		if stdoutBuf.Len() == 0 {
-			http.Error(w, "CGI Error", http.StatusInternalServerError)
-			return
+	}
+	defer waitProc()
+
+	// Phase 1 + 2: read into buffer, first until end-of-headers, then until
+	// the grace period expires or the process finishes.
+	var buf bytes.Buffer
+	readBuf := make([]byte, 4096)
+	headerEnd := -1
+	headerSepLen := 0
+	deadline := time.Now().Add(phpTimeout) // idle deadline for header phase
+	gracedeadline := time.Time{}           // set once headers are found
+	finishedQuickly := false
+	timedOut := false
+
+	for {
+		// Pick the tighter of idle and grace deadlines.
+		d := deadline
+		if !gracedeadline.IsZero() && gracedeadline.Before(d) {
+			d = gracedeadline
 		}
-		// PHP may exit non-zero on fatal errors but still produce output
+		if err := pr.SetReadDeadline(d); err != nil {
+			break
+		}
+
+		n, rerr := pr.Read(readBuf)
+		if n > 0 {
+			buf.Write(readBuf[:n])
+			deadline = time.Now().Add(phpTimeout) // reset idle deadline
+
+			if headerEnd == -1 {
+				b := buf.Bytes()
+				if idx := bytes.Index(b, []byte("\r\n\r\n")); idx >= 0 {
+					headerEnd, headerSepLen = idx, 4
+				} else if idx := bytes.Index(b, []byte("\n\n")); idx >= 0 {
+					headerEnd, headerSepLen = idx, 2
+				}
+				if headerEnd >= 0 && streamAfter > 0 {
+					gracedeadline = time.Now().Add(streamAfter)
+				} else if headerEnd >= 0 {
+					// streaming disabled (0s grace) — switch immediately
+					gracedeadline = time.Now()
+				}
+			}
+		}
+		if rerr != nil {
+			if rerr == io.EOF {
+				finishedQuickly = true
+				break
+			}
+			if os.IsTimeout(rerr) {
+				// Which deadline fired?
+				if !gracedeadline.IsZero() && !time.Now().Before(gracedeadline) {
+					break // grace expired — switch to streaming
+				}
+				// idle timeout before grace (never saw headers, or silent)
+				timedOut = true
+				break
+			}
+			// Unexpected read error — stop reading, fall through.
+			break
+		}
 	}
 
-	// Parse CGI response: headers separated from body by blank line
-	output := stdoutBuf.Bytes()
-	sep := []byte("\r\n\r\n")
-	headerEnd := bytes.Index(output, sep)
-	if headerEnd == -1 {
-		sep = []byte("\n\n")
-		headerEnd = bytes.Index(output, sep)
-	}
-	if headerEnd == -1 {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write(output)
+	if timedOut {
+		cancel()
+		waitProc()
+		log.Printf("php-cgi idle timeout after %s for %s", phpTimeout, scriptFilename)
+		http.Error(w, "Gateway Timeout", http.StatusGatewayTimeout)
 		return
 	}
 
-	body := output[headerEnd+len(sep):]
+	// No complete header block seen — treat buffered output as raw body.
+	if headerEnd == -1 {
+		waitProc()
+		if waitErr != nil {
+			log.Printf("php-cgi error for %s (cwd=%s): %v", scriptFilename, docroot, waitErr)
+			if buf.Len() == 0 {
+				http.Error(w, "CGI Error", http.StatusInternalServerError)
+				return
+			}
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write(buf.Bytes())
+		return
+	}
 
-	// Parse CGI headers, sanitizing names and values to prevent
-	// HTTP response splitting via injected \r\n sequences.
+	// Parse CGI headers (shared by buffered and streaming paths). Sanitize
+	// names and values to prevent HTTP response splitting via injected
+	// \r\n sequences.
 	statusCode := http.StatusOK
-	for _, line := range strings.Split(string(output[:headerEnd]), "\n") {
+	for _, line := range strings.Split(string(buf.Bytes()[:headerEnd]), "\n") {
 		line = strings.TrimRight(line, "\r")
 		colon := strings.IndexByte(line, ':')
 		if colon == -1 {
@@ -456,11 +552,9 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 		key := strings.TrimSpace(line[:colon])
 		val := strings.TrimSpace(line[colon+1:])
 
-		// Reject header names with invalid characters (RFC 7230: token)
 		if !isValidHeaderName(key) {
 			continue
 		}
-		// Strip \r and \n from values to prevent response splitting
 		val = sanitizeHeaderValue(val)
 
 		if strings.EqualFold(key, "Status") {
@@ -479,8 +573,53 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 		statusCode = http.StatusFound
 	}
 
+	body := buf.Bytes()[headerEnd+headerSepLen:]
+
+	if finishedQuickly {
+		// Script finished within grace period — send as a single response.
+		waitProc()
+		if waitErr != nil {
+			// Exit non-zero but we have output; log and still serve it.
+			log.Printf("php-cgi error for %s (cwd=%s): %v", scriptFilename, docroot, waitErr)
+		}
+		w.WriteHeader(statusCode)
+		w.Write(body)
+		return
+	}
+
+	// Streaming path: flush headers and buffered body, then copy the rest
+	// chunk-by-chunk with per-flush transport deadline extensions.
+	rc := http.NewResponseController(w)
 	w.WriteHeader(statusCode)
-	w.Write(body)
+	if _, werr := w.Write(body); werr != nil {
+		return
+	}
+	_ = rc.Flush()
+	_ = rc.SetWriteDeadline(time.Now().Add(phpTimeout + 30*time.Second))
+
+	for {
+		if err := pr.SetReadDeadline(time.Now().Add(phpTimeout)); err != nil {
+			return
+		}
+		n, rerr := pr.Read(readBuf)
+		if n > 0 {
+			if _, werr := w.Write(readBuf[:n]); werr != nil {
+				return
+			}
+			_ = rc.Flush()
+			_ = rc.SetWriteDeadline(time.Now().Add(phpTimeout + 30*time.Second))
+		}
+		if rerr != nil {
+			if rerr == io.EOF {
+				return
+			}
+			if os.IsTimeout(rerr) {
+				log.Printf("php-cgi idle timeout after %s for %s (streaming)", phpTimeout, scriptFilename)
+				return
+			}
+			return
+		}
+	}
 }
 
 func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docRoot, yamlPath string, site siteSettings) {
@@ -772,7 +911,9 @@ func main() {
 	cacheMaxAgeSec := resolveInt("cache-age", int(defaultCacheMaxAge.Seconds()))
 	maxStaticAgeSec := resolveInt("static-age", 86400)
 	maxParentLvls := resolveInt("parent-levels", DefaultMaxParentLevels)
-	maxBodySizeMB := resolveInt("max-body-size", 10) // default 10 MB
+	maxBodySizeMB := resolveInt("max-body-size", 10)    // default 10 MB
+	phpTimeoutSec := resolveInt("php-timeout", 60)      // idle timeout: kill php-cgi if silent this long
+	phpStreamAfterSec := resolveInt("php-stream-after", 5) // buffer php-cgi output this long before streaming
 
 	// PHP: _config.yaml > PHP_CGI env > auto-detect
 	phpcgi := resolve("php", "PHP_CGI", "")
@@ -856,11 +997,13 @@ func main() {
 		Cache:       cache,
 		MaxBodySize: maxBodySize,
 		Site: siteSettings{
-			CacheAge:     cacheMaxAge,
-			StaticAge:    maxStaticAge,
-			ParentLevels: maxParentLvls,
-			Index:        indexPriority,
-			Types:        allowedTypes,
+			CacheAge:       cacheMaxAge,
+			StaticAge:      maxStaticAge,
+			ParentLevels:   maxParentLvls,
+			Index:          indexPriority,
+			Types:          allowedTypes,
+			PHPTimeout:     time.Duration(phpTimeoutSec) * time.Second,
+			PHPStreamAfter: time.Duration(phpStreamAfterSec) * time.Second,
 		},
 	}
 
@@ -928,7 +1071,7 @@ func main() {
 		},
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      120 * time.Second,
+		WriteTimeout:      120 * time.Second, // extended per-flush via ResponseController for streaming PHP
 		IdleTimeout:       120 * time.Second,
 		ErrorLog:          newTLSErrorLogger(),
 	}
