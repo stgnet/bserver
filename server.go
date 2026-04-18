@@ -152,11 +152,12 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	root := filepath.Join(m.cfg.Base, host)
 	if st, err := os.Stat(root); err != nil || !st.IsDir() {
-		// Base domains (single dot, e.g. "b-haven.net") fall through to
-		// default so that any domain pointed at this server gets content.
-		// Subdomains (multiple dots) are only allowed if they match a
-		// known vhost, to reject bogus deeply-nested scanner domains.
-		if strings.Count(host, ".") > 1 && !isKnownVhost(host, m.cfg.Base) {
+		// Base domains (single dot, e.g. "b-haven.net") and IP addresses
+		// fall through to default so that any domain pointed at this server
+		// gets content. Subdomains (multiple dots) are only allowed if they
+		// match a known vhost, to reject bogus deeply-nested scanner domains.
+		isIP := net.ParseIP(host) != nil
+		if !isIP && strings.Count(host, ".") > 1 && !isKnownVhost(host, m.cfg.Base) {
 			http.Error(w, "Misdirected Request", http.StatusMisdirectedRequest)
 			return
 		}
@@ -1083,10 +1084,19 @@ func main() {
 		httpsOK = true
 	}
 
-	// HTTP handler: if HTTPS is active, redirect; otherwise serve directly
+	// HTTP handler: if HTTPS is active, redirect; otherwise serve directly.
+	// Skip redirect for IP addresses and .local domains where LE certs aren't possible.
 	var httpHandler http.Handler
 	if httpsOK {
 		httpHandler = m.HTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			h := r.Host
+			if hp, _, err := net.SplitHostPort(h); err == nil {
+				h = hp
+			}
+			if net.ParseIP(h) != nil || strings.HasSuffix(strings.ToLower(h), ".local") {
+				handler.ServeHTTP(w, r)
+				return
+			}
 			u := *r.URL
 			u.Scheme = "https"
 			u.Host = hostOnly(r.Host)
