@@ -22,6 +22,7 @@ type siteSettings struct {
 	Types          []string      // allowed file extensions (without dots), e.g. ["html", "css", "jpg"]
 	PHPTimeout     time.Duration // idle timeout: kill php-cgi if no output for this long
 	PHPStreamAfter time.Duration // buffer php-cgi output for this long before switching to chunked streaming
+	AllowHTTP      bool          // serve this vhost over plain HTTP instead of redirecting to HTTPS
 }
 
 // loadConfigMap loads a _config.yaml file and returns its contents as a map.
@@ -71,6 +72,34 @@ func configInt(m map[string]interface{}, key string, def int) (int, bool) {
 		if _, err := fmt.Sscanf(n, "%d", &i); err == nil {
 			return i, true
 		}
+	}
+	return def, false
+}
+
+// configBool extracts a boolean value from a config map.
+// Accepts native bools, and the strings "true"/"false"/"yes"/"no"/"1"/"0"
+// (case-insensitive). Returns the value and true if the key exists, or def
+// and false if not.
+func configBool(m map[string]interface{}, key string, def bool) (bool, bool) {
+	if m == nil {
+		return def, false
+	}
+	v, ok := m[key]
+	if !ok {
+		return def, false
+	}
+	switch b := v.(type) {
+	case bool:
+		return b, true
+	case string:
+		switch strings.ToLower(strings.TrimSpace(b)) {
+		case "true", "yes", "1":
+			return true, true
+		case "false", "no", "0":
+			return false, true
+		}
+	case int:
+		return b != 0, true
 	}
 	return def, false
 }
@@ -136,6 +165,9 @@ func applySiteSettings(m map[string]interface{}, defaults siteSettings) siteSett
 	if v, ok := configInt(m, "php-stream-after", 0); ok && v >= 0 {
 		s.PHPStreamAfter = time.Duration(v) * time.Second
 	}
+	if v, ok := configBool(m, "allow-http", false); ok {
+		s.AllowHTTP = v
+	}
 	return s
 }
 
@@ -178,6 +210,12 @@ type vhostConfigEntry struct {
 }
 
 var vhostConfigCache sync.Map // docRoot -> *vhostConfigEntry
+
+func vhostConfigCacheSize() int {
+	n := 0
+	vhostConfigCache.Range(func(_, _ any) bool { n++; return true })
+	return n
+}
 
 // vhostSettings returns the effective site settings for a given docRoot,
 // checking for a per-vhost _config.yaml override. Results are cached with

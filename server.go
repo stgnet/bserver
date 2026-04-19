@@ -29,6 +29,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -68,6 +69,12 @@ type proxyEntry struct {
 }
 
 var proxyCache sync.Map // docRoot -> *proxyEntry
+
+func proxyCacheSize() int {
+	n := 0
+	proxyCache.Range(func(_, _ any) bool { n++; return true })
+	return n
+}
 
 // getProxyForVhost checks whether the vhost at docRoot is a proxy vhost
 // by reading its index.yaml for an "http:" key. Results are cached with
@@ -709,6 +716,19 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 	w.Write([]byte(output))
 }
 
+// Error page rendering is serialized through errorRenderSem to bound memory
+// during 404 floods: a scanner hitting many unique paths would otherwise
+// spawn one full YAML render per concurrent request (~MBs each). With a
+// single slot, renders happen one at a time; extra requests wait up to
+// errorRenderMaxWaiting deep, and anything beyond that gets a bare status
+// code with no body.
+var (
+	errorRenderSem     = make(chan struct{}, 1)
+	errorRenderWaiting atomic.Int32
+)
+
+const errorRenderMaxWaiting = 50
+
 // serveErrorPage renders an error page through the YAML system.
 // If no error template is found, it falls back to a plain-text response.
 func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, docRoot string, statusCode int, message string, site siteSettings) {
@@ -718,6 +738,32 @@ func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, 
 	// mode or custom messages which are request-specific).
 	useCache := !debug && message == "" && m.cfg.Cache != nil
 	key := fmt.Sprintf("%s:error:%d:%s", docRoot, statusCode, r.URL.Path)
+	if useCache {
+		if cached, ok := m.cfg.Cache.Get(key); ok {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.WriteHeader(statusCode)
+			w.Write([]byte(cached))
+			return
+		}
+	}
+
+	// Bounded serial queue. Overflow → bare status code, no body.
+	if errorRenderWaiting.Add(1) > errorRenderMaxWaiting {
+		errorRenderWaiting.Add(-1)
+		w.WriteHeader(statusCode)
+		return
+	}
+	select {
+	case errorRenderSem <- struct{}{}:
+		errorRenderWaiting.Add(-1)
+	case <-r.Context().Done():
+		errorRenderWaiting.Add(-1)
+		return
+	}
+	defer func() { <-errorRenderSem }()
+
+	// Re-check cache: a prior queued request may have rendered this key
+	// while we were waiting.
 	if useCache {
 		if cached, ok := m.cfg.Cache.Get(key); ok {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -766,6 +812,23 @@ const selfSignedTTL = 10 * time.Minute
 
 // self-signed certificate cache
 var selfSignedCache sync.Map
+
+func selfSignedCacheSize() int {
+	n := 0
+	selfSignedCache.Range(func(_, _ any) bool { n++; return true })
+	return n
+}
+
+// leFailCache tracks domains where Let's Encrypt recently failed, so we don't
+// retry on every TLS handshake (which spams LE and logs). Package-level so the
+// memory monitor can report its size.
+var leFailCache sync.Map // host -> time.Time (retry-after)
+
+func leFailCacheSize() int {
+	n := 0
+	leFailCache.Range(func(_, _ any) bool { n++; return true })
+	return n
+}
 
 // self-signed certificate generator with disk cache
 func getOrCreateSelfSignedCert(host, cacheDir string) (*tls.Certificate, error) {
@@ -915,6 +978,16 @@ func main() {
 	phpTimeoutSec := resolveInt("php-timeout", 60)      // idle timeout: kill php-cgi if silent this long
 	phpStreamAfterSec := resolveInt("php-stream-after", 5) // buffer php-cgi output this long before streaming
 
+	// Memory monitor tunables (see memmon.go for defaults)
+	memLogIntervalSec := resolveInt("mem-log-interval", int(defaultMemInterval.Seconds()))
+	memHeapThresholdMB := resolveInt("mem-heap-threshold-mb", defaultHeapThresholdMB)
+	memGoroutineThreshold := resolveInt("mem-goroutine-threshold", defaultGoroutineThreshold)
+	memGrowthMBPer5Min := resolveInt("mem-growth-mb-per-5min", defaultGrowthMBPer5Min)
+	memDumpDir := resolve("mem-dump-dir", "", defaultMemDumpDir)
+	memDumpCooldownMin := resolveInt("mem-dump-cooldown-min", int(defaultMemDumpCooldown.Minutes()))
+	memDumpMaxFiles := resolveInt("mem-dump-max-files", defaultMemDumpMaxFiles)
+	pprofAddr := resolve("pprof-addr", "", defaultPprofAddr)
+
 	// PHP: _config.yaml > PHP_CGI env > auto-detect
 	phpcgi := resolve("php", "PHP_CGI", "")
 	if phpcgi == "" {
@@ -985,6 +1058,26 @@ func main() {
 		log.Printf("Render cache disabled (cache-size: 0)")
 	}
 
+	// Start memory monitor so we have a diagnostic trail before any OOM.
+	mm := newMemMonitor(memMonitorConfig{
+		Interval:           time.Duration(memLogIntervalSec) * time.Second,
+		HeapThresholdMB:    memHeapThresholdMB,
+		GoroutineThreshold: memGoroutineThreshold,
+		GrowthMBPer5Min:    memGrowthMBPer5Min,
+		DumpDir:            memDumpDir,
+		DumpCooldown:       time.Duration(memDumpCooldownMin) * time.Minute,
+		DumpMaxFiles:       memDumpMaxFiles,
+		PprofAddr:          pprofAddr,
+	}, cache, map[string]cacheProvider{
+		"proxy":       proxyCacheSize,
+		"vhostConfig": vhostConfigCacheSize,
+		"favicon":     faviconCacheSize,
+		"selfSigned":  selfSignedCacheSize,
+		"leFail":      leFailCacheSize,
+	})
+	mm.Start()
+	maybeStartPprof(pprofAddr)
+
 	maxBodySize := int64(maxBodySizeMB) * (1 << 20) // MB to bytes
 
 	cfg := &config{
@@ -1035,10 +1128,6 @@ func main() {
 		},
 	}
 
-	// leFailCache tracks domains where Let's Encrypt recently failed,
-	// so we don't retry on every TLS handshake (which spams LE and logs).
-	var leFailCache sync.Map // host -> time.Time (retry-after)
-
 	// Try to start HTTPS server
 	httpsOK := false
 	httpsSrv := &http.Server{
@@ -1083,10 +1172,17 @@ func main() {
 		httpsOK = true
 	}
 
-	// HTTP handler: if HTTPS is active, redirect; otherwise serve directly
+	// HTTP handler: if HTTPS is active, redirect; otherwise serve directly.
+	// Per-vhost `allow-http: true` in _config.yaml opts a vhost out of the
+	// redirect and serves it over plain HTTP instead (for clients that can't
+	// do TLS, e.g. constrained IoT devices).
 	var httpHandler http.Handler
 	if httpsOK {
 		httpHandler = m.HTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if vhostAllowsHTTP(cfg, r) {
+				handler.ServeHTTP(w, r)
+				return
+			}
 			u := *r.URL
 			u.Scheme = "https"
 			u.Host = hostOnly(r.Host)
@@ -1165,6 +1261,7 @@ func main() {
 		cache.Close()
 	}
 	rl.Close()
+	mm.Close()
 	log.Printf("Server stopped")
 }
 
@@ -1210,6 +1307,20 @@ func findPHPCGI() string {
 		}
 	}
 	return ""
+}
+
+// vhostAllowsHTTP reports whether the vhost resolved from r.Host opts out of
+// the HTTP→HTTPS redirect via `allow-http: true` in its _config.yaml.
+func vhostAllowsHTTP(cfg *config, r *http.Request) bool {
+	host := strings.ToLower(hostOnly(r.Host))
+	if host == "" || strings.ContainsAny(host, "/\\") || strings.Contains(host, "..") {
+		return false
+	}
+	root := filepath.Join(cfg.Base, host)
+	if st, err := os.Stat(root); err != nil || !st.IsDir() {
+		return false
+	}
+	return vhostSettings(root, cfg.Site).AllowHTTP
 }
 
 func hostOnly(h string) string {

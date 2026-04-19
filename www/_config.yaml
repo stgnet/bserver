@@ -81,6 +81,12 @@
 # Default: 86400 (24 hours)
 #static-age: 86400
 
+# Serve this vhost over plain HTTP instead of redirecting to HTTPS. Intended
+# for constrained clients (e.g. IoT devices) that cannot do TLS. Has no effect
+# at the server-wide level — only meaningful in a per-vhost _config.yaml.
+# Default: false
+#allow-http: false
+
 # How many directory levels above a virtual host's document root the YAML
 # name search is allowed to traverse. Set to -1 for unlimited (use with
 # caution). Higher values allow sharing YAML definitions across sites.

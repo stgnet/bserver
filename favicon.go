@@ -65,6 +65,12 @@ type faviconCacheEntry struct {
 
 var faviconCache sync.Map // docRoot -> *faviconCacheEntry
 
+func faviconCacheSize() int {
+	n := 0
+	faviconCache.Range(func(_, _ any) bool { n++; return true })
+	return n
+}
+
 // Parsed Go Bold font (singleton).
 var (
 	parsedFaviconFont *opentype.Font

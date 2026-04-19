@@ -209,6 +209,16 @@ install_systemd() {
     chown nobody:nogroup "$session_dir"
     chmod 0700 "$session_dir"
 
+    # Memory-monitor diagnostic dumps. Owned by nobody because bserver drops
+    # privileges before writing heap/goroutine pprof dumps here.
+    local diag_dir="/var/lib/${SERVICE_NAME}-diag"
+    if [ ! -d "$diag_dir" ]; then
+        info "Creating diagnostic dump directory $diag_dir"
+        mkdir -p "$diag_dir"
+    fi
+    chown nobody:nogroup "$diag_dir"
+    chmod 0750 "$diag_dir"
+
     info "Installing systemd unit → $UNIT_FILE"
 
     cat > "$UNIT_FILE" <<EOF
@@ -241,7 +251,7 @@ SyslogIdentifier=$SERVICE_NAME
 # Hardening
 NoNewPrivileges=yes
 ProtectSystem=strict
-ReadWritePaths=$SCRIPT_DIR/cert-cache $SCRIPT_DIR/www /var/log/$SERVICE_NAME.log /tmp $session_dir /var/spool/postfix/maildrop /var/spool/postfix/public
+ReadWritePaths=$SCRIPT_DIR/cert-cache $SCRIPT_DIR/www /var/log/$SERVICE_NAME.log /tmp $session_dir $diag_dir /var/spool/postfix/maildrop /var/spool/postfix/public
 ProtectHome=read-only
 PrivateTmp=yes
 
