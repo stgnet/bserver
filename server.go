@@ -159,11 +159,12 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	root := filepath.Join(m.cfg.Base, host)
 	if st, err := os.Stat(root); err != nil || !st.IsDir() {
-		// Base domains (single dot, e.g. "b-haven.net") fall through to
-		// default so that any domain pointed at this server gets content.
-		// Subdomains (multiple dots) are only allowed if they match a
-		// known vhost, to reject bogus deeply-nested scanner domains.
-		if strings.Count(host, ".") > 1 && !isKnownVhost(host, m.cfg.Base) {
+		// Base domains (single dot, e.g. "b-haven.net") and IP addresses
+		// fall through to default so that any domain pointed at this server
+		// gets content. Subdomains (multiple dots) are only allowed if they
+		// match a known vhost, to reject bogus deeply-nested scanner domains.
+		isIP := net.ParseIP(host) != nil
+		if !isIP && strings.Count(host, ".") > 1 && !isKnownVhost(host, m.cfg.Base) {
 			http.Error(w, "Misdirected Request", http.StatusMisdirectedRequest)
 			return
 		}
@@ -1173,13 +1174,17 @@ func main() {
 	}
 
 	// HTTP handler: if HTTPS is active, redirect; otherwise serve directly.
-	// Per-vhost `allow-http: true` in _config.yaml opts a vhost out of the
-	// redirect and serves it over plain HTTP instead (for clients that can't
-	// do TLS, e.g. constrained IoT devices).
+	// Skip redirect for:
+	//   - IP addresses and .local hosts (LE can't issue certs for them)
+	//   - vhosts with `allow-http: true` in _config.yaml (constrained IoT clients)
 	var httpHandler http.Handler
 	if httpsOK {
 		httpHandler = m.HTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if vhostAllowsHTTP(cfg, r) {
+			h := r.Host
+			if hp, _, err := net.SplitHostPort(h); err == nil {
+				h = hp
+			}
+			if net.ParseIP(h) != nil || strings.HasSuffix(strings.ToLower(h), ".local") || vhostAllowsHTTP(cfg, r) {
 				handler.ServeHTTP(w, r)
 				return
 			}
