@@ -66,6 +66,29 @@ func (ctx *renderContext) executeDataSource(name string, dd *dataDef) (interface
 	}
 
 	lang := strings.ToLower(dd.Script)
+
+	// Embedded JS (goja) path — no fork; runs in-process. All JS aliases
+	// route here; there is no external-node fallback.
+	if lang == "javascript" || lang == "js" || lang == "node" {
+		envList := ctx.buildScriptEnv("")
+		envList = append(envList, "REQUEST_DIR="+ctx.requestDir)
+		envMap := envListToMap(envList)
+		output, err := runJS(code, envMap, nil, false)
+		if err != nil {
+			return nil, fmt.Errorf("script error: %w", err)
+		}
+		output = strings.TrimSpace(output)
+		if output == "" {
+			return nil, fmt.Errorf("data source %q produced no output", name)
+		}
+		var result interface{}
+		if err := json.Unmarshal([]byte(output), &result); err != nil {
+			log.Printf("data source %q JSON parse error: %v (output: %s)", name, err, output)
+			return nil, fmt.Errorf("JSON parse error: %w", err)
+		}
+		return jsonToOrdered(result), nil
+	}
+
 	interpreter := findScriptInterpreter(lang)
 	if interpreter == "" {
 		return nil, fmt.Errorf("interpreter not found for %s", dd.Script)
@@ -76,8 +99,6 @@ func (ctx *renderContext) executeDataSource(name string, dd *dataDef) (interface
 	switch lang {
 	case "python", "python3":
 		flag = "-c"
-	case "javascript", "js", "node":
-		flag = "-e"
 	case "php":
 		flag = "-r"
 	case "sh", "bash", "shell":

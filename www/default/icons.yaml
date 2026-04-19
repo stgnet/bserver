@@ -61,39 +61,52 @@ main:
       </script>
 
 ^icon-grid:
-  script: python
+  script: javascript
   code: |
-    import os, re, html as _html
-    doc_root = os.environ.get('DOCUMENT_ROOT', '.')
-    yaml_path = os.path.join(doc_root, '..', 'fontawesome.yaml')
-    icons = {}
-    current_name = None
-    with open(yaml_path) as f:
-        for line in f:
-            m = re.match(r'^\^(fa-\S+):\s*$', line)
-            if m:
-                current_name = m.group(1)
-            elif current_name and line.strip().startswith('class:'):
-                css_class = line.split('class:', 1)[1].strip()
-                style = current_name.split('-')[1]
-                if style not in icons:
-                    icons[style] = []
-                icons[style].append((current_name, css_class))
-                current_name = None
-    style_labels = {'brands': 'Brand Icons', 'regular': 'Regular Icons', 'solid': 'Solid Icons'}
-    for style in ['solid', 'regular', 'brands']:
-        if style not in icons:
-            continue
-        label = style_labels.get(style, style)
-        count = len(icons[style])
-        print(f'<div class="icon-section">')
-        print(f'<h3>{_html.escape(label)} <small class="text-muted">({count})</small></h3>')
-        print(f'<div class="row row-cols-3 row-cols-sm-4 row-cols-md-6 row-cols-lg-8 g-2 mb-4">')
-        for name, css_class in icons[style]:
-            ename = _html.escape(name)
-            eclass = _html.escape(css_class)
-            print(f'<div class="col"><div class="icon-card" data-name="{ename}">')
-            print(f'<i class="{eclass}"></i>')
-            print(f'<div class="icon-name">{ename}</div>')
-            print(f'</div></div>')
-        print(f'</div></div>')
+    var docRoot = env.DOCUMENT_ROOT || '.';
+    var yamlPath = joinPath(docRoot, '..', 'fontawesome.yaml');
+    var text = readFile(yamlPath);
+    function esc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    var icons = {};
+    var currentName = null;
+    var lines = text.split('\n');
+    var nameRe = /^\^(fa-\S+):\s*$/;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      var m = nameRe.exec(line);
+      if (m) {
+        currentName = m[1];
+      } else if (currentName && line.replace(/^\s+/, '').indexOf('class:') === 0) {
+        var cssClass = line.split('class:')[1].replace(/^\s+|\s+$/g, '');
+        var style = currentName.split('-')[1];
+        if (!icons[style]) icons[style] = [];
+        icons[style].push([currentName, cssClass]);
+        currentName = null;
+      }
+    }
+    var styleLabels = {brands: 'Brand Icons', regular: 'Regular Icons', solid: 'Solid Icons'};
+    var order = ['solid', 'regular', 'brands'];
+    for (var j = 0; j < order.length; j++) {
+      var style = order[j];
+      if (!icons[style]) continue;
+      var label = styleLabels[style] || style;
+      var count = icons[style].length;
+      print('<div class="icon-section">');
+      print('<h3>' + esc(label) + ' <small class="text-muted">(' + count + ')</small></h3>');
+      print('<div class="row row-cols-3 row-cols-sm-4 row-cols-md-6 row-cols-lg-8 g-2 mb-4">');
+      for (var k = 0; k < icons[style].length; k++) {
+        var name = icons[style][k][0];
+        var cls = icons[style][k][1];
+        var ename = esc(name);
+        var eclass = esc(cls);
+        print('<div class="col"><div class="icon-card" data-name="' + ename + '">');
+        print('<i class="' + eclass + '"></i>');
+        print('<div class="icon-name">' + ename + '</div>');
+        print('</div></div>');
+      }
+      print('</div></div>');
+    }

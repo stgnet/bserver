@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
 	"io"
@@ -12,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -204,15 +207,29 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 	// Determine interpreter and wrap user code
 	var interpreter, flag, wrappedCode string
 	lang := strings.ToLower(fd.Script)
+
+	// Embedded JS (goja) runs in-process — no fork, no ForkLock contention.
+	// All JS aliases route here; there is no external-node fallback.
+	if lang == "javascript" || lang == "js" || lang == "node" {
+		scriptFile := ""
+		if fd.File != "" {
+			scriptFile = filepath.Join(ctx.docRoot, fd.File)
+		} else if ctx.sourceFile != "" {
+			scriptFile = ctx.sourceFile
+		}
+		envMap := envListToMap(ctx.buildScriptEnv(scriptFile))
+		output, err := runJS(code, envMap, jsonData, true)
+		if err != nil {
+			return fmt.Sprintf("<!-- script error: %v -->\n", err)
+		}
+		return output
+	}
+
 	switch lang {
 	case "python", "python3":
 		interpreter = findScriptInterpreter("python")
 		flag = "-c"
 		wrappedCode = pythonScriptWrapper(code)
-	case "javascript", "js", "node":
-		interpreter = findScriptInterpreter("node")
-		flag = "-e"
-		wrappedCode = jsScriptWrapper(code)
 	case "php":
 		interpreter = findScriptInterpreter("php")
 		flag = "-r"
@@ -229,8 +246,21 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 		return fmt.Sprintf("<!-- %s interpreter not found -->\n", fd.Script)
 	}
 
-	// Execute with timeout, CWD set to docRoot for file resolution
-	cmd := exec.Command(interpreter, flag, wrappedCode)
+	// Execute with timeout, CWD set to docRoot for file resolution.
+	// Use CommandContext so an expired deadline kills the process (and its
+	// process group, via Setpgid below) — cmd.Run returns instead of leaving
+	// a goroutine blocked on a stuck interpreter.
+	execCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(execCtx, interpreter, flag, wrappedCode)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.Cancel = func() error {
+		// Kill the entire process group so child processes die too.
+		if cmd.Process != nil {
+			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+		}
+		return os.ErrProcessDone
+	}
 	cmd.Dir = ctx.docRoot
 	scriptFile := ""
 	if fd.File != "" {
@@ -249,16 +279,12 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	done := make(chan error, 1)
-	go func() { done <- cmd.Run() }()
-	select {
-	case err := <-done:
-		if err != nil {
-			return fmt.Sprintf("<!-- script error: %v: %s -->\n", err, stderr.String())
-		}
-	case <-time.After(30 * time.Second):
-		cmd.Process.Kill()
+	runErr := cmd.Run()
+	if errors.Is(execCtx.Err(), context.DeadlineExceeded) {
 		return "<!-- script timeout (30s) -->\n"
+	}
+	if runErr != nil {
+		return fmt.Sprintf("<!-- script error: %v: %s -->\n", runErr, stderr.String())
 	}
 
 	output := stdout.String()
@@ -297,10 +323,6 @@ func findScriptInterpreter(lang string) string {
 			return p
 		}
 		if p, err := exec.LookPath("python"); err == nil {
-			return p
-		}
-	case "node":
-		if p, err := exec.LookPath("node"); err == nil {
 			return p
 		}
 	case "php":
@@ -393,18 +415,6 @@ func pythonScriptWrapper(userCode string) string {
 			sb.WriteString("    " + line + "\n")
 		}
 	}
-	return sb.String()
-}
-
-// jsScriptWrapper wraps user code in a JavaScript loop over JSON records.
-// The user code has `record` (an object) available for each iteration.
-func jsScriptWrapper(userCode string) string {
-	var sb strings.Builder
-	sb.WriteString("const _data = JSON.parse(process.env._SCRIPT_DATA || '[]');\n")
-	sb.WriteString("const _records = Array.isArray(_data) ? _data : [_data];\n")
-	sb.WriteString("for (const record of _records) {\n")
-	sb.WriteString(userCode)
-	sb.WriteString("\n}\n")
 	return sb.String()
 }
 

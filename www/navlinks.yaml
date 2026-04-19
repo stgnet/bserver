@@ -1,46 +1,35 @@
-# navlinks is included by navbar and gives the list of links: which will be common across all pages
-# 
-# This script automatically creates navlinks from eligible targets
+# navlinks is included by navbar and gives the list of links common to all pages.
 #
-# The automatic version can be replaced with a manually created
-# version by substituting a definition like this:
+# This data source auto-discovers eligible targets in the vhost root.
 #
-# navlinks:
-#   /urlone: First
-#   /urltwo: Second
+# It can be replaced by a manually-authored definition like:
 #
-#   etc...
+#   navlinks:
+#     /urlone: First
+#     /urltwo: Second
 #
 $navlinks:
-  script: python
+  script: javascript
   code: |
-    import os, json, re
-
-    docroot = os.environ.get('DOCUMENT_ROOT', '.')
-    results = []
-
-    # Always include Home first
-    results.append({"key": "/", "value": "Home"})
-
-    for f in sorted(os.listdir(docroot)):
-        name, ext = os.path.splitext(f)
-
-        # Skip hidden files, underscore-prefixed files, and index
-        if name.startswith('.') or name.startswith('_') or name == 'index':
-            continue
-
-        if ext == '.md':
-            title = name.replace('-', ' ').replace('_', ' ').title()
-            results.append({"key": "/" + name, "value": title})
-        elif ext == '.yaml':
-            path = os.path.join(docroot, f)
-            try:
-                with open(path) as fh:
-                    head = fh.read(500)
-                if re.search(r'^main:', head, re.MULTILINE):
-                    title = name.replace('-', ' ').replace('_', ' ').title()
-                    results.append({"key": "/" + name, "value": title})
-            except (IOError, OSError):
-                pass
-
-    print(json.dumps(results))
+    var docroot = env.DOCUMENT_ROOT || '.';
+    var results = [{key: "/", value: "Home"}];
+    var files = listdir(docroot);
+    files.sort();
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      var parts = splitExt(f);
+      var name = parts[0], ext = parts[1];
+      if (name.charAt(0) === '.' || name.charAt(0) === '_' || name === 'index') continue;
+      var title = name.replace(/[-_]/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+      if (ext === '.md') {
+        results.push({key: "/" + name, value: title});
+      } else if (ext === '.yaml') {
+        try {
+          var head = readFileHead(joinPath(docroot, f), 500);
+          if (/^main:/m.test(head)) {
+            results.push({key: "/" + name, value: title});
+          }
+        } catch (e) {}
+      }
+    }
+    print(JSON.stringify(results));
