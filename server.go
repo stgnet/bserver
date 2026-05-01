@@ -1555,12 +1555,30 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// defaultCSP is a side-protection Content-Security-Policy applied to every
+// response. It deliberately does NOT restrict script-src or style-src
+// because bserver renders user-authored YAML/markdown/PHP/JS pages whose
+// inline content is unpredictable per-vhost — a strict script-src would
+// silently break legitimate pages. Instead it blocks the directives that
+// no normal page needs:
+//
+//   object-src 'none'      — no <object>/<embed>/<applet>
+//   base-uri 'self'        — defeat injected <base href="evil.com">
+//   frame-ancestors 'self' — modern X-Frame-Options
+//   form-action 'self'     — injected <form action=evil> won't submit
+//
+// Operators that want a stricter CSP (e.g. nonce-based script-src) can
+// add a `csp:` key to _config.yaml in a future change; this default is
+// the no-config baseline.
+const defaultCSP = "object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'"
+
 // securityHeadersMiddleware adds standard security headers to all responses.
 func securityHeadersMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		w.Header().Set("Content-Security-Policy", defaultCSP)
 		next.ServeHTTP(w, r)
 	})
 }
