@@ -8,12 +8,36 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dop251/goja"
 )
+
+// jsHeapLimitBytes caps the additional process heap a single runJS call is
+// allowed to grow by before being interrupted. 0 disables the check.
+//
+// Notes / caveats:
+//   - The check is reactive: runtime.ReadMemStats is sampled every
+//     jsHeapProbeInterval. A single huge allocation between probes can
+//     still OOM the process; a deployment-level cgroup MemoryMax= is the
+//     belt-and-braces backstop for that.
+//   - HeapAlloc is process-global. With concurrent JS scripts, each sees
+//     the combined growth. That biases toward false positives (innocent
+//     scripts may be interrupted when a sibling runs away), which is
+//     preferable to false negatives (a runaway escapes detection).
+//   - vm.Interrupt only fires between bytecode ops; long native-side
+//     work (e.g., a single huge String.repeat) doesn't yield until done.
+var jsHeapLimitBytes atomic.Int64
+
+const jsHeapProbeInterval = 100 * time.Millisecond
+
+// SetJSHeapLimit sets the per-script heap growth cap in bytes. 0 disables
+// the check. Called once during server startup from main.
+func SetJSHeapLimit(b int64) { jsHeapLimitBytes.Store(b) }
 
 // jsProgramCache caches compiled JavaScript programs keyed by source hash.
 // Compilation costs microseconds but is the dominant overhead for short
@@ -151,10 +175,44 @@ func runJS(source string, envMap map[string]string, dataJSON []byte, wrap bool, 
 	}()
 	defer close(done)
 
+	// Optional heap-growth watchdog. Captures a process-wide HeapAlloc
+	// baseline and interrupts the VM if the heap grows beyond the cap
+	// during this script's run. See jsHeapLimitBytes notes for caveats.
+	if limit := jsHeapLimitBytes.Load(); limit > 0 {
+		var baseline runtime.MemStats
+		runtime.ReadMemStats(&baseline)
+		go func() {
+			ticker := time.NewTicker(jsHeapProbeInterval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					var ms runtime.MemStats
+					runtime.ReadMemStats(&ms)
+					// Signed diff: GC may shrink HeapAlloc between probes.
+					if int64(ms.HeapAlloc)-int64(baseline.HeapAlloc) > limit {
+						vm.Interrupt("memory limit")
+						return
+					}
+				case <-done:
+					return
+				}
+			}
+		}()
+	}
+
 	if _, err := vm.RunProgram(prog); err != nil {
 		var iErr *goja.InterruptedError
 		if errors.As(err, &iErr) {
-			return out.String(), fmt.Errorf("script timeout (30s)")
+			switch v := iErr.Value().(type) {
+			case string:
+				if v == "memory limit" {
+					return out.String(), fmt.Errorf("script exceeded memory limit")
+				}
+				return out.String(), fmt.Errorf("script %s", v)
+			default:
+				return out.String(), fmt.Errorf("script interrupted")
+			}
 		}
 		return out.String(), err
 	}

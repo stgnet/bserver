@@ -1024,6 +1024,7 @@ func main() {
 	maxStaticAgeSec := resolveInt("static-age", 86400)
 	maxParentLvls := resolveInt("parent-levels", DefaultMaxParentLevels)
 	maxBodySizeMB := resolveInt("max-body-size", 10)    // default 10 MB
+	jsHeapMB := resolveInt("js-heap-mb", 128)           // per-script heap-growth cap (0 disables)
 	phpTimeoutSec := resolveInt("php-timeout", 60)      // idle timeout: kill php-cgi if silent this long
 	phpStreamAfterSec := resolveInt("php-stream-after", 5) // buffer php-cgi output this long before streaming
 
@@ -1131,6 +1132,22 @@ func main() {
 	})
 	mm.Start()
 	maybeStartPprof(pprofAddr)
+
+	// Per-script JS heap-growth cap. Configured value is capped at 25% of
+	// available RAM (same heuristic detectAvailableRAM uses for the render
+	// cache) so a constrained box doesn't promise more than it has.
+	if jsHeapMB > 0 {
+		jsHeapBytes := int64(jsHeapMB) * (1 << 20)
+		effective := detectAvailableRAM(jsHeapBytes)
+		if effective < jsHeapBytes {
+			log.Printf("Warning: js-heap-mb (%s) capped to %s by available RAM",
+				formatBytes(jsHeapBytes), formatBytes(effective))
+		}
+		SetJSHeapLimit(effective)
+		log.Printf("JS script heap-growth cap: %s per invocation", formatBytes(effective))
+	} else {
+		log.Printf("JS script heap-growth cap disabled (js-heap-mb: 0)")
+	}
 
 	maxBodySize := int64(maxBodySizeMB) * (1 << 20) // MB to bytes
 
