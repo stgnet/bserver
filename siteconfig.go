@@ -167,6 +167,9 @@ func applySiteSettings(m map[string]interface{}, defaults siteSettings) siteSett
 	}
 	if v, ok := configBool(m, "allow-http", false); ok {
 		s.AllowHTTP = v
+		if v {
+			log.Printf("Warning: allow-http=true — HTTPS redirect disabled; session cookies and other secrets may transit in cleartext")
+		}
 	}
 	return s
 }

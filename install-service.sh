@@ -58,13 +58,38 @@ install_go() {
     tmp="$(mktemp -d)"
 
     info "Downloading ${url}…"
+    local fetch
     if command -v curl >/dev/null 2>&1; then
+        fetch="curl -fsSL -o"
         curl -fsSL -o "$tmp/$tarball" "$url"
+        curl -fsSL -o "$tmp/$tarball.sha256" "${url}.sha256"
     elif command -v wget >/dev/null 2>&1; then
+        fetch="wget -q -O"
         wget -q -O "$tmp/$tarball" "$url"
+        wget -q -O "$tmp/$tarball.sha256" "${url}.sha256"
     else
         die "Neither curl nor wget found. Install one of them and retry."
     fi
+    : "${fetch:=}" # silence shellcheck unused
+
+    info "Verifying SHA-256 checksum…"
+    local expected actual
+    expected="$(awk '{print $1}' "$tmp/$tarball.sha256" | tr -d '[:space:]')"
+    if [ -z "$expected" ]; then
+        die "Could not read expected SHA-256 from ${url}.sha256"
+    fi
+    if command -v sha256sum >/dev/null 2>&1; then
+        actual="$(sha256sum "$tmp/$tarball" | awk '{print $1}')"
+    elif command -v shasum >/dev/null 2>&1; then
+        actual="$(shasum -a 256 "$tmp/$tarball" | awk '{print $1}')"
+    else
+        die "Neither sha256sum nor shasum is available; cannot verify Go download."
+    fi
+    if [ "$expected" != "$actual" ]; then
+        rm -rf "$tmp"
+        die "SHA-256 mismatch for $tarball: expected $expected, got $actual"
+    fi
+    info "Checksum OK ($actual)"
 
     info "Extracting to /usr/local/go…"
     rm -rf /usr/local/go
@@ -196,6 +221,31 @@ UNIT_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 install_systemd() {
     need_root
 
+    # Cgroup memory limits (Linux only — backstop for runaway scripts).
+    #
+    # Computed from /proc/meminfo at install time so absolute byte values
+    # are baked into the unit file. We use absolute values rather than the
+    # `MemoryMax=75%` percentage syntax because percentages require systemd
+    # 240+ on cgroup v2; absolute byte values work on both cgroup hierarchies
+    # and on older systemd releases.
+    #
+    # If MemoryMax is exceeded the kernel OOM-kills bserver; systemd then
+    # restarts it (Restart=on-failure below). Combined with the in-process
+    # JS heap watchdog (js-heap-mb), this is the belt-and-braces safety net.
+    local mem_total_kb mem_directives=""
+    if [ -r /proc/meminfo ]; then
+        mem_total_kb="$(awk '/^MemTotal:/ {print $2; exit}' /proc/meminfo)"
+        if [ -n "${mem_total_kb:-}" ] && [ "$mem_total_kb" -gt 0 ]; then
+            local mem_max_kb mem_high_kb
+            mem_max_kb=$(( mem_total_kb * 75 / 100 ))
+            mem_high_kb=$(( mem_total_kb * 60 / 100 ))
+            mem_directives="# Memory backstop (computed from $((mem_total_kb / 1024)) MB total RAM)
+MemoryHigh=${mem_high_kb}K
+MemoryMax=${mem_max_kb}K"
+            info "Memory limits: high=$((mem_high_kb / 1024)) MB, max=$((mem_max_kb / 1024)) MB"
+        fi
+    fi
+
     # PHP session storage. bserver runs php-cgi as "nobody" after dropping
     # privileges, and PrivateTmp=yes wipes /tmp on every restart — so we
     # use a persistent per-service directory owned by nobody. Sessions
@@ -254,6 +304,8 @@ ProtectSystem=strict
 ReadWritePaths=$SCRIPT_DIR/cert-cache $SCRIPT_DIR/www /var/log/$SERVICE_NAME.log /tmp $session_dir $diag_dir /var/spool/postfix/maildrop /var/spool/postfix/public
 ProtectHome=read-only
 PrivateTmp=yes
+
+${mem_directives}
 
 [Install]
 WantedBy=multi-user.target

@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/subtle"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -51,7 +53,29 @@ type config struct {
 	PHPCGI      string // path to php-cgi
 	Cache       *renderCache
 	MaxBodySize int64        // max request body size in bytes (0 = unlimited)
+	DebugToken  string       // if non-empty, ?debug=<token> is required to enable debug output
 	Site        siteSettings // server-wide defaults (per-vhost _config.yaml can override)
+}
+
+// debugEnabled reports whether debug output should be emitted for this
+// request. When DebugToken is non-empty, the query parameter must match it
+// exactly via constant-time compare. When DebugToken is empty, the bare
+// ?debug parameter is honored (legacy / dev mode).
+func (cfg *config) debugEnabled(r *http.Request) bool {
+	q := r.URL.Query()
+	vals, ok := q["debug"]
+	if !ok {
+		return false
+	}
+	if cfg.DebugToken == "" {
+		return true
+	}
+	for _, v := range vals {
+		if subtle.ConstantTimeCompare([]byte(v), []byte(cfg.DebugToken)) == 1 {
+			return true
+		}
+	}
+	return false
 }
 
 // virtualHostMux dynamically serves based on cwd directories.
@@ -125,6 +149,21 @@ func getProxyForVhost(docRoot string) *proxyEntry {
 		return nil
 	}
 
+	// SSRF guard: refuse to proxy to loopback / link-local / private /
+	// unspecified / multicast addresses. An attacker who can write a vhost
+	// index.yaml could otherwise turn bserver into an SSRF gateway to
+	// cloud metadata services or internal-only services. Operators that
+	// genuinely want to proxy to a private backend can opt in via
+	// `allow-private: true`.
+	allowPrivate, _ := configBool(m, "allow-private", false)
+	if !allowPrivate {
+		if reason := unsafeProxyTarget(target); reason != "" {
+			log.Printf("Warning: refusing proxy backend %q in %s: %s", backend, indexPath, reason)
+			proxyCache.Store(docRoot, &proxyEntry{modTime: currentMtime})
+			return nil
+		}
+	}
+
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	defaultDirector := proxy.Director
 	proxy.Director = func(r *http.Request) {
@@ -181,7 +220,8 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if entry := getProxyForVhost(root); entry != nil && entry.proxy != nil {
 		if entry.apiKey != "" {
 			auth := r.Header.Get("Authorization")
-			if auth != "Bearer "+entry.apiKey {
+			expected := "Bearer " + entry.apiKey
+			if subtle.ConstantTimeCompare([]byte(auth), []byte(expected)) != 1 {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
@@ -631,8 +671,8 @@ func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host,
 }
 
 func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docRoot, yamlPath string, site siteSettings) {
-	_, debug := r.URL.Query()["debug"]
-	key := cacheKey(docRoot, yamlPath)
+	debug := m.cfg.debugEnabled(r)
+	key := cacheKey(docRoot, hostOnly(r.Host), yamlPath)
 
 	// Skip cache for requests with query parameters or POST data, since
 	// scripts may produce different output based on $_GET/$_POST values.
@@ -675,8 +715,8 @@ func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docR
 }
 
 func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, docRoot, mdPath string, site siteSettings) {
-	_, debug := r.URL.Query()["debug"]
-	key := cacheKey(docRoot, mdPath)
+	debug := m.cfg.debugEnabled(r)
+	key := cacheKey(docRoot, hostOnly(r.Host), mdPath)
 
 	// Skip cache for requests with query parameters or POST data
 	dynamic := r.URL.RawQuery != "" || r.Method == http.MethodPost
@@ -733,12 +773,12 @@ const errorRenderMaxWaiting = 50
 // serveErrorPage renders an error page through the YAML system.
 // If no error template is found, it falls back to a plain-text response.
 func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, docRoot string, statusCode int, message string, site siteSettings) {
-	_, debug := r.URL.Query()["debug"]
+	debug := m.cfg.debugEnabled(r)
 
 	// Cache rendered error pages per docRoot+statusCode+path (skip for debug
 	// mode or custom messages which are request-specific).
 	useCache := !debug && message == "" && m.cfg.Cache != nil
-	key := fmt.Sprintf("%s:error:%d:%s", docRoot, statusCode, r.URL.Path)
+	key := fmt.Sprintf("%s:error:%s:%d:%s", docRoot, hostOnly(r.Host), statusCode, r.URL.Path)
 	if useCache {
 		if cached, ok := m.cfg.Cache.Get(key); ok {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -862,8 +902,16 @@ func getOrCreateSelfSignedCert(host, cacheDir string) (*tls.Certificate, error) 
 		return nil, err
 	}
 
+	// Random 128-bit serial number — RFC 5280 requires up to 20 octets and
+	// uniqueness; using crypto/rand avoids the predictability of a
+	// timestamp-based serial.
+	serialMax := new(big.Int).Lsh(big.NewInt(1), 128)
+	serial, err := rand.Int(rand.Reader, serialMax)
+	if err != nil {
+		return nil, err
+	}
 	tmpl := x509.Certificate{
-		SerialNumber: big.NewInt(time.Now().UnixNano()),
+		SerialNumber: serial,
 		Subject:      pkix.Name{CommonName: host},
 		NotBefore:    time.Now().Add(-time.Hour),
 		NotAfter:     time.Now().Add(365 * 24 * time.Hour),
@@ -976,6 +1024,7 @@ func main() {
 	maxStaticAgeSec := resolveInt("static-age", 86400)
 	maxParentLvls := resolveInt("parent-levels", DefaultMaxParentLevels)
 	maxBodySizeMB := resolveInt("max-body-size", 10)    // default 10 MB
+	jsHeapMB := resolveInt("js-heap-mb", 128)           // per-script heap-growth cap (0 disables)
 	phpTimeoutSec := resolveInt("php-timeout", 60)      // idle timeout: kill php-cgi if silent this long
 	phpStreamAfterSec := resolveInt("php-stream-after", 5) // buffer php-cgi output this long before streaming
 
@@ -988,6 +1037,11 @@ func main() {
 	memDumpCooldownMin := resolveInt("mem-dump-cooldown-min", int(defaultMemDumpCooldown.Minutes()))
 	memDumpMaxFiles := resolveInt("mem-dump-max-files", defaultMemDumpMaxFiles)
 	pprofAddr := resolve("pprof-addr", "", defaultPprofAddr)
+
+	// Optional debug token: when set, ?debug=<token> is required to enable
+	// debug HTML output. When empty, ?debug works without authentication
+	// (intended for development environments only).
+	debugToken := resolve("debug-token", "DEBUG_TOKEN", "")
 
 	// PHP: _config.yaml > PHP_CGI env > auto-detect
 	phpcgi := resolve("php", "PHP_CGI", "")
@@ -1079,6 +1133,22 @@ func main() {
 	mm.Start()
 	maybeStartPprof(pprofAddr)
 
+	// Per-script JS heap-growth cap. Configured value is capped at 25% of
+	// available RAM (same heuristic detectAvailableRAM uses for the render
+	// cache) so a constrained box doesn't promise more than it has.
+	if jsHeapMB > 0 {
+		jsHeapBytes := int64(jsHeapMB) * (1 << 20)
+		effective := detectAvailableRAM(jsHeapBytes)
+		if effective < jsHeapBytes {
+			log.Printf("Warning: js-heap-mb (%s) capped to %s by available RAM",
+				formatBytes(jsHeapBytes), formatBytes(effective))
+		}
+		SetJSHeapLimit(effective)
+		log.Printf("JS script heap-growth cap: %s per invocation", formatBytes(effective))
+	} else {
+		log.Printf("JS script heap-growth cap disabled (js-heap-mb: 0)")
+	}
+
 	maxBodySize := int64(maxBodySizeMB) * (1 << 20) // MB to bytes
 
 	cfg := &config{
@@ -1090,6 +1160,7 @@ func main() {
 		PHPCGI:      phpcgi,
 		Cache:       cache,
 		MaxBodySize: maxBodySize,
+		DebugToken:  debugToken,
 		Site: siteSettings{
 			CacheAge:       cacheMaxAge,
 			StaticAge:      maxStaticAge,
@@ -1463,6 +1534,34 @@ func (lrw *loggingResponseWriter) WriteHeader(code int) {
 	lrw.ResponseWriter.WriteHeader(code)
 }
 
+// Hijack forwards to the underlying ResponseWriter if it supports
+// http.Hijacker. Required for WebSocket upgrades and the rate limiter's
+// connection-close drop strategy to work through the logging middleware.
+func (lrw *loggingResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hj, ok := lrw.ResponseWriter.(http.Hijacker); ok {
+		return hj.Hijack()
+	}
+	return nil, nil, http.ErrNotSupported
+}
+
+// Flush forwards to the underlying ResponseWriter if it supports
+// http.Flusher. Required for streaming responses (SSE, chunked PHP output)
+// to work through the logging middleware.
+func (lrw *loggingResponseWriter) Flush() {
+	if fl, ok := lrw.ResponseWriter.(http.Flusher); ok {
+		fl.Flush()
+	}
+}
+
+// Push forwards to the underlying ResponseWriter if it supports
+// http.Pusher (HTTP/2 server push).
+func (lrw *loggingResponseWriter) Push(target string, opts *http.PushOptions) error {
+	if p, ok := lrw.ResponseWriter.(http.Pusher); ok {
+		return p.Push(target, opts)
+	}
+	return http.ErrNotSupported
+}
+
 // loggingMiddleware logs each request with client IP, hostname, method, path, status, and duration.
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -1473,12 +1572,30 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// defaultCSP is a side-protection Content-Security-Policy applied to every
+// response. It deliberately does NOT restrict script-src or style-src
+// because bserver renders user-authored YAML/markdown/PHP/JS pages whose
+// inline content is unpredictable per-vhost — a strict script-src would
+// silently break legitimate pages. Instead it blocks the directives that
+// no normal page needs:
+//
+//   object-src 'none'      — no <object>/<embed>/<applet>
+//   base-uri 'self'        — defeat injected <base href="evil.com">
+//   frame-ancestors 'self' — modern X-Frame-Options
+//   form-action 'self'     — injected <form action=evil> won't submit
+//
+// Operators that want a stricter CSP (e.g. nonce-based script-src) can
+// add a `csp:` key to _config.yaml in a future change; this default is
+// the no-config baseline.
+const defaultCSP = "object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'"
+
 // securityHeadersMiddleware adds standard security headers to all responses.
 func securityHeadersMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		w.Header().Set("Content-Security-Policy", defaultCSP)
 		next.ServeHTTP(w, r)
 	})
 }
@@ -1511,6 +1628,46 @@ func isValidHeaderName(s string) bool {
 		}
 	}
 	return true
+}
+
+// unsafeProxyTarget returns a non-empty reason string if target points at
+// an address class that should not be reachable through a public proxy:
+// loopback, link-local, multicast, private (RFC1918 / ULA), unspecified,
+// or interface-local. An empty hostname is also rejected. DNS names are
+// resolved; if any resolved IP is unsafe, the target is rejected.
+func unsafeProxyTarget(target *url.URL) string {
+	host := target.Hostname()
+	if host == "" {
+		return "empty host"
+	}
+	var ips []net.IP
+	if ip := net.ParseIP(host); ip != nil {
+		ips = []net.IP{ip}
+	} else {
+		resolved, err := net.LookupIP(host)
+		if err != nil {
+			return fmt.Sprintf("dns lookup failed: %v", err)
+		}
+		ips = resolved
+	}
+	for _, ip := range ips {
+		if ip.IsLoopback() {
+			return fmt.Sprintf("loopback address %s", ip)
+		}
+		if ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+			return fmt.Sprintf("link-local address %s", ip)
+		}
+		if ip.IsInterfaceLocalMulticast() || ip.IsMulticast() {
+			return fmt.Sprintf("multicast address %s", ip)
+		}
+		if ip.IsUnspecified() {
+			return fmt.Sprintf("unspecified address %s", ip)
+		}
+		if ip.IsPrivate() {
+			return fmt.Sprintf("private address %s", ip)
+		}
+	}
+	return ""
 }
 
 // sanitizeHeaderValue removes \r and \n from a header value to prevent

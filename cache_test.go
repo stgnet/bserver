@@ -187,15 +187,19 @@ func TestCacheReplace(t *testing.T) {
 }
 
 func TestCacheKey(t *testing.T) {
-	k1 := cacheKey("/srv/default", "/srv/default/index.yaml")
-	k2 := cacheKey("/srv/other", "/srv/other/index.yaml")
-	k3 := cacheKey("/srv/default", "/srv/default/about.yaml")
+	k1 := cacheKey("/srv/default", "a.example", "/srv/default/index.yaml")
+	k2 := cacheKey("/srv/other", "a.example", "/srv/other/index.yaml")
+	k3 := cacheKey("/srv/default", "a.example", "/srv/default/about.yaml")
+	k4 := cacheKey("/srv/default", "b.example", "/srv/default/index.yaml")
 
 	if k1 == k2 {
 		t.Error("different docRoots should produce different keys")
 	}
 	if k1 == k3 {
 		t.Error("different file paths should produce different keys")
+	}
+	if k1 == k4 {
+		t.Error("different hosts should produce different keys")
 	}
 }
 
@@ -266,7 +270,7 @@ func TestCacheIntegrationWithRender(t *testing.T) {
 
 	docRoot := filepath.Join(func() string { b, _ := os.Getwd(); return b }(), "www", "default")
 	yamlPath := filepath.Join(docRoot, "index.yaml")
-	key := cacheKey(docRoot, yamlPath)
+	key := cacheKey(docRoot, "test.local", yamlPath)
 
 	// First render: cache miss
 	if _, ok := rc.Get(key); ok {

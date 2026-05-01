@@ -2,14 +2,16 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -54,7 +56,10 @@ func parseDataDef(v interface{}) *dataDef {
 func (ctx *renderContext) executeDataSource(name string, dd *dataDef) (interface{}, error) {
 	code := dd.Code
 	if code == "" && dd.File != "" {
-		filePath := filepath.Join(ctx.docRoot, dd.File)
+		filePath, err := resolveUnderRoot(ctx.docRoot, dd.File)
+		if err != nil {
+			return nil, fmt.Errorf("data source file %s rejected: %w", dd.File, err)
+		}
 		fileData, err := os.ReadFile(filePath)
 		if err != nil {
 			return nil, fmt.Errorf("cannot read data source file %s: %w", dd.File, err)
@@ -73,7 +78,7 @@ func (ctx *renderContext) executeDataSource(name string, dd *dataDef) (interface
 		envList := ctx.buildScriptEnv("")
 		envList = append(envList, "REQUEST_DIR="+ctx.requestDir)
 		envMap := envListToMap(envList)
-		output, err := runJS(code, envMap, nil, false)
+		output, err := runJS(code, envMap, nil, false, ctx.docRoot)
 		if err != nil {
 			return nil, fmt.Errorf("script error: %w", err)
 		}
@@ -107,25 +112,32 @@ func (ctx *renderContext) executeDataSource(name string, dd *dataDef) (interface
 		return nil, fmt.Errorf("unsupported script language: %s", dd.Script)
 	}
 
-	cmd := exec.Command(interpreter, flag, code)
+	execCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(execCtx, interpreter, flag, code)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.Cancel = func() error {
+		// Kill the entire process group so any child processes (e.g. shell
+		// subprocesses, python multiprocessing workers) are reaped too.
+		if cmd.Process != nil {
+			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+		}
+		return os.ErrProcessDone
+	}
 	cmd.Dir = ctx.requestDir
 	cmd.Env = ctx.buildScriptEnv("")
 	cmd.Env = append(cmd.Env, "REQUEST_DIR="+ctx.requestDir)
 
 	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	cmd.Stdout = &cappedWriter{w: &stdout, limit: maxScriptOutputBytes}
+	cmd.Stderr = &cappedWriter{w: &stderr, limit: maxScriptOutputBytes}
 
-	done := make(chan error, 1)
-	go func() { done <- cmd.Run() }()
-	select {
-	case err := <-done:
-		if err != nil {
-			return nil, fmt.Errorf("script error: %v: %s", err, stderr.String())
-		}
-	case <-time.After(30 * time.Second):
-		cmd.Process.Kill()
+	runErr := cmd.Run()
+	if errors.Is(execCtx.Err(), context.DeadlineExceeded) {
 		return nil, fmt.Errorf("script timeout (30s)")
+	}
+	if runErr != nil {
+		return nil, fmt.Errorf("script error: %v: %s", runErr, stderr.String())
 	}
 
 	output := strings.TrimSpace(stdout.String())

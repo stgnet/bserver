@@ -1,13 +1,28 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/binary"
 	"log"
-	"math/rand"
 	"net"
 	"net/http"
 	"sync"
 	"time"
 )
+
+// randIntn returns a uniformly random integer in [0, n) using crypto/rand.
+// Falls back to 0 if the system entropy source fails (extremely unlikely
+// in practice; the fallback just means slightly more predictable jitter).
+func randIntn(n int) int {
+	if n <= 1 {
+		return 0
+	}
+	var b [8]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return 0
+	}
+	return int(binary.BigEndian.Uint64(b[:]) % uint64(n))
+}
 
 // clientIP extracts the client's IP address from the request's RemoteAddr.
 func clientIP(r *http.Request) string {
@@ -157,7 +172,7 @@ func calcPenalty(level int) time.Duration {
 // automated scanners: closing the connection, returning bare error codes,
 // or delaying briefly before closing.
 func dropResponse(w http.ResponseWriter, r *http.Request) {
-	switch rand.Intn(4) {
+	switch randIntn(4) {
 	case 0:
 		// Close connection immediately (lowest possible overhead)
 		if hj, ok := w.(http.Hijacker); ok {
@@ -175,7 +190,7 @@ func dropResponse(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	case 3:
 		// Brief delay then close — wastes attacker's time
-		time.Sleep(time.Duration(1+rand.Intn(3)) * time.Second)
+		time.Sleep(time.Duration(1+randIntn(3)) * time.Second)
 		if hj, ok := w.(http.Hijacker); ok {
 			if conn, _, err := hj.Hijack(); err == nil {
 				conn.Close()

@@ -18,6 +18,48 @@ import (
 	"time"
 )
 
+// maxScriptOutputBytes caps captured stdout/stderr from script subprocesses
+// so a runaway interpreter that prints unbounded data cannot exhaust server
+// memory ahead of the 30-second timeout.
+const maxScriptOutputBytes = 10 << 20 // 10 MB
+
+// cappedWriter is an io.Writer that discards bytes after limit is reached.
+// It tracks total bytes seen so callers can detect truncation.
+type cappedWriter struct {
+	w        *bytes.Buffer
+	limit    int
+	written  int
+	overflow bool
+}
+
+func (c *cappedWriter) Write(p []byte) (int, error) {
+	c.written += len(p)
+	remaining := c.limit - c.w.Len()
+	if remaining <= 0 {
+		c.overflow = true
+		return len(p), nil
+	}
+	if len(p) > remaining {
+		c.w.Write(p[:remaining])
+		c.overflow = true
+		return len(p), nil
+	}
+	c.w.Write(p)
+	return len(p), nil
+}
+
+// safeHeaderEnvValue strips CR/LF/NUL from a value before it is forwarded
+// to a script subprocess via an HTTP_* environment variable. Without this,
+// a header like `User-Agent: $(cmd)\nX: y` could expand to multiple shell
+// statements when the value is interpolated unquoted by the script.
+func safeHeaderEnvValue(s string) string {
+	if !strings.ContainsAny(s, "\r\n\x00") {
+		return s
+	}
+	r := strings.NewReplacer("\r", " ", "\n", " ", "\x00", "")
+	return r.Replace(s)
+}
+
 // buildScriptEnv builds the environment variables for script execution.
 // Only essential variables are passed — the full server environment is NOT
 // inherited, to avoid leaking secrets (API keys, database passwords, etc.)
@@ -97,17 +139,22 @@ func (ctx *renderContext) buildScriptEnv(scriptFile string) []string {
 		"HTTP_HOST="+r.Host,
 	)
 
-	// Forward HTTP headers as HTTP_* variables
+	// Forward HTTP headers as HTTP_* variables. Strip CR/LF/NUL so a
+	// header value cannot expand into multiple env entries or inject
+	// shell statements when interpolated unquoted by a script.
 	for key, vals := range r.Header {
 		envKey := "HTTP_" + strings.ReplaceAll(strings.ToUpper(key), "-", "_")
-		env = append(env, envKey+"="+strings.Join(vals, ", "))
+		joined := strings.Join(vals, ", ")
+		env = append(env, envKey+"="+safeHeaderEnvValue(joined))
 	}
 	if ct := r.Header.Get("Content-Type"); ct != "" {
-		env = append(env, "CONTENT_TYPE="+ct)
+		env = append(env, "CONTENT_TYPE="+safeHeaderEnvValue(ct))
 	}
 
-	// Buffer the POST body once (r.Body can only be read once) and pass it
-	// via an environment variable so script wrappers can populate $_POST etc.
+	// Buffer the POST body once (r.Body can only be read once). The body
+	// is forwarded to the script subprocess via stdin (not an env var) so
+	// large or binary payloads are not OS-arg-limit-bound and cannot be
+	// command-injected by interpolation.
 	if !ctx.postBodyRead {
 		ctx.postBodyRead = true
 		if r.Body != nil {
@@ -120,12 +167,6 @@ func (ctx *renderContext) buildScriptEnv(scriptFile string) []string {
 	}
 	if len(ctx.postBody) > 0 {
 		env = append(env, fmt.Sprintf("CONTENT_LENGTH=%d", len(ctx.postBody)))
-		// Cap _POST_DATA at 1MB to stay within OS environment block limits
-		// (Linux ARG_MAX is typically ~2MB for combined args+env).
-		// Larger POST bodies are still available to PHP-CGI via stdin.
-		if len(ctx.postBody) <= 1<<20 {
-			env = append(env, "_POST_DATA="+string(ctx.postBody))
-		}
 	} else if r.ContentLength >= 0 {
 		env = append(env, fmt.Sprintf("CONTENT_LENGTH=%d", r.ContentLength))
 	}
@@ -167,8 +208,12 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 
 	code := fd.Code
 	if code == "" && fd.File != "" {
-		// Load code from file (relative to docRoot)
-		filePath := filepath.Join(ctx.docRoot, fd.File)
+		// Load code from file, refusing paths that escape docRoot via
+		// "../" or symlinks pointing outside the vhost root.
+		filePath, err := resolveUnderRoot(ctx.docRoot, fd.File)
+		if err != nil {
+			return fmt.Sprintf("<!-- script: rejected %s: %v -->\n", fd.File, err)
+		}
 		fileData, err := os.ReadFile(filePath)
 		if err != nil {
 			return fmt.Sprintf("<!-- script: error reading %s: %v -->\n", fd.File, err)
@@ -218,7 +263,7 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 			scriptFile = ctx.sourceFile
 		}
 		envMap := envListToMap(ctx.buildScriptEnv(scriptFile))
-		output, err := runJS(code, envMap, jsonData, true)
+		output, err := runJS(code, envMap, jsonData, true, ctx.docRoot)
 		if err != nil {
 			return fmt.Sprintf("<!-- script error: %v -->\n", err)
 		}
@@ -274,20 +319,29 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 	env := ctx.buildScriptEnv(scriptFile)
 	env = append(env, "_SCRIPT_DATA="+string(jsonData))
 	cmd.Env = env
-	cmd.Stdin = nil // no stdin — data passed via _SCRIPT_DATA env var
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	// POST body is piped on stdin so large or binary payloads are not
+	// constrained by OS env-block limits and cannot be command-injected
+	// via unquoted interpolation of an env var by user scripts.
+	if len(ctx.postBody) > 0 {
+		cmd.Stdin = bytes.NewReader(ctx.postBody)
+	} else {
+		cmd.Stdin = nil
+	}
+	var stdoutBuf, stderrBuf bytes.Buffer
+	stdout := &cappedWriter{w: &stdoutBuf, limit: maxScriptOutputBytes}
+	stderr := &cappedWriter{w: &stderrBuf, limit: maxScriptOutputBytes}
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	runErr := cmd.Run()
 	if errors.Is(execCtx.Err(), context.DeadlineExceeded) {
 		return "<!-- script timeout (30s) -->\n"
 	}
 	if runErr != nil {
-		return fmt.Sprintf("<!-- script error: %v: %s -->\n", runErr, stderr.String())
+		return fmt.Sprintf("<!-- script error: %v: %s -->\n", runErr, stderrBuf.String())
 	}
 
-	output := stdout.String()
+	output := stdoutBuf.String()
 
 	// Parse headers emitted by PHP wrapper (session cookies, custom headers).
 	// Format: \x00--BSERVER-HEADERS--\x00\nHeader: val\n...\x00--BSERVER-BODY--\x00\nbody
@@ -306,7 +360,10 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 				if colon := strings.Index(line, ":"); colon > 0 {
 					key := strings.TrimSpace(line[:colon])
 					val := strings.TrimSpace(line[colon+1:])
-					ctx.responseHeaders.Add(key, val)
+					if !isValidHeaderName(key) {
+						continue
+					}
+					ctx.responseHeaders.Add(key, sanitizeHeaderValue(val))
 				}
 			}
 		}
@@ -457,8 +514,8 @@ func phpScriptWrapper(userCode string) string {
 	sb.WriteString("$_COOKIE = []; $_rawCookie = getenv('HTTP_COOKIE'); if ($_rawCookie !== false) { foreach (explode(';', $_rawCookie) as $_c) { $_c = trim($_c); if ($_c === '') continue; $_eq = strpos($_c, '='); if ($_eq !== false) { $_COOKIE[urldecode(substr($_c, 0, $_eq))] = urldecode(substr($_c, $_eq + 1)); } } }\n")
 	// Populate $_GET from QUERY_STRING
 	sb.WriteString("parse_str(getenv('QUERY_STRING') ?: '', $_GET);\n")
-	// Populate $_POST from _POST_DATA env var (body passed by bserver)
-	sb.WriteString("$_POST = []; $_postData = getenv('_POST_DATA'); if ($_postData !== false && getenv('REQUEST_METHOD') === 'POST') { $_ct = getenv('CONTENT_TYPE') ?: ''; if (stripos($_ct, 'application/x-www-form-urlencoded') !== false) { parse_str($_postData, $_POST); } elseif (stripos($_ct, 'application/json') !== false) { $_POST = json_decode($_postData, true) ?: []; } }\n")
+	// Populate $_POST by reading the request body from stdin (piped by bserver).
+	sb.WriteString("$_POST = []; if (getenv('REQUEST_METHOD') === 'POST') { $_postData = stream_get_contents(STDIN); if ($_postData !== false && $_postData !== '') { $_ct = getenv('CONTENT_TYPE') ?: ''; if (stripos($_ct, 'application/x-www-form-urlencoded') !== false) { parse_str($_postData, $_POST); } elseif (stripos($_ct, 'application/json') !== false) { $_POST = json_decode($_postData, true) ?: []; } $GLOBALS['_RAW_POST_DATA'] = $_postData; } }\n")
 	// Populate $_REQUEST from merged GET+POST+COOKIE
 	sb.WriteString("$_REQUEST = array_merge($_COOKIE, $_GET, $_POST);\n")
 	// In CLI mode the default session.save_path (e.g. /var/lib/php/sessions)
@@ -491,7 +548,7 @@ func phpScriptWrapper(userCode string) string {
 	sb.WriteString("  foreach ($_hdrs as $_h) { if (stripos($_h, 'Set-Cookie') === 0 && stripos($_h, session_name()) !== false) { $_hasSessCookie = true; break; } }\n")
 	sb.WriteString("  if (!$_hasSessCookie) {\n")
 	sb.WriteString("    $_bserver_cookie = 'Set-Cookie: ' . session_name() . '=' . urlencode($_bserver_sid) . '; Path=/; Max-Age=' . (int)ini_get('session.gc_maxlifetime') . '; HttpOnly; SameSite=Lax';\n")
-	sb.WriteString("    if (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] === '443') { $_bserver_cookie .= '; Secure'; }\n")
+	sb.WriteString("    if ((isset($_SERVER['REQUEST_SCHEME']) && $_SERVER['REQUEST_SCHEME'] === 'https') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] === '443')) { $_bserver_cookie .= '; Secure'; }\n")
 	sb.WriteString("    $_hdrs[] = $_bserver_cookie;\n")
 	sb.WriteString("  }\n")
 	sb.WriteString("}\n")
