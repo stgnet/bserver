@@ -41,6 +41,11 @@ func compileJS(source string) (*goja.Program, error) {
 // exposes `record` per iteration (data-driven format script semantics).
 // If wrap is false, the source runs once (data-source semantics).
 //
+// File system access (listdir, readFile, readFileHead) is restricted to
+// docRoot — paths that escape via "..", absolute paths outside docRoot, or
+// symlinks pointing outside docRoot return an error. An empty docRoot
+// disables file access entirely.
+//
 // Host builtins available to all scripts:
 //
 //	env        — object: env.VAR returns "" if unset
@@ -50,7 +55,7 @@ func compileJS(source string) (*goja.Program, error) {
 //	readFile(p) — entire file contents as string
 //	joinPath(a, b, ...) — filepath.Join wrapper
 //	splitExt(name)      — [basename, ext] pair (ext includes leading dot)
-func runJS(source string, envMap map[string]string, dataJSON []byte, wrap bool) (string, error) {
+func runJS(source string, envMap map[string]string, dataJSON []byte, wrap bool, docRoot string) (string, error) {
 	final := source
 	if wrap {
 		final = jsFormatWrapper(source)
@@ -79,8 +84,12 @@ func runJS(source string, envMap map[string]string, dataJSON []byte, wrap bool) 
 		out.WriteString("\n")
 		return goja.Undefined()
 	})
-	_ = vm.Set("listdir", func(path string) ([]string, error) {
-		entries, err := os.ReadDir(path)
+	_ = vm.Set("listdir", func(p string) ([]string, error) {
+		safe, err := resolveUnderRoot(docRoot, p)
+		if err != nil {
+			return nil, err
+		}
+		entries, err := os.ReadDir(safe)
 		if err != nil {
 			return nil, err
 		}
@@ -90,11 +99,15 @@ func runJS(source string, envMap map[string]string, dataJSON []byte, wrap bool) 
 		}
 		return names, nil
 	})
-	_ = vm.Set("readFileHead", func(path string, n int) (string, error) {
+	_ = vm.Set("readFileHead", func(p string, n int) (string, error) {
 		if n <= 0 {
 			return "", nil
 		}
-		f, err := os.Open(path)
+		safe, err := resolveUnderRoot(docRoot, p)
+		if err != nil {
+			return "", err
+		}
+		f, err := os.Open(safe)
 		if err != nil {
 			return "", err
 		}
@@ -106,8 +119,12 @@ func runJS(source string, envMap map[string]string, dataJSON []byte, wrap bool) 
 		}
 		return string(buf[:r]), nil
 	})
-	_ = vm.Set("readFile", func(path string) (string, error) {
-		data, err := os.ReadFile(path)
+	_ = vm.Set("readFile", func(p string) (string, error) {
+		safe, err := resolveUnderRoot(docRoot, p)
+		if err != nil {
+			return "", err
+		}
+		data, err := os.ReadFile(safe)
 		if err != nil {
 			return "", err
 		}
@@ -160,6 +177,42 @@ func jsFormatWrapper(userCode string) string {
 	sb.WriteString("  }\n")
 	sb.WriteString("})();\n")
 	return sb.String()
+}
+
+// resolveUnderRoot resolves a script-supplied path against docRoot and
+// rejects anything that escapes the root, including via symlinks. Returns
+// the absolute, symlink-resolved path on success.
+func resolveUnderRoot(docRoot, p string) (string, error) {
+	if docRoot == "" {
+		return "", errors.New("file access disabled: no docRoot")
+	}
+	rootAbs, err := filepath.Abs(docRoot)
+	if err != nil {
+		return "", err
+	}
+	if resolved, err := filepath.EvalSymlinks(rootAbs); err == nil {
+		rootAbs = resolved
+	}
+	// Resolve user path relative to docRoot when not absolute.
+	full := p
+	if !filepath.IsAbs(full) {
+		full = filepath.Join(rootAbs, full)
+	}
+	full = filepath.Clean(full)
+	// EvalSymlinks fails for missing files; in that case fall back to
+	// containment check on the cleaned path so that the caller's open
+	// or stat returns a normal "not found" error.
+	if resolved, err := filepath.EvalSymlinks(full); err == nil {
+		full = resolved
+	}
+	rel, err := filepath.Rel(rootAbs, full)
+	if err != nil {
+		return "", fmt.Errorf("path outside docRoot")
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("path outside docRoot")
+	}
+	return full, nil
 }
 
 // envListToMap converts a []string of KEY=VALUE entries (as produced by

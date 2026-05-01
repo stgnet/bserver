@@ -58,13 +58,38 @@ install_go() {
     tmp="$(mktemp -d)"
 
     info "Downloading ${url}…"
+    local fetch
     if command -v curl >/dev/null 2>&1; then
+        fetch="curl -fsSL -o"
         curl -fsSL -o "$tmp/$tarball" "$url"
+        curl -fsSL -o "$tmp/$tarball.sha256" "${url}.sha256"
     elif command -v wget >/dev/null 2>&1; then
+        fetch="wget -q -O"
         wget -q -O "$tmp/$tarball" "$url"
+        wget -q -O "$tmp/$tarball.sha256" "${url}.sha256"
     else
         die "Neither curl nor wget found. Install one of them and retry."
     fi
+    : "${fetch:=}" # silence shellcheck unused
+
+    info "Verifying SHA-256 checksum…"
+    local expected actual
+    expected="$(awk '{print $1}' "$tmp/$tarball.sha256" | tr -d '[:space:]')"
+    if [ -z "$expected" ]; then
+        die "Could not read expected SHA-256 from ${url}.sha256"
+    fi
+    if command -v sha256sum >/dev/null 2>&1; then
+        actual="$(sha256sum "$tmp/$tarball" | awk '{print $1}')"
+    elif command -v shasum >/dev/null 2>&1; then
+        actual="$(shasum -a 256 "$tmp/$tarball" | awk '{print $1}')"
+    else
+        die "Neither sha256sum nor shasum is available; cannot verify Go download."
+    fi
+    if [ "$expected" != "$actual" ]; then
+        rm -rf "$tmp"
+        die "SHA-256 mismatch for $tarball: expected $expected, got $actual"
+    fi
+    info "Checksum OK ($actual)"
 
     info "Extracting to /usr/local/go…"
     rm -rf /usr/local/go

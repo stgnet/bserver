@@ -217,17 +217,31 @@ func (rc *renderCache) watchLoop() {
 // For WRITE/REMOVE/RENAME: invalidates entries that depend on the changed file.
 // For CREATE: also invalidates entries with sources in the same directory,
 // since a new file might change YAML name resolution order.
+//
+// The collect-and-invalidate happens under a single lock hold so that no
+// new entry for an invalidated key can slip in between collection and
+// removal (which would otherwise leave stale data in the cache).
 func (rc *renderCache) handleFileEvent(event fsnotify.Event) {
 	path := event.Name
 
-	// Collect keys to invalidate (under lock), then invalidate (reacquires lock)
 	rc.mu.Lock()
-	var keysToInvalidate []string
+	defer rc.mu.Unlock()
+
+	seen := make(map[string]bool)
+	invalidate := func(key string) {
+		if seen[key] {
+			return
+		}
+		seen[key] = true
+		if entry, ok := rc.entries[key]; ok {
+			rc.removeLocked(entry)
+		}
+	}
 
 	// Direct file dependency
 	if deps, ok := rc.fileDeps[path]; ok {
 		for key := range deps {
-			keysToInvalidate = append(keysToInvalidate, key)
+			invalidate(key)
 		}
 	}
 
@@ -237,22 +251,8 @@ func (rc *renderCache) handleFileEvent(event fsnotify.Event) {
 		dir := filepath.Dir(path)
 		if deps, ok := rc.dirDeps[dir]; ok {
 			for key := range deps {
-				keysToInvalidate = append(keysToInvalidate, key)
+				invalidate(key)
 			}
-		}
-	}
-	rc.mu.Unlock()
-
-	// Deduplicate and invalidate
-	seen := make(map[string]bool)
-	for _, key := range keysToInvalidate {
-		if !seen[key] {
-			seen[key] = true
-			rc.mu.Lock()
-			if entry, ok := rc.entries[key]; ok {
-				rc.removeLocked(entry)
-			}
-			rc.mu.Unlock()
 		}
 	}
 }
@@ -346,9 +346,13 @@ func formatBytes(b int64) string {
 	return fmt.Sprintf("%.1f MB", float64(b)/float64(mb))
 }
 
-// cacheKey builds a cache key from the document root and file path.
-func cacheKey(docRoot, filePath string) string {
-	return docRoot + "\x00" + filePath
+// cacheKey builds a cache key from the document root, request host, and
+// file path. Host is included so that requests falling back to a shared
+// "default" docRoot don't return content cached for a different vhost
+// (different Host headers may render different output even from the same
+// source, e.g. via $HTTP_HOST in scripts).
+func cacheKey(docRoot, host, filePath string) string {
+	return docRoot + "\x00" + host + "\x00" + filePath
 }
 
 // staticFileCacheControl returns a Cache-Control max-age value for a static file,
