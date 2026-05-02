@@ -178,6 +178,47 @@ func TestNotFoundDoesNotLeakPaths(t *testing.T) {
 	}
 }
 
+// TestErrorPageBailsOutIfBlockedWhileQueued verifies that serveErrorPage
+// re-checks the rate limiter after acquiring its render semaphore. During
+// a scanner flood, many concurrent 404 requests pass the middleware's
+// isBlocked check before the block triggers, then pile up in the render
+// queue. If the block fires while requests are waiting, the queued
+// requests must not render a full error page anyway.
+func TestErrorPageBailsOutIfBlockedWhileQueued(t *testing.T) {
+	base, _ := os.Getwd()
+	mux := newTestMux(t, filepath.Join(base, "www"))
+	mux.rl = newRateLimiter()
+	defer mux.rl.Close()
+
+	ip := "203.0.113.99"
+
+	// Drive the IP into blocked state directly (simulates the state that
+	// would exist after 10 in-flight errors completed while our request
+	// was waiting in the render queue).
+	for i := 0; i < maxConsecutiveErrors; i++ {
+		mux.rl.recordResult(ip, http.StatusNotFound)
+	}
+	if blocked, _ := mux.rl.isBlocked(ip); !blocked {
+		t.Fatal("setup failed: IP should be blocked")
+	}
+
+	req := httptest.NewRequest("GET", "/this-path-does-not-exist-xyz", nil)
+	req.Host = "default"
+	req.RemoteAddr = ip + ":40000"
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("status = %d, want 404", resp.StatusCode)
+	}
+	// Body should be empty — the render was skipped because the IP
+	// became blocked while the request was (conceptually) queued.
+	if body := w.Body.String(); body != "" {
+		t.Errorf("blocked IP should get bare status with no body, got %d bytes", len(body))
+	}
+}
+
 func TestDebugQueryParameter(t *testing.T) {
 	base, _ := os.Getwd()
 	mux := newTestMux(t, filepath.Join(base, "www"))

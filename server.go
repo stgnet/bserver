@@ -81,6 +81,7 @@ func (cfg *config) debugEnabled(r *http.Request) bool {
 // virtualHostMux dynamically serves based on cwd directories.
 type virtualHostMux struct {
 	cfg *config
+	rl  *rateLimiter // may be nil in tests
 	sync.Mutex
 }
 
@@ -803,6 +804,19 @@ func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, 
 	}
 	defer func() { <-errorRenderSem }()
 
+	// Re-check rate-limit state: during a scanner flood, many concurrent
+	// requests pass the middleware's isBlocked check (counter not yet at
+	// threshold) and then pile up behind this serializer. By the time a
+	// queued request acquires the slot, the IP may have been blocked by an
+	// earlier request's result. Without this check, all queued requests
+	// would render full 404 pages anyway, defeating the block.
+	if m.rl != nil {
+		if blocked, _ := m.rl.isBlocked(clientIP(r)); blocked {
+			w.WriteHeader(statusCode)
+			return
+		}
+	}
+
 	// Re-check cache: a prior queued request may have rendered this key
 	// while we were waiting.
 	if useCache {
@@ -1172,8 +1186,8 @@ func main() {
 		},
 	}
 
-	mux := &virtualHostMux{cfg: cfg}
 	rl := newRateLimiter()
+	mux := &virtualHostMux{cfg: cfg, rl: rl}
 
 	// Wrap mux with logging, security headers, body size limit, and rate limiting
 	var handler http.Handler = mux
