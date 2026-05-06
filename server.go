@@ -198,6 +198,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	root := filepath.Join(m.cfg.Base, host)
+	hostFallback := false
 	if st, err := os.Stat(root); err != nil || !st.IsDir() {
 		// Base domains (single dot, e.g. "b-haven.net") and IP addresses
 		// fall through to default so that any domain pointed at this server
@@ -215,6 +216,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		root = defaultRoot
+		hostFallback = true
 	}
 
 	// Check if this vhost is a proxy (index.yaml with http: backend)
@@ -283,7 +285,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Block file types not in the allowed types list
 	if ext := filepath.Ext(fsPath); ext != "" {
 		if !isAllowedType(ext, site.Types) {
-			m.serveErrorPage(w, r, root, http.StatusNotFound, "", site)
+			m.serveErrorPage(w, r, root, http.StatusNotFound, "", site, hostFallback)
 			return
 		}
 	}
@@ -371,7 +373,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	m.serveErrorPage(w, r, root, http.StatusNotFound, "", site)
+	m.serveErrorPage(w, r, root, http.StatusNotFound, "", site, hostFallback)
 }
 
 func (m *virtualHostMux) handlePHP(w http.ResponseWriter, r *http.Request, host, docroot, scriptFilename string, site siteSettings) {
@@ -773,7 +775,18 @@ const errorRenderMaxWaiting = 50
 
 // serveErrorPage renders an error page through the YAML system.
 // If no error template is found, it falls back to a plain-text response.
-func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, docRoot string, statusCode int, message string, site siteSettings) {
+//
+// hostFallback is true when the request's Host has no matching directory
+// under www/ and is being served from the default vhost. In that case we
+// skip rendering and caching entirely — scanners send arbitrary Host
+// headers and unique paths, so caching their 404s would explode the
+// render cache (host is part of the key) without serving any real user.
+func (m *virtualHostMux) serveErrorPage(w http.ResponseWriter, r *http.Request, docRoot string, statusCode int, message string, site siteSettings, hostFallback bool) {
+	if hostFallback {
+		w.WriteHeader(statusCode)
+		return
+	}
+
 	debug := m.cfg.debugEnabled(r)
 
 	// Cache rendered error pages per docRoot+statusCode+path (skip for debug

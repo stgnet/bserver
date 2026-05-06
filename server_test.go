@@ -178,6 +178,29 @@ func TestNotFoundDoesNotLeakPaths(t *testing.T) {
 	}
 }
 
+// TestUnknownHost404IsBare verifies that a 404 for a host with no
+// matching directory under www/ returns the bare status code with no
+// rendered body. Scanners send arbitrary Host headers and unique paths;
+// rendering and caching their 404s would explode the render cache (host
+// is part of the key) without serving any real user.
+func TestUnknownHost404IsBare(t *testing.T) {
+	base, _ := os.Getwd()
+	mux := newTestMux(t, filepath.Join(base, "www"))
+
+	req := httptest.NewRequest("GET", "/some-missing-path", nil)
+	req.Host = "scanner.example" // single dot → falls back to default
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("status = %d, want 404", resp.StatusCode)
+	}
+	if body := w.Body.String(); body != "" {
+		t.Errorf("fallback host should get bare 404 with no body, got %d bytes", len(body))
+	}
+}
+
 // TestErrorPageBailsOutIfBlockedWhileQueued verifies that serveErrorPage
 // re-checks the rate limiter after acquiring its render semaphore. During
 // a scanner flood, many concurrent 404 requests pass the middleware's
