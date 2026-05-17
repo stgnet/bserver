@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -49,7 +50,16 @@ type memMonitor struct {
 	ring         []uint64 // recent HeapInuse samples (byte)
 	lastHeapDump time.Time
 	lastGoDump   time.Time
+
+	// Dumps run on background goroutines so a slow pprof.WriteTo (which
+	// can block for minutes when the heap is under GC pressure) doesn't
+	// stall the snapshot ticker. The atomic flags prevent piling up
+	// duplicate dumps while one is already running.
+	heapDumpInFlight atomic.Bool
+	goDumpInFlight   atomic.Bool
 }
+
+const slowDumpThreshold = 30 * time.Second
 
 // startupGrace suppresses growth-rate alarms during warmup. The heap ramps
 // from a few MB to steady-state (tens of MB) as caches populate, trivially
@@ -167,6 +177,12 @@ func (m *memMonitor) tick() {
 	for _, name := range m.providerKey {
 		fmt.Fprintf(&b, " %s=%d", name, cacheCounts[name])
 	}
+	if m.heapDumpInFlight.Load() {
+		b.WriteString(" dump_in_flight=heap")
+	}
+	if m.goDumpInFlight.Load() {
+		b.WriteString(" dump_in_flight=goroutine")
+	}
 	log.Print(b.String())
 
 	// Ring buffer for growth rate
@@ -211,32 +227,52 @@ func (m *memMonitor) tick() {
 		}
 	}
 
-	// Heap threshold dump
-	if int(bytesToMB(ms.HeapInuse)) >= m.cfg.HeapThresholdMB {
-		if time.Since(lastHeap) >= m.cfg.DumpCooldown {
-			if path, err := m.dumpHeap(); err == nil {
-				log.Printf("MEMMON_DUMP kind=heap reason=heap_threshold heap_inuse=%dMB file=%s", bytesToMB(ms.HeapInuse), path)
-				m.mu.Lock()
-				m.lastHeapDump = time.Now()
-				m.mu.Unlock()
-			} else {
-				log.Printf("MEMMON_WARN dump_failed=heap err=%v", err)
-			}
-		}
+	// Heap threshold dump (asynchronous: a stuck pprof.WriteTo must not
+	// block the snapshot ticker — that's how the May 16 OOM happened
+	// invisibly). The cooldown timestamp is set on dispatch, not on
+	// completion, so a slow dump doesn't queue up successors.
+	if int(bytesToMB(ms.HeapInuse)) >= m.cfg.HeapThresholdMB &&
+		time.Since(lastHeap) >= m.cfg.DumpCooldown &&
+		m.heapDumpInFlight.CompareAndSwap(false, true) {
+		m.mu.Lock()
+		m.lastHeapDump = time.Now()
+		m.mu.Unlock()
+		heapInuse := bytesToMB(ms.HeapInuse)
+		go m.runDump("heap", "heap_threshold",
+			fmt.Sprintf("heap_inuse=%dMB", heapInuse),
+			m.dumpHeap, &m.heapDumpInFlight)
 	}
 
-	// Goroutine threshold dump
-	if goroutines >= m.cfg.GoroutineThreshold {
-		if time.Since(lastGo) >= m.cfg.DumpCooldown {
-			if path, err := m.dumpGoroutines(); err == nil {
-				log.Printf("MEMMON_DUMP kind=goroutine reason=goroutine_threshold count=%d file=%s", goroutines, path)
-				m.mu.Lock()
-				m.lastGoDump = time.Now()
-				m.mu.Unlock()
-			} else {
-				log.Printf("MEMMON_WARN dump_failed=goroutine err=%v", err)
-			}
-		}
+	// Goroutine threshold dump (same async treatment)
+	if goroutines >= m.cfg.GoroutineThreshold &&
+		time.Since(lastGo) >= m.cfg.DumpCooldown &&
+		m.goDumpInFlight.CompareAndSwap(false, true) {
+		m.mu.Lock()
+		m.lastGoDump = time.Now()
+		m.mu.Unlock()
+		count := goroutines
+		go m.runDump("goroutine", "goroutine_threshold",
+			fmt.Sprintf("count=%d", count),
+			m.dumpGoroutines, &m.goDumpInFlight)
+	}
+}
+
+// runDump executes a dump function on a background goroutine, releasing
+// the in-flight flag when done and logging slow or failed dumps.
+func (m *memMonitor) runDump(kind, reason, context string, dump func() (string, error), inFlight *atomic.Bool) {
+	defer inFlight.Store(false)
+	start := time.Now()
+	path, err := dump()
+	elapsed := time.Since(start)
+	if err != nil {
+		log.Printf("MEMMON_WARN dump_failed=%s err=%v elapsed=%v", kind, err, elapsed.Round(time.Millisecond))
+		return
+	}
+	log.Printf("MEMMON_DUMP kind=%s reason=%s %s elapsed=%v file=%s",
+		kind, reason, context, elapsed.Round(time.Millisecond), path)
+	if elapsed > slowDumpThreshold {
+		log.Printf("MEMMON_WARN dump_slow kind=%s elapsed=%v threshold=%v file=%s",
+			kind, elapsed.Round(time.Millisecond), slowDumpThreshold, path)
 	}
 }
 
