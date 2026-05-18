@@ -39,6 +39,30 @@ const jsHeapProbeInterval = 100 * time.Millisecond
 // the check. Called once during server startup from main.
 func SetJSHeapLimit(b int64) { jsHeapLimitBytes.Store(b) }
 
+// jsConcurrencySem bounds concurrent goja Runtime instances. Each runtime
+// plus a user script can consume several MB; under thundering-herd load
+// (e.g. a burst of ~200 simultaneous requests for an uncached path whose
+// navbar uses a JS data source) the unbounded fan-out drove heap spikes
+// from 150 MB to 700+ MB in a single tick. Worse, the per-script heap
+// watchdog reads process-global HeapAlloc, so each concurrent script sees
+// the combined sibling growth and many get falsely interrupted with
+// "exceeded memory limit" once the herd is large enough.
+//
+// A modest cap preserves throughput for normal traffic (a 50 ms script
+// gives ~640/s headroom at this size) while keeping the worst-case
+// concurrent JS heap footprint bounded.
+var jsConcurrencySem = make(chan struct{}, 32)
+
+// jsAcquireTimeout caps how long runJS will wait for a concurrency slot.
+// Long enough to ride out a brief queue, short enough to fail before the
+// outer HTTP write deadline fires (default 120 s).
+const jsAcquireTimeout = 15 * time.Second
+
+// errJSConcurrencyTimeout is returned when a runJS call could not acquire
+// a runtime slot within jsAcquireTimeout. Distinct error so callers (e.g.
+// data source / script execution paths) can log it specifically.
+var errJSConcurrencyTimeout = errors.New("js concurrency queue timeout")
+
 // jsProgramCache caches compiled JavaScript programs keyed by source hash.
 // Compilation costs microseconds but is the dominant overhead for short
 // scripts; execution on a cached program is sub-microsecond. Runtimes are
@@ -87,6 +111,14 @@ func runJS(source string, envMap map[string]string, dataJSON []byte, wrap bool, 
 	prog, err := compileJS(final)
 	if err != nil {
 		return "", fmt.Errorf("compile: %w", err)
+	}
+
+	// Bound concurrent runtimes. See jsConcurrencySem docs above.
+	select {
+	case jsConcurrencySem <- struct{}{}:
+		defer func() { <-jsConcurrencySem }()
+	case <-time.After(jsAcquireTimeout):
+		return "", errJSConcurrencyTimeout
 	}
 
 	vm := goja.New()
