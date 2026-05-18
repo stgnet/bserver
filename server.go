@@ -692,6 +692,25 @@ func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docR
 		}
 	}
 
+	// Cold render: bound the global concurrent render count.
+	if !acquirePageRenderSlot(r.Context()) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+	defer func() { <-pageRenderSem }()
+
+	// Re-check cache: a sibling request may have rendered this key while
+	// we were queued for a slot.
+	if !debug && !dynamic && m.cfg.Cache != nil {
+		if cached, ok := m.cfg.Cache.Get(key); ok {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(cached))
+			return
+		}
+	}
+
 	output, sourceFiles, scriptHeaders := renderYAMLPage(docRoot, yamlPath, debug, site.ParentLevels, r)
 
 	// Don't cache pages that emit per-request HTTP headers (e.g., Set-Cookie
@@ -725,6 +744,25 @@ func (m *virtualHostMux) handleMarkdown(w http.ResponseWriter, r *http.Request, 
 	dynamic := r.URL.RawQuery != "" || r.Method == http.MethodPost
 
 	// Try cache (skip for debug mode and dynamic requests)
+	if !debug && !dynamic && m.cfg.Cache != nil {
+		if cached, ok := m.cfg.Cache.Get(key); ok {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(site.CacheAge.Seconds())))
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(cached))
+			return
+		}
+	}
+
+	// Cold render: bound the global concurrent render count.
+	if !acquirePageRenderSlot(r.Context()) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+	defer func() { <-pageRenderSem }()
+
+	// Re-check cache: a sibling request may have rendered this key while
+	// we were queued for a slot.
 	if !debug && !dynamic && m.cfg.Cache != nil {
 		if cached, ok := m.cfg.Cache.Get(key); ok {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -772,6 +810,39 @@ var (
 )
 
 const errorRenderMaxWaiting = 50
+
+// pageRenderSem caps concurrent YAML/Markdown renders. A scanner that
+// enumerates many distinct URLs on a known vhost can otherwise fan out
+// dozens of concurrent renders, each parsing ~10 YAML files and
+// allocating 10-15 MB — drove heap to 520 MB on May 18 03:41 in a
+// single 60 s tick. The cap converts unbounded heap fan-out into
+// bounded queueing. Cache hits bypass this entirely; only cold-render
+// requests acquire a slot.
+var pageRenderSem = make(chan struct{}, 16)
+
+// pageRenderQueueTimeout caps how long a request will wait for a render
+// slot. Well under the 120 s HTTP write deadline so the queue path
+// fails before the connection times out, freeing the slot for someone
+// else. Real renders typically complete in <1 s.
+const pageRenderQueueTimeout = 10 * time.Second
+
+// acquirePageRenderSlot blocks up to pageRenderQueueTimeout (or the
+// request context deadline, whichever fires first) for a render slot.
+// Returns true on success — caller MUST release via `<-pageRenderSem`.
+// Returns false on timeout / client disconnect; caller should serve a
+// bare 503 (no body) so the failed request is cheap.
+func acquirePageRenderSlot(ctx context.Context) bool {
+	timer := time.NewTimer(pageRenderQueueTimeout)
+	defer timer.Stop()
+	select {
+	case pageRenderSem <- struct{}{}:
+		return true
+	case <-timer.C:
+		return false
+	case <-ctx.Done():
+		return false
+	}
+}
 
 // serveErrorPage renders an error page through the YAML system.
 // If no error template is found, it falls back to a plain-text response.
