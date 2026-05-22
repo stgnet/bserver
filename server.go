@@ -1287,10 +1287,13 @@ func main() {
 		Prompt: autocert.AcceptTOS,
 		Email:  cfg.LEEmail,
 		HostPolicy: func(ctx context.Context, host string) error {
-			// Allow base domains (single dot) — they fall through to default
-			if strings.Count(host, ".") <= 1 {
-				return nil
-			}
+			// Issue LE certs only for vhosts that actually exist under
+			// www/. Allowing arbitrary base domains (e.g. random.com)
+			// turned bserver into an LE-challenge amplifier: scanners
+			// sending diverse SNIs piled up hundreds of in-flight ACME
+			// orders and thousands of TLS handshakes blocked on per-host
+			// mutexes (May 22 alert: 2613 goroutines, 846 active ACME
+			// calls, leFail cache at 715).
 			if isKnownVhost(host, cfg.Base) {
 				return nil
 			}
@@ -1308,7 +1311,13 @@ func main() {
 				if !isPublicDomain(hello.ServerName) {
 					return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
 				}
-				if strings.Count(hello.ServerName, ".") > 1 && !isKnownVhost(hello.ServerName, cfg.Base) {
+				// Only attempt Let's Encrypt for vhosts we actually
+				// serve. Allowing any single-dot domain (the prior
+				// condition was multi-dot only) made bserver an
+				// amplifier for scanner-driven ACME calls: a flood of
+				// SNIs for random base domains triggered hundreds of
+				// in-flight LE orders and a per-hostname mutex pileup.
+				if !isKnownVhost(hello.ServerName, cfg.Base) {
 					return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
 				}
 				// Skip LE if we recently failed for this host
