@@ -4,47 +4,16 @@
 [![Go 1.24+](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://go.dev/dl/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-A YAML-driven web server written in Go that generates complete HTML pages from structured YAML and Markdown definitions. Write YAML, get HTML — with virtual hosting, automatic HTTPS, and zero boilerplate.
+A small web server written in Go that builds HTML pages from **YAML and
+Markdown** definitions — no template language, no build step. Virtual
+hosting, automatic HTTPS, server-side scripts (Python, JavaScript, PHP,
+Shell), reverse proxying, and rate limiting are all built in.
 
-**Website:** [bserver.info](https://bserver.info)
-
-## How It Works
-
-bserver uses a pipeline of YAML definitions to build complete HTML pages. You only define `main:` — everything else is inherited:
-
-```
-html.yaml          ← starting point (provides <html lang="en">)
-├── head.yaml      ← <head> with meta, title, styles
-└── body.yaml      ← <body> wrapping:
-    ├── header.yaml    ← navbar
-    ├── main           ← YOUR CONTENT (from index.yaml)
-    └── footer.yaml    ← footer text
-```
-
-Names resolve by searching upward through directories — your site's `navlinks.yaml` overrides the default, but inherited definitions like `navbar.yaml` are shared across all sites. Files are read on every request, so changes take effect immediately with no restart.
-
-## Features
-
-- **YAML page generation** — Define pages as structured YAML; bserver renders clean, indented HTML5
-- **Markdown support** — `.md` files render with full site chrome (navbar, header, footer, styles)
-- **Format definitions** — Reusable HTML templates via the `^name` prefix, with variable substitution
-- **Cascading name resolution** — Definitions resolve upward through directories, child overrides parent
-- **Proxy mode** — Reverse-proxy a vhost to a backend server with a one-line `index.yaml`
-- **Virtual hosting** — Serve multiple domains from subdirectories, with a `default/` fallback
-- **Automatic HTTPS** — Let's Encrypt certificates with self-signed fallback for local development
-- **Bootstrap 5** — Pre-configured CSS and Font Awesome out of the box
-- **Server-side scripting** — Dynamic content via Python, JavaScript (Node.js), or PHP
-- **Privilege dropping** — Binds ports 80/443 as root, then drops to `nobody`
-- **Merge definitions** — Extend inherited definitions with the `+name` prefix
-- **Style rendering** — YAML-defined CSS with selector keys and property maps
-- **Debug mode** — Add `?debug` to any URL (e.g., `http://localhost/?debug`) for HTML comment tracing
-- **Hot reload** — YAML/Markdown files are read per-request; no server restart needed
-- **Access logging** — Every request is logged with method, path, status, and duration
-- **Graceful shutdown** — Clean shutdown on SIGINT/SIGTERM for systemd compatibility
+**Website / live docs:** [bserver.info](https://bserver.info)
 
 ## Quick Start
 
-Requires [Go](https://go.dev/dl/) 1.24 or later.
+You need [Go 1.24+](https://go.dev/dl/).
 
 ```sh
 git clone https://github.com/stgnet/bserver.git
@@ -53,100 +22,122 @@ go build
 ./bserver
 ```
 
-Then visit localhost (port 80 or as shown on startup) to see the built-in documentation site.
+Open the URL it logs at startup (port 80 if available, otherwise
+`8000-8099`). You'll land on the bundled documentation site — which is
+itself a bserver site living in `www/default/`.
 
-A minimal page needs just an `index.yaml` in `www/example.com`:
+### Your First Page
+
+```sh
+mkdir www/example.com
+```
 
 ```yaml
+# www/example.com/index.yaml
 main:
   - h1: "Hello World"
   - p: "Welcome to my site."
 ```
 
-This produces:
+That's it. Visit the site and bserver wraps your `main:` content in a
+full HTML document with navigation, footer, Bootstrap 5 styling, and an
+auto-generated favicon. Everything outside of `main:` was inherited from
+the shared YAML in `www/`; override any of it by dropping a same-named
+file into your vhost directory.
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>bserver</title>
-    ...
-  </head>
-  <body>
-    <header>...</header>
-    <main>
-      <h1>Hello World</h1>
-      <p>Welcome to my site.</p>
-    </main>
-    <footer>...</footer>
-  </body>
-</html>
-```
-
-## Directory Structure
-
-Go source files live in the project root. Web content lives in `www/`, mirroring the `/var/www` convention:
-
-```
-bserver/
-├── *.go                     # Go source code
-├── www/                     # Web content root (-base flag)
-│   ├── default/             # Fallback for unmapped hosts
-│   │   ├── index.yaml       # Home page
-│   │   ├── header.yaml      # Site header
-│   │   ├── footer.yaml      # Site footer
-│   │   └── style.yaml       # Site styles
-│   ├── example.com/         # Virtual host
-│   │   ├── index.yaml
-│   │   └── about.md
-│   ├── html.yaml            # Base document structure (inherited)
-│   ├── bootstrap5.yaml      # Bootstrap 5 CDN (inherited)
-│   ├── navbar.yaml          # Navigation component (inherited)
-│   └── cert-cache/          # TLS certificates (auto-created)
-└── ...
-```
-
-The shared YAML definitions in `www/` are readable and can be copied into any virtual host directory to customize behavior.
-
-## Installing as a Service
+### Install as a System Service
 
 ```sh
-git clone https://github.com/stgnet/bserver.git
-cd bserver
-go build
-sudo ./install-service.sh
+sudo ./install-service.sh             # install + start (systemd or launchd)
+sudo ./install-service.sh restart     # after `git pull && go build`
+sudo ./install-service.sh remove      # uninstall
 ```
 
-Installs and starts bserver as a system service using systemd (Linux) or launchd (macOS). The service starts automatically and is enabled on boot.
+## How It Works (One Page)
 
-To update and restart after pulling new changes:
+Every page is assembled by following a tree of named references starting
+at `html`:
 
-```sh
-git pull
-go build
-sudo ./install-service.sh restart
+```
+html.yaml          ← <html lang="en"> wrapping head + body
+├── head.yaml      ← <head> with meta, title, styles
+└── body.yaml      ← <body> wrapping:
+    ├── header.yaml    ← navbar
+    ├── main           ← YOUR CONTENT (from index.yaml or .md)
+    └── footer.yaml    ← footer
 ```
 
-To uninstall:
+When bserver sees a name like `header`, it looks for `header.yaml`
+starting in the request's directory and walking up — so site-specific
+files win, shared definitions in `www/` are inherited. YAML files are
+re-read on every request (with a render cache invalidated by fsnotify),
+so there's no restart cycle.
 
-```sh
-sudo ./install-service.sh remove
+Four prefixes govern every YAML key:
+
+```yaml
+main:           # plain key — content
+  - h1: "Hi"
+
+^card:          # ^ — format definition (how a name renders as HTML)
+  tag: div
+  params: { class: card }
+
++headlink:      # + — merge into an existing definition
+  - { rel: stylesheet, href: /extra.css }
+
+$navlinks:      # $ — data source (script that produces the value)
+  script: javascript
+  code: |
+    print(JSON.stringify([{key: "/", value: "Home"}]));
 ```
+
+Everything else — components, layouts, the navbar, error pages, scripts,
+proxy mode — composes from these four pieces.
+
+## Feature Highlights
+
+- **YAML / Markdown page generation** with clean indented HTML5 output
+- **Cascading name resolution** — child overrides parent, no inheritance
+  ceremony
+- **Format definitions** (`^name`) — reusable HTML templates with
+  variable substitution
+- **Data sources** (`$name`) — script-backed content with JSON output
+- **Server-side scripts** — Python, embedded JavaScript (goja), PHP, and
+  Shell, plus full PHP-CGI for `.php` files
+- **Virtual hosting** — one directory per domain, `default/` fallback,
+  symlink aliases
+- **Automatic HTTPS** — Let's Encrypt for public domains, self-signed
+  fallback for IPs and `.local` / `.test` / `.internal`
+- **Reverse proxy mode** — one-line `index.yaml` turns a vhost into a
+  proxy (with SSRF guards and optional API-key gating)
+- **Render cache** with fsnotify invalidation and RAM-aware sizing
+- **Security headers, rate limiting, privilege dropping**, port-80
+  fallback
+- **Auto-generated favicons** with optional `_favicon.yaml` customization
+- **Debug mode** — `?debug` emits HTML-comment traces of name resolution
 
 ## Documentation
 
-- [Getting Started](getting-started) — Installation, directory layout, first page
-- [Content Definitions](definitions) — How `main:` and named definitions work
-- [Format Definitions](formats) — Custom HTML templates with `^name` prefix
-- [Built-in Components](components) — Pre-defined YAML files (html, head, body, navbar, etc.)
-- [Server-Side Scripts](scripts) — Dynamic content via Python, JavaScript, PHP, Shell
-- [Error Handling](errors) — Custom error pages
-- [Server Features](features) — Caching, security headers, rate limiting, TLS, and more
-- [Proxy Mode](proxy) — Reverse-proxy a vhost to a backend
-- [Advanced Features](advanced) — Virtual hosting, HTTPS, debug mode
-- [Tips & Recipes](tips) — Common patterns and practical examples
+Once the server is running, the full documentation site is available at
+`/`:
+
+- [Getting Started](getting-started) — installation, first page,
+  configuration
+- [Content Definitions](definitions) — the four prefixes
+- [Format Definitions](formats) — the `^` system
+- [Data Sources](data-sources) — the `$` system
+- [Built-in Components](components) — pre-defined layout & navigation
+  pieces
+- [Server-Side Scripts](scripts) — Python, JavaScript, PHP, Shell
+- [Server Features](features) — caching, security, rate limiting, TLS,
+  favicons
+- [Proxy Mode](proxy) — reverse proxying with one line
+- [Error Handling](errors) — custom 404/500 templates
+- [Advanced Features](advanced) — virtual hosting internals, name
+  resolution, debug mode
+- [Tips & Recipes](tips) — common patterns
 
 ## License
 
-Licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
+Apache 2.0 — see [LICENSE](LICENSE).

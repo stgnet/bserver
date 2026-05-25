@@ -1,185 +1,191 @@
-# Getting Started with bserver
+# Getting Started
 
 ## What is bserver?
 
-bserver is a simple web server written in Go that generates HTML pages from YAML
-definitions. Instead of writing HTML directly, you define your page structure
-using YAML files, and bserver renders them into complete HTML pages with proper
-DOCTYPE, head, body, and all the trimmings.
+bserver is a small web server written in Go that builds HTML pages from
+**YAML and Markdown** definitions instead of templates. You describe a
+page as a tree of named pieces, and bserver renders them into clean,
+indented HTML5. The same engine handles virtual hosting, automatic
+HTTPS, server-side scripts in four languages, reverse proxying, and
+static file serving.
+
+Most sites need only a handful of YAML files. The default `www/`
+directory bundled with bserver — including the site you're reading right
+now — is itself a complete bserver site you can clone, tweak, and serve.
 
 ## Installation
 
-Build from source:
+You need [Go](https://go.dev/dl/) 1.24 or later.
 
-```
+```sh
+git clone https://github.com/stgnet/bserver.git
+cd bserver
 go build
 ./bserver
 ```
 
-By default, bserver listens on port 80 (HTTP) and serves content from the
-`www/` subdirectory of the current working directory. Subdirectories matching
-domain names are used as virtual host roots. Use the `-base` flag or
-`BASE_DIR` environment variable to override the content directory.
+By default, bserver listens on port 80 (HTTP) and 443 (HTTPS) and serves
+content from `./www/`. If port 80 is unavailable (no root, port in use)
+it falls back to a port in the `8000-8099` range. Open the URL it
+logs at startup to see the documentation site.
 
-## How It Works
+To install as a system service (systemd or launchd):
 
-bserver serves virtual hosts from subdirectories under its content root. For
-example, if the content root is `/var/www/`, it will serve `example.com` from
-`/var/www/example.com/`.
-
-The `default/` directory is used as a fallback for any host that doesn't have
-its own directory. This documentation site itself is the default site.
-
-## Directory Structure
-
-A typical bserver site looks like this:
-
+```sh
+sudo ./install-service.sh
 ```
-mysite.com/
-├── index.yaml          # Homepage content
-├── about.yaml          # About page
-├── navlinks.yaml       # Navigation links
-├── header.yaml         # Header section (usually loads navbar)
-├── footer.yaml         # Footer section
-└── style.yaml          # Custom CSS styles (optional)
-```
-
-The content root directory (`www/`) contains shared definitions (html.yaml,
-head.yaml, body.yaml, navbar.yaml, etc.) that are inherited by all sites.
-You can copy any of these into your site directory to customize them.
 
 ## Your First Page
 
-The simplest page needs only an `index.yaml` file with a `main:` definition:
+Make a directory for your virtual host and drop an `index.yaml` into it:
+
+```sh
+mkdir www/example.com
+```
 
 ```yaml
+# www/example.com/index.yaml
 main:
   - h1: "Hello World"
-  - p: "This is my first bserver page."
+  - p: "Welcome to my site."
 ```
 
-This renders inside the full HTML structure. bserver automatically provides:
+That's a complete page. Visit `http://example.com/` (or set up
+`example.com` in `/etc/hosts` for local testing) and you'll get:
 
-- `<!DOCTYPE html>` declaration
-- `<html lang="en">` with proper attributes
-- `<head>` with meta tags and stylesheets
-- `<body>` with header, your main content, and footer
-
-## The Rendering Pipeline
-
-1. bserver loads `html.yaml` as the starting point
-2. `html.yaml` references `head` and `body`
-3. `body.yaml` references `header`, `main`, and `footer`
-4. Each name is resolved by searching for `name.yaml` files
-5. Your `index.yaml` defines `main:` to set the page content
-
-The pipeline looks like:
-
-```
-html.yaml
-├── head.yaml → title, meta, headlink, style
-└── body.yaml
-    ├── header.yaml → navbar
-    ├── main ← YOUR CONTENT (from index.yaml)
-    └── footer.yaml → muted text
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>bserver</title>
+    ...
+  </head>
+  <body>
+    <header><nav>...</nav></header>
+    <main>
+      <h1>Hello World</h1>
+      <p>Welcome to my site.</p>
+    </main>
+    <footer>...</footer>
+  </body>
+</html>
 ```
 
-## Name Resolution
+Notice you only defined `main:` — the rest (DOCTYPE, `<head>`, navbar,
+footer, Bootstrap styles, automatic favicon) was inherited from the
+shared YAML in `www/`. See [Content Definitions](/definitions) for how
+that works.
 
-When bserver encounters a name reference like `footer`, it searches for
-`footer.yaml`:
+## How Pages Are Built
 
-1. First in the current request directory (e.g., `mysite.com/`)
-2. Then upward through parent directories
-3. Up to the document root and one level above
+bserver assembles every page by following a tree of named references
+starting at `html`:
 
-This cascading search allows shared definitions (like the navbar) to live in
-the content root directory while site-specific content lives in the site
-directory. Your site's `navlinks.yaml` overrides the default navigation, but
-the navbar structure itself is inherited.
-
-## Creating Multiple Pages
-
-Each `.yaml` file that defines `main:` becomes a page. For example:
-
-**about.yaml:**
-```yaml
-main:
-  - h1: "About Us"
-  - p: "Welcome to our company."
+```
+html.yaml          ← starting point: <html lang="en"> wrapping head + body
+├── head.yaml      ← <head> with meta, title, headlink, style
+└── body.yaml      ← <body> wrapping:
+    ├── header.yaml    ← navbar
+    ├── main           ← YOUR PAGE CONTENT (from your index.yaml or .md file)
+    └── footer.yaml    ← footer text
 ```
 
-This page is accessible at `/about` (bserver strips the `.yaml` extension).
+Each name is resolved by looking for a `<name>.yaml` file, starting in
+the request's directory and walking up to one level above the document
+root. Your site's files override the inherited ones. The pipeline is
+described in detail under [Content Definitions](/definitions) and
+[Advanced Features](/advanced).
 
-You can also use Markdown files - any `.md` file is automatically rendered
-with the same site structure (navbar, footer, etc.). See the
-[Definitions](/definitions) page for more on how content is defined.
+## Directory Layout
 
-## Setting Up Navigation
-
-Create a `navlinks.yaml` file in your site directory:
-
-```yaml
-navlinks:
-  "/": Home
-  "/about": About
-  "/contact": Contact
+```
+www/                        ← the document root (the -base flag)
+├── _config.yaml            ← server-wide configuration (all keys optional)
+├── html.yaml               ← shared base definitions ...
+├── head.yaml
+├── body.yaml
+├── navbar.yaml
+├── bootstrap5.yaml
+├── ...
+├── default/                ← fallback site (this documentation)
+│   └── index.yaml
+├── example.com/            ← virtual host
+│   ├── index.yaml          ← home page
+│   ├── about.md            ← markdown page → /about
+│   ├── navlinks.yaml       ← override nav (optional)
+│   ├── style.yaml          ← extra CSS (optional, use +style)
+│   └── _config.yaml        ← per-vhost overrides (optional)
+└── cert-cache/             ← TLS certificates (auto-created)
 ```
 
-Each key is the URL path, and the value is the display text. The navbar
-automatically highlights the current page using server-side Python scripting.
-
-## Adding Styles
-
-Create a `style.yaml` file for custom CSS:
-
-```yaml
-style:
-  body:
-    font-family: sans-serif
-  .custom-header:
-    background-color: "#2c3e50"
-    color: white
-```
-
-Or include Bootstrap 5 (already included in the default navbar) for a full
-CSS framework.
+Anything in `www/` (the shared definitions) is available to every site.
+Anything inside a vhost directory wins over the shared version because
+page-level files are loaded first.
 
 ## Configuration
 
-bserver is configured through `_config.yaml` in the www directory. All settings
-have sensible defaults — the file is optional. See `www/_config.yaml` for a
-documented template with all available settings.
+bserver is configured through `_config.yaml` in the `www/` directory.
+**Every key is optional** and has a sensible default. See the bundled
+`www/_config.yaml` for a documented template.
 
-Per-site overrides: place a `_config.yaml` in a virtual host directory
-(e.g., `www/example.com/_config.yaml`) to override `cache-age`, `static-age`,
-`parent-levels`, and `index` for that site.
+### Server-wide settings
 
-Environment variables override `_config.yaml` values:
+| Key | Env | Default | Description |
+|-----|-----|---------|-------------|
+| `http` | `HTTP_ADDR` | `:80` | HTTP listen address |
+| `https` | `HTTPS_ADDR` | `:443` | HTTPS listen address |
+| `email` | `LE_EMAIL` | *(auto-detected)* | Let's Encrypt contact email |
+| `cert-cache` | `CERT_CACHE` | `./cert-cache` | TLS cert cache directory |
+| `php` | `PHP_CGI` | *(auto-detected)* | Path to `php-cgi` |
+| `cache-size` | — | `1024` | Render cache size in MB (`0` disables) |
+| `max-body-size` | — | `10` | Max request body in MB (`0` disables) |
+| `js-heap-mb` | — | `128` | Per-script JS heap-growth cap in MB |
+| `php-timeout` | — | `60` | Idle timeout for `php-cgi`, seconds |
+| `php-stream-after` | — | `5` | Buffer `php-cgi` for this long before switching to chunked |
+| `debug-token` | `DEBUG_TOKEN` | — | Token required for `?debug=<token>` |
 
-| Variable | Config key | Default | Description |
-|----------|------------|---------|-------------|
-| `HTTP_ADDR` | `http` | `:80` | HTTP listen address |
-| `HTTPS_ADDR` | `https` | `:443` | HTTPS listen address |
-| `LE_EMAIL` | `email` | (empty) | Let's Encrypt contact email |
-| `CERT_CACHE` | `cert-cache` | `./cert-cache` | Certificate cache directory |
-| `PHP_CGI` | `php` | (auto-detected) | Path to php-cgi executable |
-| `INDEX` | `index` | `index.yaml,index.md,...` | Index file search order |
-| `BASE_DIR` | — | (empty) | Web content root directory |
+### Per-vhost settings (override in `<host>/_config.yaml`)
 
-## Command-Line Flags
+| Key | Env | Default | Description |
+|-----|-----|---------|-------------|
+| `cache-age` | — | `900` | Render cache + Cache-Control for pages, seconds |
+| `static-age` | — | `86400` | Max Cache-Control max-age cap for static files, seconds |
+| `parent-levels` | — | `1` | How many directories above docRoot to search |
+| `index` | `INDEX` | `index.yaml,index.md,index.php,index.html,index.htm` | Directory index priority |
+| `types` | `TYPES` | *(common web types)* | Allowed file extensions |
+| `allow-http` | — | `false` | Serve this vhost over plain HTTP (skip HTTPS redirect) |
+
+### Command-line flags
 
 | Flag | Description |
 |------|-------------|
-| `-base` | Web content root directory (default: `www` subdirectory of cwd) |
+| `-base <dir>` | Web content root (overrides `BASE_DIR` env, defaults to `./www`) |
 | `-version` | Print version and exit |
 
-See [Server Features](/server-features) for details on caching, security
-headers, and other production features.
+Precedence everywhere: **environment variable > `_config.yaml` value >
+built-in default**.
 
-## Next Steps
+## What's Next
 
-- [Content Definitions](/definitions) - Learn how YAML keys become HTML
-- [Format Definitions](/formats) - Create reusable HTML components
-- [Built-in Components](/components) - Explore what's included
-- [Server Features](/server-features) - Caching, security headers, and more
+If you're new, read these in order:
+
+1. **[Content Definitions](/definitions)** — the four prefixes (`name`,
+   `^name`, `+name`, `$name`) that govern every YAML key
+2. **[Format Definitions](/formats)** — how to make reusable HTML
+   components
+3. **[Built-in Components](/components)** — the catalog of pre-made
+   layout, navigation, and content blocks
+4. **[Server-Side Scripts](/scripts)** — Python, JavaScript, PHP, and
+   Shell scripts that produce HTML
+5. **[Tips & Recipes](/tips)** — common patterns: redirects, custom CSS,
+   icon links, embedded media
+
+For operations:
+
+- **[Server Features](/features)** — caching, security headers, rate
+  limiting, TLS, debug mode, favicons
+- **[Proxy Mode](/proxy)** — make a vhost a reverse proxy with one line
+- **[Error Handling](/errors)** — custom 404/500 templates
+- **[Advanced Features](/advanced)** — virtual hosting, style rendering,
+  name resolution internals

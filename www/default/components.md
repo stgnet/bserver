@@ -80,8 +80,11 @@ Wraps the main content in a Bootstrap container:
     class: container mt-4
 ```
 
-Note: `main` is also a known HTML tag, but the `^main` format overrides it
-to render as a `<div>` with Bootstrap classes instead of a plain `<main>` tag.
+`main` is also a known HTML5 tag, but the `^main` format overrides the
+default `<main>` rendering with a `<div>` carrying Bootstrap classes. The
+base `body.yaml` also defines a simpler `^main` for sites that don't load
+`main.yaml` — whichever file is loaded first wins. To customize, define
+`^main` in your own site's YAML.
 
 ## Bootstrap Integration
 
@@ -130,68 +133,103 @@ is built from several interconnected format definitions:
 navbar:
   bootstrap5:
   navbar-cf:
-    navbar-toggler: navbar-toggler-icon
+    navbar-toggler:
+      - navbar-toggler-icon
+      - brand
     navbar-collapse:
-      navbar-nav:
-        - navlinks
-      navbar-nav-right:
-        - navlinksright
+      - navbar-nav:
+          - navlinks
+      - navform
+      - navbar-nav-right:
+          - navlinksright
 ```
 
 The key formats:
 
-- `^navbar` → `<nav class="navbar navbar-expand-lg navbar-dark bg-primary">`
+- `^navbar` → `<nav class="navbar navbar-expand-lg navbar-dark bg-dark">`
+  (the docs site overrides this to `bg-primary` in `default/title.yaml`)
 - `^navbar-cf` → `<div class="container-fluid">`
 - `^navbar-toggler` → hamburger button for mobile
 - `^navbar-collapse` → collapsible menu wrapper
 - `^navbar-nav` → `<ul class="navbar-nav">` (left-aligned links)
-- `^navbar-nav-right` → `<ul class="navbar-nav ms-auto">` (right-aligned links)
+- `^navbar-nav-right` → `<ul class="navbar-nav">` (right-aligned items)
+- `^navform` → optional `<form class="d-flex ms-auto me-2">` slot for a search box
 
 ### navlinks (script-based)
 
-The `^navlinks` format uses Python scripting to generate navigation links
-with active-page highlighting:
+The `^navlinks` format is an embedded-JavaScript format script that
+generates a `<li>` per entry, adds an `active` class to the link matching
+the current request URI, and renders nested maps as Bootstrap dropdown
+menus. The relevant excerpt:
 
 ```yaml
 ^navlinks:
-  script: python
+  script: javascript
   code: |
-    import os, html as _html
-    page = os.environ.get('REQUEST_URI', '/')
-    link = record.get('key', '')
-    text = record.get('value', '')
-    active = ' active bg-primary bg-opacity-10' if link == page else ''
-    print(f'<li class="nav-item"><a class="nav-link{active}" href="{_html.escape(link)}">{text}</a></li>')
+    var page = env.REQUEST_URI || '/';
+    var key = record.key || '';
+    var value = record.value;
+    var isObj = value && typeof value === 'object' && !Array.isArray(value);
+    if (isObj) {
+      // nested map → Bootstrap dropdown
+      print('<li class="nav-item dropdown">');
+      // ... emit dropdown items ...
+      print('</li>');
+    } else {
+      var active = (key === page) ? ' active bg-primary bg-opacity-10' : '';
+      print('<li class="nav-item"><a class="nav-link' + active + '" href="' + esc(key) + '">' + esc(value) + '</a></li>');
+    }
 ```
 
-This reads the current page URL from the `REQUEST_URI` environment variable
-and adds the `active` class to the matching link. Define your links in
-`navlinks.yaml`:
+The JavaScript runs inside an embedded interpreter and has access to
+`env.REQUEST_URI` (the current URL), `print()` for output, and a small set
+of file-system helpers. See [Server-Side Scripts](/scripts) for the full
+helper list.
+
+The navbar's link list is the name `navlinks`. You have two ways to supply
+it:
 
 ```yaml
+# Option 1: hand-written
 navlinks:
   "/": Home
   "/about": About
   "/contact": Contact
 ```
 
+```yaml
+# Option 2: auto-discovered (the default, via $navlinks)
+# Drop pages into the vhost directory and they appear in the navbar.
+```
+
+The default `$navlinks` data source scans the vhost directory and emits an
+entry for every `.md` file and every `.yaml` file that defines `main:`.
+See [Data Sources](/data-sources) for how this works.
+
 ### navlinksright (with dropdown support)
 
 The `^navlinksright` format renders right-side navigation items and supports
 Bootstrap 5 dropdown menus. When a YAML value is a nested map, it renders
-as a dropdown; simple key-value pairs render as regular links:
+as a dropdown; simple key-value pairs render as regular links. Dropdown
+items can themselves contain nested content — including icons:
 
 ```yaml
 navlinksright:
   Info:
-    https://github.com/example/repo: Repo
-    "mailto:user@example.com": Author
+    https://github.com/stgnet/bserver/:
+      - fa-brands-github
+      - Repo
+    "mailto:scott@stg.net":
+      - fa-regular-envelope
+      - Author
   "/settings": Settings
 ```
 
 The nested map under `Info` produces a Bootstrap 5 dropdown menu with the
-toggle label "Info" and the child entries as dropdown items. The flat
-`/settings` entry renders as a regular nav link.
+toggle label "Info" and the child entries as dropdown items. Each child
+value is a list that combines a Font Awesome icon (rendered as `<i
+class="...">`) and the link text. The flat `/settings` entry renders as a
+regular nav link.
 
 ## Content Elements
 

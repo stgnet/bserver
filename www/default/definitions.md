@@ -16,9 +16,16 @@ main:
 When bserver encounters the name `main`, it looks up this definition and
 renders it as HTML.
 
-## Three Types of Definitions
+## The Four Prefixes
 
-YAML keys in bserver have three forms, distinguished by their prefix:
+A YAML key is interpreted differently depending on its first character:
+
+| Prefix | Name | Purpose |
+|--------|------|---------|
+| *(none)* | Content definition | Sets the value of a name |
+| `^`    | Format definition | Defines how a name renders as HTML |
+| `+`    | Merge definition  | Adds to an existing definition |
+| `$`    | Data source      | Runs a script to produce the value of a name |
 
 ### Content Definitions (plain keys)
 
@@ -27,10 +34,10 @@ footer:
   muted: This is the footer text
 ```
 
-Plain keys define content. The first definition loaded wins - so your
+Plain keys define content. The first definition loaded wins — so your
 page-level definition overrides inherited ones from parent directories.
 
-### Format Definitions (^ prefix)
+### Format Definitions (`^` prefix)
 
 ```yaml
 ^muted:
@@ -43,7 +50,7 @@ page-level definition overrides inherited ones from parent directories.
 The caret `^` prefix registers a format definition that controls how a name
 renders as HTML. See [Format Definitions](/formats) for details.
 
-### Merge Definitions (+ prefix)
+### Merge Definitions (`+` prefix)
 
 ```yaml
 +headlink:
@@ -54,6 +61,19 @@ renders as HTML. See [Format Definitions](/formats) for details.
 The `+` prefix merges into an existing definition rather than replacing it.
 This is how Bootstrap adds its stylesheet to the head section without
 overwriting other stylesheets.
+
+### Data Sources (`$` prefix)
+
+```yaml
+$navlinks:
+  script: javascript
+  code: |
+    print(JSON.stringify([{key: "/", value: "Home"}]));
+```
+
+The `$` prefix declares a script-backed content definition. When the name
+is needed, the script runs and its JSON output becomes the value. See
+[Data Sources](/data-sources) for details.
 
 ## String Values
 

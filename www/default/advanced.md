@@ -1,12 +1,18 @@
 # Advanced Features
 
+This page covers topics beyond the day-to-day basics: how virtual hosts
+are resolved, how the renderer's two-pass system works, what name
+resolution actually does, the special `style:` name, the catalog of
+recognized HTML tags, and debugging tools. For the operational features
+of the server (caching, rate limiting, TLS, favicons, security headers,
+etc.) see [Server Features](/features).
+
 ## Virtual Hosting
 
-bserver serves different content based on the request hostname. Each domain
-gets its own document root directory:
+Each domain has its own subdirectory under the document root:
 
 ```
-/var/www/
+www/
 ├── example.com/
 │   ├── index.yaml
 │   ├── navlinks.yaml
@@ -19,15 +25,32 @@ gets its own document root directory:
 ```
 
 When a request comes in for `example.com`, bserver looks for content in
-`/var/www/example.com/`. The `default/` directory serves as the fallback
-for any host that doesn't have a dedicated directory.
+`www/example.com/`. The `default/` directory serves as the fallback for
+any host that doesn't have its own directory.
+
+Subdomains one level deeper than a known vhost (e.g. `www.example.com`,
+`api.example.com` when `www/example.com` exists) are also accepted and
+fall through to `default/`. Anything deeper is rejected with `421
+Misdirected Request` — see [Server Features](/features) for the details
+of vhost resolution and how this protects Let's Encrypt rate limits.
+
+For aliases between vhosts, use a filesystem symlink:
+
+```sh
+cd www && ln -s example.com www.example.com
+```
 
 ## Let's Encrypt (HTTPS)
 
-bserver supports automatic HTTPS with Let's Encrypt certificates via the
-`golang.org/x/crypto/acme/autocert` package. When HTTPS is configured,
-certificates are automatically obtained and renewed for the domains being
-served.
+bserver supports automatic HTTPS with Let's Encrypt certificates via
+[`golang.org/x/crypto/acme/autocert`](https://pkg.go.dev/golang.org/x/crypto/acme/autocert).
+Certificates are obtained and renewed transparently for every known
+vhost. Set `email:` in `_config.yaml` (or `LE_EMAIL`) to your contact
+address; otherwise the first public-looking vhost name is used.
+
+IPs, `.local`/`.test`/`.internal` domains, and unknown hosts get
+self-signed certificates instead of an LE request, so a bogus scan
+cannot exhaust LE rate limits.
 
 ## Known HTML Tags
 
