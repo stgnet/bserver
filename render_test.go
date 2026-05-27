@@ -260,6 +260,33 @@ func TestMarkdownAdvanced(t *testing.T) {
 	}
 }
 
+// TestRenderIconsPage exercises the icons.yaml data source, whose
+// embedded-JS reads ../fontawesome.yaml. With parent-levels=1 the JS
+// sandbox must allow that — regression for the bug where icons rendered
+// as a "path outside docRoot" comment.
+func TestRenderIconsPage(t *testing.T) {
+	base, _ := os.Getwd()
+	docRoot := filepath.Join(base, "www", "default")
+	yamlPath := filepath.Join(docRoot, "icons.yaml")
+	if _, err := os.Stat(yamlPath); err != nil {
+		t.Fatal("icons.yaml not found")
+	}
+	output, _, _ := renderYAMLPage(docRoot, yamlPath, false, 1, nil)
+
+	if strings.Contains(output, "path outside docRoot") {
+		t.Error("icons page hit JS sandbox: path outside docRoot")
+	}
+	if strings.Contains(output, "script error") {
+		t.Errorf("icons page produced a script error; first 400 chars:\n%s", output[:min(400, len(output))])
+	}
+	if !strings.Contains(output, `class="icon-card"`) {
+		t.Error("icons page rendered no icon-card entries")
+	}
+	if !strings.Contains(output, "Solid Icons") {
+		t.Error("icons page missing Solid Icons section")
+	}
+}
+
 func TestIsNameRef(t *testing.T) {
 	// Valid name refs
 	for _, s := range []string{"html", "main", "navbarcon", "B-Haven", "h1", "col2"} {
