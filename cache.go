@@ -78,8 +78,50 @@ func newRenderCache(maxSize int64, maxAge time.Duration) *renderCache {
 	if watcher != nil {
 		go rc.watchLoop()
 	}
+	go rc.janitorLoop()
 
 	return rc
+}
+
+// janitorInterval controls how often the cache sweeps expired entries.
+// Without active pruning, entries put by scanner one-shots (URL hit
+// once, never re-fetched) linger past maxAge until LRU byte-cap eviction
+// kicks in. With ~1k scanner-driven uniques per day, that can grow to
+// tens of thousands of entries holding ~30 KB metadata each (sourceFiles
+// list, fileDeps/dirDeps map entries, list.Element nodes — none of which
+// count against currentSize), bloating heap without triggering eviction.
+const janitorInterval = 5 * time.Minute
+
+// janitorLoop periodically removes entries whose age exceeds maxAge.
+// Stops when stopCh is closed.
+func (rc *renderCache) janitorLoop() {
+	t := time.NewTicker(janitorInterval)
+	defer t.Stop()
+	for {
+		select {
+		case <-rc.stopCh:
+			return
+		case <-t.C:
+			rc.sweepExpired()
+		}
+	}
+}
+
+// sweepExpired removes all entries older than maxAge. Two-pass to avoid
+// mutating the map during iteration.
+func (rc *renderCache) sweepExpired() {
+	rc.mu.Lock()
+	defer rc.mu.Unlock()
+	cutoff := time.Now().Add(-rc.maxAge)
+	var expired []*cacheEntry
+	for _, entry := range rc.entries {
+		if entry.createdAt.Before(cutoff) {
+			expired = append(expired, entry)
+		}
+	}
+	for _, entry := range expired {
+		rc.removeLocked(entry)
+	}
 }
 
 // Get retrieves a cached render result.

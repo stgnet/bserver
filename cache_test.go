@@ -54,6 +54,44 @@ func TestCacheExpiry(t *testing.T) {
 	}
 }
 
+// TestCacheJanitorSweepsExpired verifies that sweepExpired removes
+// entries past maxAge even when no Get traffic touches them. Without
+// this, scanner one-shot URLs (put once, never re-fetched) linger
+// indefinitely until LRU byte-cap eviction — which underaccounts for
+// per-entry metadata and triggers far too late.
+func TestCacheJanitorSweepsExpired(t *testing.T) {
+	rc := newRenderCache(1<<20, 50*time.Millisecond)
+	defer rc.Close()
+
+	rc.Put("scanner-one-shot", "data", nil)
+	rc.Put("scanner-two-shot", "data", nil)
+
+	if n, _ := rc.Stats(); n != 2 {
+		t.Fatalf("setup: entries=%d, want 2", n)
+	}
+
+	time.Sleep(100 * time.Millisecond)
+	rc.sweepExpired()
+
+	if n, _ := rc.Stats(); n != 0 {
+		t.Errorf("after sweep: entries=%d, want 0 (both should be expired)", n)
+	}
+}
+
+// TestCacheJanitorLeavesFreshEntries verifies the sweep doesn't touch
+// entries within maxAge.
+func TestCacheJanitorLeavesFreshEntries(t *testing.T) {
+	rc := newRenderCache(1<<20, 5*time.Minute)
+	defer rc.Close()
+
+	rc.Put("fresh", "data", nil)
+	rc.sweepExpired()
+
+	if _, ok := rc.Get("fresh"); !ok {
+		t.Error("fresh entry was swept; janitor should only remove expired")
+	}
+}
+
 func TestCacheSizeEviction(t *testing.T) {
 	// Cache max size of 100 bytes
 	rc := newRenderCache(100, 5*time.Minute)
