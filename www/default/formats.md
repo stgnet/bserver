@@ -56,6 +56,23 @@ prefix first.
 
 ## Format Fields
 
+A format definition is a map. These are the fields bserver recognizes:
+
+| Field | Purpose |
+|-------|---------|
+| `tag` | HTML tag to emit |
+| `params` | HTML attributes (string values, may contain `$var` substitutions, or the literal `'$*'` wildcard) |
+| `content` | How to render inner content as a single block |
+| `contents` | Same idea, but wraps each item individually when iterating |
+| `script` | Run a script instead of static rendering. See [Server-Side Scripts](/scripts) |
+| `code` / `file` | Script source (inline) or path (file) when `script` is set |
+| `markup` | Process the content through a markup converter before rendering. Currently supports `markdown` and `html` (passthrough) |
+
+A format definition can also be a **YAML list of format definitions**:
+each element produces its own tag in sequence, all receiving the same
+content. This is how `^inputlabel` emits an `<input>` followed by a
+`<label>` from a single content entry.
+
 ### tag
 
 The HTML tag to render:
@@ -331,6 +348,35 @@ Renders:
 
 The `contents:` (plural) on both formats ensures each link gets its own
 `<li>` wrapper.
+
+## Markup Processing
+
+Setting `markup:` on a format runs the content through a converter before
+the surrounding tag is emitted. Currently two markups are supported:
+`markdown` (via [goldmark](https://github.com/yuin/goldmark)) and `html`
+(passthrough — useful for `raw:`-style escapes).
+
+```yaml
+^markdown:
+  markup: markdown
+
+^raw:
+  markup: html
+```
+
+Usage:
+
+```yaml
+main:
+  - markdown: |
+      ## A subsection
+
+      Written in **markdown** — converted before bserver wraps it.
+  - raw: <iframe src="https://example.com" width="600" height="400"></iframe>
+```
+
+The built-in `^markdown` and `^raw` formats are pre-defined in `www/` so
+you can use both names without any setup.
 
 ## Page-Level Format Overrides
 

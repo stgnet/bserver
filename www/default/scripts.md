@@ -1,8 +1,20 @@
 # Server-Side Scripts
 
-bserver can execute server-side scripts in Python, JavaScript (Node.js), PHP,
-or Shell (sh/bash) to dynamically generate HTML content. This is used for
-rendering that requires logic beyond what static YAML can express.
+bserver runs server-side scripts in four languages to generate HTML
+dynamically: **Python**, **JavaScript** (embedded), **PHP**, and **Shell**
+(`sh`/`bash`). Use them when a page needs logic beyond what static YAML
+expresses.
+
+bserver supports server-side scripting in three places, each with its own
+chapter:
+
+| Context | Prefix / mechanism | What it does |
+|---------|--------------------|--------------|
+| **Format script** | `^name` with `script:` | Renders a value as HTML (this page) |
+| **Data source**   | `$name` with `script:` | Produces the value of a name as JSON ([Data Sources](/data-sources)) |
+| **`.php` file**   | A file ending in `.php` | Handled by `php-cgi` as a normal PHP page (see [PHP files](#php-files)) |
+
+This page covers the first — format scripts.
 
 ## How It Works
 
@@ -39,18 +51,37 @@ Available variable: `record` (a Python dict)
 
 bserver looks for `python3` first, then `python`.
 
-### JavaScript (Node.js)
+### JavaScript (embedded)
 
 ```yaml
 ^renderer:
   script: javascript
   code: |
-    console.log(`<div class="item">${record.key}: ${record.value}</div>`);
+    print('<div class="item">' + record.key + ': ' + record.value + '</div>');
 ```
 
-Available variable: `record` (a JavaScript object)
+JavaScript runs in an **embedded interpreter** ([goja](https://github.com/dop251/goja))
+— no Node.js process is forked. This makes it the fastest scripting option
+and the right default for short rendering snippets.
 
-Aliases: `javascript`, `js`, `node`
+Available per-iteration variable: `record` (a JS object).
+
+Host builtins available to every JS script:
+
+| Helper | Description |
+|--------|-------------|
+| `env` | Object of CGI environment variables: `env.REQUEST_URI`, `env.DOCUMENT_ROOT`, ... |
+| `print(...args)` | Append a space-joined line to captured output |
+| `listdir(path)` | List directory entries (path must be under `DOCUMENT_ROOT`) |
+| `readFile(path)` | Read an entire file as a string |
+| `readFileHead(path, n)` | Read the first `n` bytes |
+| `joinPath(a, b, ...)` | Path concatenation |
+| `splitExt(name)` | Returns `[basename, ext]` |
+
+File access is restricted to paths under the vhost's `DOCUMENT_ROOT`;
+attempts to escape via `..` or absolute paths are rejected.
+
+Aliases: `javascript`, `js`, `node`.
 
 ### PHP
 
@@ -221,12 +252,19 @@ for record in _data:
 ### JavaScript Wrapper
 
 ```javascript
-const _data = JSON.parse(require('fs').readFileSync(0, 'utf8'));
-const _records = Array.isArray(_data) ? _data : [_data];
-for (const record of _records) {
-  // your code here
+var _data = _SCRIPT_DATA ? JSON.parse(_SCRIPT_DATA) : [];
+if (!Array.isArray(_data)) _data = [_data];
+for (var _i = 0; _i < _data.length; _i++) {
+  var record = _data[_i];
+  (function(){
+    // your code here
+  }).call(this);
 }
 ```
+
+The data is passed via the `_SCRIPT_DATA` variable that bserver injects
+into the embedded VM — not via stdin or `fs`. Use the `print()` builtin
+for output rather than `console.log`.
 
 ### PHP Wrapper
 
@@ -266,16 +304,66 @@ echo "<p>$name: $value</p>"
 
 ## Execution Details
 
-- **Working directory**: Set to the document root, so relative file paths
+- **Working directory**: set to the document root, so relative file paths
   in your scripts resolve from there.
-- **Timeout**: Scripts have a 30-second execution timeout. If exceeded, the
-  process is killed and an HTML comment is inserted.
-- **Error handling**: Script errors (non-zero exit) produce an HTML comment
+- **Timeout**: scripts have a 30-second execution timeout. If exceeded,
+  the process is killed and an HTML comment is inserted.
+- **Error handling**: script errors (non-zero exit) produce an HTML comment
   with the error message and stderr output.
-- **Output**: Everything written to stdout becomes part of the page HTML.
+- **Output**: everything written to stdout becomes part of the page HTML.
   Stderr is captured separately for error reporting.
+- **Output limit**: stdout is capped at 10 MB to prevent runaway scripts
+  from exhausting memory.
+- **Environment leakage**: the server process's full environment is *not*
+  inherited by scripts. Only `PATH`, `HOME`, the CGI variables listed
+  above, and forwarded `HTTP_*` headers are exposed. Secrets in the
+  parent environment stay in the parent.
+- **POST bodies**: the request body is piped on the script's **stdin**
+  (Python/PHP/Shell) — it is not put into an environment variable, so it
+  is not subject to OS env-block limits and cannot be command-injected.
+  For embedded JS, the body is not yet exposed in the embedded VM.
+- **JS heap cap**: each JS invocation has a soft heap-growth cap
+  (`js-heap-mb` in `_config.yaml`, default 128 MB) so a runaway script
+  cannot exhaust the server's memory.
+
+## PHP Files
+
+In addition to inline PHP via the `^php` format, bserver serves any file
+ending in `.php` as a regular CGI request through the system `php-cgi`
+binary. This is what you want for traditional PHP apps and for any script
+that uses sessions, custom headers, or large file uploads.
+
+```
+www/example.com/contact.php
+```
+
+Visiting `/contact.php` runs that file through `php-cgi` with the standard
+CGI environment (`SERVER_NAME`, `REQUEST_METHOD`, `QUERY_STRING`,
+`HTTP_HOST`, all `HTTP_*` headers, etc.). The request body is piped on
+stdin.
+
+Per-vhost PHP behavior is controlled by two `_config.yaml` settings:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `php-timeout` | 60 | Idle timeout: if `php-cgi` produces no output for this many seconds, it is killed. Total runtime is *not* capped, so long-running scripts that keep printing can run indefinitely. |
+| `php-stream-after` | 5 | Buffer `php-cgi` output for this many seconds before switching to chunked streaming. Short responses get a buffered reply with `Content-Length`; long ones stream incrementally. Set to 0 to stream immediately. |
+
+The path to `php-cgi` is auto-detected from `$PATH` and common
+locations, and can be overridden with `php:` in `_config.yaml` or the
+`PHP_CGI` environment variable. If `php-cgi` is not found, a warning is
+logged at startup and `.php` files return 404.
+
+## Inline PHP With Sessions and Headers
+
+The inline `^php` format also supports `session_start()`, `header()`, and
+`setcookie()`. Output is buffered with `ob_start()` while the script runs;
+any headers PHP queues are extracted and added to the HTTP response.
+Session cookies are set automatically when `session_start()` is called.
+See `default/session.yaml` for a complete demo.
 
 ## Next Steps
 
-- [Built-in Components](/components) - See the navbar's script in context
-- [Advanced Features](/advanced) - Virtual hosting, custom tags, and more
+- [Data Sources](/data-sources) — `$name` scripts that produce data rather than HTML
+- [Built-in Components](/components) — see the navbar's script in context
+- [Advanced Features](/advanced) — virtual hosting, custom tags, and more

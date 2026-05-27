@@ -95,9 +95,8 @@ These settings go in `_config.yaml` (in the www directory):
 Set `cache-size: 0` to disable caching entirely.
 
 Set `max-body-size: 0` to allow unlimited request bodies (not recommended).
-POST bodies larger than 1 MB are not passed to inline scripts via the
-`_POST_DATA` environment variable due to OS limits; PHP-CGI always receives
-the full body via stdin regardless of this setting.
+The request body is always piped to scripts on stdin, so the practical limit
+is set by `max-body-size` rather than by OS environment-variable limits.
 
 ## Cache-Control Headers
 
@@ -317,6 +316,112 @@ bserver handles `SIGINT` (Ctrl+C) and `SIGTERM` signals gracefully:
 
 This means deployments using `systemctl restart` or container orchestrators
 won't drop active requests.
+
+## Allowed File Types
+
+bserver only serves files whose extension appears in the allowed-types
+list. Requests for unlisted extensions return `404` even if the file
+exists. This stops accidental exposure of configuration, secrets, or
+backup files (`.env`, `.json`, `.sql`, `.log`, etc.).
+
+The default list is permissive enough for typical web content (HTML, CSS,
+JS, images, fonts, audio, video, PDF, etc.). To customize, set `types:`
+in `_config.yaml` or the `TYPES` environment variable:
+
+```yaml
+# www/_config.yaml or www/example.com/_config.yaml
+types:
+  - yaml
+  - md
+  - png
+  - svg
+  - css
+  - js
+```
+
+The `types` setting can be overridden per-vhost.
+
+## Per-vhost HTTP
+
+`_config.yaml` accepts `allow-http: true` on a per-vhost basis. When set,
+the vhost is served over plain HTTP instead of being redirected to HTTPS.
+This is intended for constrained clients (IoT devices, embedded systems)
+that cannot do TLS. A warning is logged because session cookies and other
+secrets may transit in cleartext.
+
+```yaml
+# www/iot.example.com/_config.yaml
+allow-http: true
+```
+
+## Favicons
+
+Every vhost gets a `/favicon.ico` even without an `favicon.ico` file. By
+default, bserver generates one on the fly using the first three letters
+of the domain name, white on black. Drop a real `favicon.ico` into the
+vhost's document root to use that instead.
+
+To customize the generated icon, add a `_favicon.yaml` to the vhost root:
+
+```yaml
+# Text mode
+text: ABC
+color: white
+background: navy
+```
+
+```yaml
+# Image mode — scales an image to a square ICO
+image: logo.png
+fit: contain   # contain | crop | stretch
+```
+
+The generated icons are cached in memory and regenerated when
+`_favicon.yaml` (or the source image) changes on disk.
+
+## Debug Mode
+
+Append `?debug` to any URL to emit HTML comments throughout the rendered
+output that trace name resolution, format selection, and rendering depth.
+
+For production, set `debug-token` in `_config.yaml` (or the `DEBUG_TOKEN`
+environment variable) to require a secret: `?debug=<token>`. With a token
+configured, the bare `?debug` no longer works — a constant-time compare
+gates access. With no token configured, `?debug` is open (development
+default).
+
+## JS Heap Cap
+
+Each embedded-JavaScript invocation has a soft heap-growth cap to protect
+against runaway scripts:
+
+```yaml
+# www/_config.yaml
+js-heap-mb: 128   # 0 disables the check
+```
+
+The cap is sampled every 100 ms; a single huge allocation between probes
+can still escape, so a cgroup or other deployment-level memory limit is a
+useful belt-and-braces backstop on production hosts.
+
+## Memory Monitor
+
+bserver includes a built-in memory monitor that logs heap, goroutine, and
+cache statistics on an interval and writes a pprof heap dump when growth
+exceeds a threshold. The relevant `_config.yaml` keys (all optional, all
+have sensible defaults):
+
+- `mem-log-interval` — seconds between status log entries
+- `mem-heap-threshold-mb` — heap size that triggers a warning
+- `mem-goroutine-threshold` — goroutine count that triggers a warning
+- `mem-growth-mb-per-5min` — growth rate that triggers a pprof dump
+- `mem-dump-dir` — where to write pprof dumps (empty = disabled)
+- `mem-dump-cooldown-min` — minimum minutes between dumps
+- `mem-dump-max-files` — keep at most this many pprof files
+- `pprof-addr` — optional debug pprof listen address (e.g. `127.0.0.1:6060`)
+
+These are diagnostics, not safety limits. The JS heap cap above and your
+OS/cgroup limits are what actually stop runaway memory use.
 
 ## Version Flag
 

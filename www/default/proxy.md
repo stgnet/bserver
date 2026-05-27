@@ -82,6 +82,45 @@ Forward to a backend that serves from a subpath:
 http: 'http://10.0.0.5:9090/v2'
 ```
 
+## SSRF Protection
+
+A vhost `index.yaml` is a file on disk — but an attacker who can write to
+it could otherwise turn bserver into an SSRF gateway. bserver refuses to
+proxy to:
+
+- Loopback addresses (`127.0.0.0/8`, `::1`)
+- Link-local addresses (`169.254.0.0/16`, including AWS metadata
+  `169.254.169.254`)
+- Private network ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`)
+- Unspecified addresses (`0.0.0.0`, `::`)
+- Multicast addresses
+
+If you legitimately need to proxy to a private backend (the common case on
+a LAN), opt in with `allow-private: true`:
+
+```yaml
+# www/internal.example.com/index.yaml
+http: '192.168.1.50:8080'
+allow-private: true
+```
+
+## API Key Protection
+
+Add an `api-key` to require Bearer-token authorization on every request to
+a proxied vhost:
+
+```yaml
+# www/api.example.com/index.yaml
+http: 'localhost:9090'
+api-key: 'sk-secret-string-here'
+```
+
+Clients must send `Authorization: Bearer sk-secret-string-here` or the
+server returns `401 Unauthorized`. The header is then stripped before the
+request is forwarded, so the backend never sees the bserver key.
+
+This pairs well with rate limiting (10 wrong attempts blocks the IP).
+
 ## What Gets Proxied
 
 When a vhost is in proxy mode, **all** requests to that domain are forwarded
