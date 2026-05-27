@@ -263,7 +263,7 @@ func (ctx *renderContext) renderScript(fd *formatDef, data interface{}) string {
 			scriptFile = ctx.sourceFile
 		}
 		envMap := envListToMap(ctx.buildScriptEnv(scriptFile))
-		output, err := runJS(code, envMap, jsonData, true, ctx.docRoot)
+		output, err := runJS(code, envMap, jsonData, true, jsAccessRoot(ctx.docRoot, ctx.maxParentLevels))
 		if err != nil {
 			return fmt.Sprintf("<!-- script error: %v -->\n", err)
 		}

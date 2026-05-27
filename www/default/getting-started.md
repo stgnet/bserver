@@ -77,7 +77,7 @@ footer, Bootstrap styles, automatic favicon) was inherited from the
 shared YAML in `www/`. See [Content Definitions](/definitions) for how
 that works.
 
-## How Pages Are Built
+## Rendering Pipeline
 
 bserver assembles every page by following a tree of named references
 starting at `html`:
@@ -91,11 +91,14 @@ html.yaml          ← starting point: <html lang="en"> wrapping head + body
     └── footer.yaml    ← footer text
 ```
 
+## Name Resolution
+
 Each name is resolved by looking for a `<name>.yaml` file, starting in
 the request's directory and walking up to one level above the document
-root. Your site's files override the inherited ones. The pipeline is
-described in detail under [Content Definitions](/definitions) and
-[Advanced Features](/advanced).
+root (`parent-levels`, default `1`). Your site's files override the
+inherited ones because page-local definitions are loaded first. See
+[Content Definitions](/definitions) and [Advanced Features](/advanced)
+for the full pipeline.
 
 ## Directory Layout
 

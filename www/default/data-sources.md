@@ -73,8 +73,10 @@ interpreter — no Node.js process is forked. Available host builtins:
 | `joinPath(a, b, ...)` | Path concatenation (like `path.join`) |
 | `splitExt(name)` | `[basename, ext]` split |
 
-File access is restricted to paths under the vhost's `DOCUMENT_ROOT`;
-traversal via `..` or absolute paths outside the root is rejected.
+File access is restricted to paths under the vhost's `DOCUMENT_ROOT`,
+plus up to `parent-levels` directories above it — the same scope used by
+YAML name resolution. Traversal beyond that ceiling via `..` or absolute
+paths is rejected.
 
 ### Python / PHP / Shell
 

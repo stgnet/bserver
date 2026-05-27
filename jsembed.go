@@ -237,6 +237,31 @@ func jsFormatWrapper(userCode string) string {
 	return sb.String()
 }
 
+// jsAccessRoot returns the effective filesystem ceiling for JavaScript
+// file-access helpers (listdir, readFile, readFileHead). JS scripts may
+// read files anywhere from docRoot up to maxParentLevels directories
+// above it — matching the scope of YAML name resolution, so a script
+// can read the same shared files (e.g. www/fontawesome.yaml) that the
+// YAML resolver can. A maxParentLevels value of -1 means unlimited
+// (filesystem root); 0 limits access to docRoot itself.
+func jsAccessRoot(docRoot string, maxParentLevels int) string {
+	if docRoot == "" {
+		return ""
+	}
+	if maxParentLevels < 0 {
+		return string(filepath.Separator)
+	}
+	root := docRoot
+	for i := 0; i < maxParentLevels; i++ {
+		parent := filepath.Dir(root)
+		if parent == root {
+			break
+		}
+		root = parent
+	}
+	return root
+}
+
 // resolveUnderRoot resolves a script-supplied path against docRoot and
 // rejects anything that escapes the root, including via symlinks. Returns
 // the absolute, symlink-resolved path on success.

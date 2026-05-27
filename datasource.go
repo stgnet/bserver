@@ -78,7 +78,7 @@ func (ctx *renderContext) executeDataSource(name string, dd *dataDef) (interface
 		envList := ctx.buildScriptEnv("")
 		envList = append(envList, "REQUEST_DIR="+ctx.requestDir)
 		envMap := envListToMap(envList)
-		output, err := runJS(code, envMap, nil, false, ctx.docRoot)
+		output, err := runJS(code, envMap, nil, false, jsAccessRoot(ctx.docRoot, ctx.maxParentLevels))
 		if err != nil {
 			return nil, fmt.Errorf("script error: %w", err)
 		}

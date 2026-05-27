@@ -78,8 +78,11 @@ Host builtins available to every JS script:
 | `joinPath(a, b, ...)` | Path concatenation |
 | `splitExt(name)` | Returns `[basename, ext]` |
 
-File access is restricted to paths under the vhost's `DOCUMENT_ROOT`;
-attempts to escape via `..` or absolute paths are rejected.
+File access is restricted to paths under the vhost's `DOCUMENT_ROOT`,
+plus up to `parent-levels` directories above it — the same scope used by
+YAML name resolution, so a script can read the shared YAML files
+(e.g. `../fontawesome.yaml`) that the YAML resolver can also see.
+Attempts to escape this scope via `..` or absolute paths are rejected.
 
 Aliases: `javascript`, `js`, `node`.
 
