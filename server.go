@@ -88,9 +88,10 @@ type virtualHostMux struct {
 // proxyEntry caches a reverse proxy for a vhost whose index.yaml defines
 // an http: backend target.
 type proxyEntry struct {
-	proxy   *httputil.ReverseProxy // nil if not a proxy vhost
-	apiKey  string                 // if set, requires Authorization: Bearer <key>
-	modTime time.Time              // mtime of index.yaml (zero if absent)
+	proxy      *httputil.ReverseProxy // nil if not a proxy vhost or setup failed
+	apiKey     string                 // if set, requires Authorization: Bearer <key>
+	setupError string                 // non-empty if vhost intended-as-proxy but setup failed
+	modTime    time.Time              // mtime of index.yaml (zero if absent)
 }
 
 var proxyCache sync.Map // docRoot -> *proxyEntry
@@ -103,8 +104,13 @@ func proxyCacheSize() int {
 
 // getProxyForVhost checks whether the vhost at docRoot is a proxy vhost
 // by reading its index.yaml for an "http:" key. Results are cached with
-// mtime-based invalidation. Returns nil if not a proxy vhost.
-func getProxyForVhost(docRoot string) *proxyEntry {
+// mtime-based invalidation.
+//
+// Returns nil if the vhost is not configured as a proxy (no http: key).
+// Returns an entry with setupError set when the vhost intends to proxy
+// but configuration is rejected (invalid URL, SSRF guard). Returns an
+// entry with proxy set on success.
+func getProxyForVhost(docRoot string, vmux *virtualHostMux) *proxyEntry {
 	indexPath := filepath.Join(docRoot, "index.yaml")
 
 	var currentMtime time.Time
@@ -126,13 +132,16 @@ func getProxyForVhost(docRoot string) *proxyEntry {
 	if cached, ok := proxyCache.Load(docRoot); ok {
 		entry := cached.(*proxyEntry)
 		if entry.modTime.Equal(currentMtime) {
+			if entry.proxy == nil && entry.setupError == "" {
+				return nil
+			}
 			return entry
 		}
 	}
 
 	// Read and parse index.yaml
-	m := loadConfigMap(indexPath)
-	backend, ok := configString(m, "http", "")
+	idx := loadConfigMap(indexPath)
+	backend, ok := configString(idx, "http", "")
 	if !ok || backend == "" {
 		proxyCache.Store(docRoot, &proxyEntry{modTime: currentMtime})
 		return nil
@@ -145,9 +154,11 @@ func getProxyForVhost(docRoot string) *proxyEntry {
 
 	target, err := url.Parse(backend)
 	if err != nil {
-		log.Printf("Warning: invalid proxy backend %q in %s: %v", backend, indexPath, err)
-		proxyCache.Store(docRoot, &proxyEntry{modTime: currentMtime})
-		return nil
+		msg := fmt.Sprintf("invalid proxy backend %q: %v", backend, err)
+		log.Printf("Warning: %s in %s", msg, indexPath)
+		entry := &proxyEntry{modTime: currentMtime, setupError: msg}
+		proxyCache.Store(docRoot, entry)
+		return entry
 	}
 
 	// SSRF guard: refuse to proxy to loopback / link-local / private /
@@ -156,12 +167,14 @@ func getProxyForVhost(docRoot string) *proxyEntry {
 	// cloud metadata services or internal-only services. Operators that
 	// genuinely want to proxy to a private backend can opt in via
 	// `allow-private: true`.
-	allowPrivate, _ := configBool(m, "allow-private", false)
+	allowPrivate, _ := configBool(idx, "allow-private", false)
 	if !allowPrivate {
 		if reason := unsafeProxyTarget(target); reason != "" {
-			log.Printf("Warning: refusing proxy backend %q in %s: %s", backend, indexPath, reason)
-			proxyCache.Store(docRoot, &proxyEntry{modTime: currentMtime})
-			return nil
+			msg := fmt.Sprintf("refusing proxy backend %q: %s", backend, reason)
+			log.Printf("Warning: %s in %s", msg, indexPath)
+			entry := &proxyEntry{modTime: currentMtime, setupError: msg}
+			proxyCache.Store(docRoot, entry)
+			return entry
 		}
 	}
 
@@ -173,10 +186,12 @@ func getProxyForVhost(docRoot string) *proxyEntry {
 	}
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		log.Printf("proxy error for %s -> %s: %v", r.Host, target, err)
-		http.Error(w, "Bad Gateway", http.StatusBadGateway)
+		site := vhostSettings(docRoot, vmux.cfg.Site)
+		msg := fmt.Sprintf("Backend service at %s is not responding: %v", target.Host, err)
+		vmux.serveErrorPage(w, r, docRoot, http.StatusBadGateway, msg, site, false)
 	}
 
-	apiKey, _ := configString(m, "api-key", "")
+	apiKey, _ := configString(idx, "api-key", "")
 	log.Printf("Proxy vhost %s -> %s", docRoot, target)
 	entry := &proxyEntry{proxy: proxy, apiKey: apiKey, modTime: currentMtime}
 	proxyCache.Store(docRoot, entry)
@@ -219,23 +234,32 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		hostFallback = true
 	}
 
-	// Check if this vhost is a proxy (index.yaml with http: backend)
-	if entry := getProxyForVhost(root); entry != nil && entry.proxy != nil {
-		if entry.apiKey != "" {
-			auth := r.Header.Get("Authorization")
-			expected := "Bearer " + entry.apiKey
-			if subtle.ConstantTimeCompare([]byte(auth), []byte(expected)) != 1 {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
-			r.Header.Del("Authorization")
-		}
-		entry.proxy.ServeHTTP(w, r)
-		return
-	}
-
 	// Resolve per-vhost settings (cached, mtime-invalidated)
 	site := vhostSettings(root, m.cfg.Site)
+
+	// Check if this vhost is a proxy (index.yaml with http: backend)
+	if entry := getProxyForVhost(root, m); entry != nil {
+		if entry.proxy != nil {
+			if entry.apiKey != "" {
+				auth := r.Header.Get("Authorization")
+				expected := "Bearer " + entry.apiKey
+				if subtle.ConstantTimeCompare([]byte(auth), []byte(expected)) != 1 {
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
+				}
+				r.Header.Del("Authorization")
+			}
+			entry.proxy.ServeHTTP(w, r)
+			return
+		}
+		// vhost intended as a proxy but setup was rejected — surface a
+		// recognizable 502 instead of falling through to YAML rendering,
+		// which would just render the bare index.yaml (e.g., a blank page).
+		log.Printf("proxy unavailable for %s: %s", r.Host, entry.setupError)
+		m.serveErrorPage(w, r, root, http.StatusBadGateway,
+			"Proxy backend unavailable: "+entry.setupError, site, hostFallback)
+		return
+	}
 
 	upath := path.Clean("/" + r.URL.Path)
 
@@ -1132,9 +1156,9 @@ func main() {
 	cacheMaxAgeSec := resolveInt("cache-age", int(defaultCacheMaxAge.Seconds()))
 	maxStaticAgeSec := resolveInt("static-age", 86400)
 	maxParentLvls := resolveInt("parent-levels", DefaultMaxParentLevels)
-	maxBodySizeMB := resolveInt("max-body-size", 10)    // default 10 MB
-	jsHeapMB := resolveInt("js-heap-mb", 128)           // per-script heap-growth cap (0 disables)
-	phpTimeoutSec := resolveInt("php-timeout", 60)      // idle timeout: kill php-cgi if silent this long
+	maxBodySizeMB := resolveInt("max-body-size", 10)       // default 10 MB
+	jsHeapMB := resolveInt("js-heap-mb", 128)              // per-script heap-growth cap (0 disables)
+	phpTimeoutSec := resolveInt("php-timeout", 60)         // idle timeout: kill php-cgi if silent this long
 	phpStreamAfterSec := resolveInt("php-stream-after", 5) // buffer php-cgi output this long before streaming
 
 	// Memory monitor tunables (see memmon.go for defaults)
@@ -1714,10 +1738,10 @@ func loggingMiddleware(next http.Handler) http.Handler {
 // silently break legitimate pages. Instead it blocks the directives that
 // no normal page needs:
 //
-//   object-src 'none'      — no <object>/<embed>/<applet>
-//   base-uri 'self'        — defeat injected <base href="evil.com">
-//   frame-ancestors 'self' — modern X-Frame-Options
-//   form-action 'self'     — injected <form action=evil> won't submit
+//	object-src 'none'      — no <object>/<embed>/<applet>
+//	base-uri 'self'        — defeat injected <base href="evil.com">
+//	frame-ancestors 'self' — modern X-Frame-Options
+//	form-action 'self'     — injected <form action=evil> won't submit
 //
 // Operators that want a stricter CSP (e.g. nonce-based script-src) can
 // add a `csp:` key to _config.yaml in a future change; this default is
