@@ -23,6 +23,8 @@ type siteSettings struct {
 	PHPTimeout     time.Duration // idle timeout: kill php-cgi if no output for this long
 	PHPStreamAfter time.Duration // buffer php-cgi output for this long before switching to chunked streaming
 	AllowHTTP      bool          // serve this vhost over plain HTTP instead of redirecting to HTTPS
+	BlockedPaths   []string      // extra path patterns to deny, beyond the built-in dotfile/vendor defaults
+	AllowedPaths   []string      // path patterns to exempt from blocking, overriding the defaults and BlockedPaths
 }
 
 // loadConfigMap loads a _config.yaml file and returns its contents as a map.
@@ -171,7 +173,117 @@ func applySiteSettings(m map[string]interface{}, defaults siteSettings) siteSett
 			log.Printf("Warning: allow-http=true — HTTPS redirect disabled; session cookies and other secrets may transit in cleartext")
 		}
 	}
+	if v, ok := configIndex(m, "block-paths"); ok {
+		s.BlockedPaths = normalizePathPatterns(v)
+	}
+	if v, ok := configIndex(m, "allow-paths"); ok {
+		s.AllowedPaths = normalizePathPatterns(v)
+	}
 	return s
+}
+
+// normalizePathPatterns trims whitespace from each pattern and drops empties.
+// Path patterns are case-sensitive (filesystem paths on Linux are too).
+func normalizePathPatterns(raw []string) []string {
+	out := make([]string, 0, len(raw))
+	for _, p := range raw {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// pathBlocked reports whether the cleaned URL path should be denied (404).
+//
+// Precedence:
+//  1. Allow list — the built-in "/.well-known" exemption plus any allow-paths
+//     from _config.yaml. A match here always wins, so an operator can expose a
+//     path that the defaults below would otherwise deny.
+//  2. Built-in denies — any hidden segment (a dot-prefixed file or directory,
+//     e.g. .git, .env) and any "vendor" directory at any depth.
+//  3. block-paths from _config.yaml — additional operator-defined denies.
+func (s siteSettings) pathBlocked(upath string) bool {
+	for _, p := range s.AllowedPaths {
+		if pathMatchesPattern(upath, p) {
+			return false
+		}
+	}
+	if pathMatchesPattern(upath, "/.well-known") {
+		return false
+	}
+	if hasHiddenSegment(upath) || pathMatchesPattern(upath, "vendor") {
+		return true
+	}
+	for _, p := range s.BlockedPaths {
+		if pathMatchesPattern(upath, p) {
+			return true
+		}
+	}
+	return false
+}
+
+// hasHiddenSegment reports whether any segment of the cleaned URL path begins
+// with a dot (a hidden file or directory), e.g. "/.git/index" or "/.env".
+func hasHiddenSegment(upath string) bool {
+	for _, seg := range splitPath(upath) {
+		if seg[0] == '.' && seg != "." && seg != ".." {
+			return true
+		}
+	}
+	return false
+}
+
+// pathMatchesPattern reports whether the cleaned request path is matched by
+// pattern. Two pattern forms:
+//
+//   - Bare name (single segment, no slash), e.g. "vendor": matches if ANY
+//     segment of the path equals it — i.e. the named directory at any depth.
+//   - Rooted prefix (leading slash or multiple segments), e.g. "/vendor" or
+//     "vendor/public": matches the path only from the docroot, when the
+//     pattern's segments are a leading prefix of the path's segments.
+//
+// Matching is segment-aware, so "vendor" never matches "/vendored/x".
+func pathMatchesPattern(upath, pattern string) bool {
+	pattern = strings.TrimSpace(pattern)
+	if pattern == "" || pattern == "/" {
+		return false
+	}
+	rooted := strings.HasPrefix(pattern, "/")
+	pat := splitPath(pattern)
+	if len(pat) == 0 {
+		return false
+	}
+	if len(pat) > 1 {
+		rooted = true // multi-segment patterns are inherently rooted prefixes
+	}
+	segs := splitPath(upath)
+	if !rooted {
+		for _, s := range segs {
+			if s == pat[0] {
+				return true
+			}
+		}
+		return false
+	}
+	if len(pat) > len(segs) {
+		return false
+	}
+	for i, p := range pat {
+		if segs[i] != p {
+			return false
+		}
+	}
+	return true
+}
+
+// splitPath splits a slash path into its non-empty segments.
+func splitPath(p string) []string {
+	t := strings.Trim(p, "/")
+	if t == "" {
+		return nil
+	}
+	return strings.Split(t, "/")
 }
 
 // normalizeTypes lowercases each entry and strips any leading dot.

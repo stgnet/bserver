@@ -239,6 +239,17 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	upath := path.Clean("/" + r.URL.Path)
 
+	// Block requests for hidden files/directories (/.git/*, /.env, ...) and
+	// vendor trees by default. Without this guard the allowed-types check is
+	// skipped for extensionless files like .git/index and .git/HEAD, letting
+	// an attacker fetch version-control metadata and reconstruct the repo.
+	// .well-known is exempt; operators can adjust via the allow-paths and
+	// block-paths keys in _config.yaml.
+	if site.pathBlocked(upath) {
+		m.serveErrorPage(w, r, root, http.StatusNotFound, "", site, hostFallback)
+		return
+	}
+
 	// Favicon: generate from _favicon.yaml (or defaults) when no real file exists
 	if upath == "/favicon.ico" {
 		icoPath := filepath.Join(root, "favicon.ico")
@@ -1187,6 +1198,21 @@ func main() {
 		}
 	}
 
+	// Path blocking: extra denies / exemptions beyond the built-in defaults
+	// (hidden dotfiles and vendor are always denied; .well-known is always
+	// exempt). _config.yaml > BLOCK_PATHS/ALLOW_PATHS env > none.
+	resolvePathList := func(yamlKey, envKey string) []string {
+		if v, ok := configIndex(yamlCfg, yamlKey); ok {
+			return normalizePathPatterns(v)
+		}
+		if v := os.Getenv(envKey); v != "" {
+			return normalizePathPatterns(strings.Split(v, ","))
+		}
+		return nil
+	}
+	blockedPaths := resolvePathList("block-paths", "BLOCK_PATHS")
+	allowedPaths := resolvePathList("allow-paths", "ALLOW_PATHS")
+
 	// Warn if php-cgi was not found
 	if phpcgi == "" {
 		log.Printf("Warning: php-cgi not found in PATH or common locations; .php files will not work (set php in _config.yaml or PHP_CGI env)")
@@ -1267,6 +1293,8 @@ func main() {
 			Types:          allowedTypes,
 			PHPTimeout:     time.Duration(phpTimeoutSec) * time.Second,
 			PHPStreamAfter: time.Duration(phpStreamAfterSec) * time.Second,
+			BlockedPaths:   blockedPaths,
+			AllowedPaths:   allowedPaths,
 		},
 	}
 

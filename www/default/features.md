@@ -158,6 +158,53 @@ IP addresses and domains with non-public suffixes (`.local`, `.test`,
 `.internal`, etc.) always get self-signed certificates without contacting
 Let's Encrypt.
 
+## Blocked Paths
+
+bserver refuses to serve certain paths regardless of the allowed `types`,
+because they commonly leak source code or secrets. Two categories are blocked
+by default:
+
+- **Hidden files and directories** — any path segment beginning with a dot,
+  such as `/.git/`, `/.env`, `/.htaccess`, or `/.svn/`. This matters because
+  extensionless files (e.g. `.git/index`, `.git/HEAD`) would otherwise bypass
+  the `types` allow-list and expose a fetchable copy of the repository.
+- **`vendor` directories** — dependency trees at any depth (`/vendor/...`,
+  `/app/vendor/...`), which should never be web-served.
+
+The `.well-known` directory is always exempt so ACME challenges and
+`security.txt` keep working. A blocked request returns a plain `404` and does
+not confirm whether the file exists.
+
+### Customizing
+
+Two `_config.yaml` keys (server-wide in `www/_config.yaml`, or per-vhost) let
+you adjust the defaults. They also accept the `BLOCK_PATHS` / `ALLOW_PATHS`
+environment variables (comma-separated).
+
+| Setting | Description |
+|---------|-------------|
+| `block-paths` | Additional paths to deny, beyond the built-in defaults |
+| `allow-paths` | Paths to expose, overriding the defaults and `block-paths` |
+
+Each entry is matched against the request path one of two ways:
+
+- A **bare name** (no slash, e.g. `vendor`) matches that directory at **any
+  depth**. Matching is segment-aware, so `vendor` never matches `/vendored`.
+- A **rooted prefix** (a leading slash or multiple segments, e.g. `/vendor` or
+  `vendor/public`) matches only from the document root.
+
+`allow-paths` always wins over the defaults and `block-paths`, so you can
+expose a single subtree while keeping the rest blocked:
+
+```yaml
+# www/example.com/_config.yaml
+allow-paths:
+  - /vendor/public      # serve this subtree...
+block-paths:
+  - private             # ...block any "private" dir, and
+  - /internal/secrets   # ...this exact rooted path
+```
+
 ## Security Headers
 
 Every response includes these security headers automatically:

@@ -269,8 +269,8 @@ func TestSecurityHeadersMiddleware(t *testing.T) {
 
 	tests := map[string]string{
 		"X-Content-Type-Options": "nosniff",
-		"X-Frame-Options":       "SAMEORIGIN",
-		"Referrer-Policy":       "strict-origin-when-cross-origin",
+		"X-Frame-Options":        "SAMEORIGIN",
+		"Referrer-Policy":        "strict-origin-when-cross-origin",
 	}
 	for header, expected := range tests {
 		if got := w.Header().Get(header); got != expected {
@@ -314,6 +314,106 @@ func TestStaticFileServing(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, "color: red") {
 		t.Error("static file content not served correctly")
+	}
+}
+
+// TestHiddenPathsBlocked ensures version-control metadata and other dotfiles
+// are never served, even though extensionless files bypass the allowed-types
+// check. .well-known must remain reachable.
+func TestHiddenPathsBlocked(t *testing.T) {
+	tmpDir := t.TempDir()
+	defaultDir := filepath.Join(tmpDir, "default")
+	gitDir := filepath.Join(defaultDir, ".git")
+	wkDir := filepath.Join(defaultDir, ".well-known")
+	os.MkdirAll(gitDir, 0755)
+	os.MkdirAll(wkDir, 0755)
+	vendorDir := filepath.Join(defaultDir, "vendor")
+	os.MkdirAll(vendorDir, 0755)
+	os.WriteFile(filepath.Join(gitDir, "index"), []byte("DIRC-secret"), 0644)
+	os.WriteFile(filepath.Join(gitDir, "config"), []byte("[core]"), 0644)
+	os.WriteFile(filepath.Join(defaultDir, ".env"), []byte("SECRET=1"), 0644)
+	os.WriteFile(filepath.Join(vendorDir, "autoload.php"), []byte("secret"), 0644)
+	os.WriteFile(filepath.Join(wkDir, "security.txt"), []byte("Contact: x"), 0644)
+
+	mux := newTestMux(t, tmpDir)
+
+	for _, p := range []string{"/.git/index", "/.git/config", "/.git/", "/.env", "/vendor/autoload.php", "/vendor/"} {
+		req := httptest.NewRequest("GET", p, nil)
+		req.Host = "default"
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, req)
+		if w.Result().StatusCode != http.StatusNotFound {
+			t.Errorf("GET %s: status = %d, want 404", p, w.Result().StatusCode)
+		}
+		if strings.Contains(w.Body.String(), "secret") || strings.Contains(w.Body.String(), "SECRET") {
+			t.Errorf("GET %s leaked hidden file content", p)
+		}
+	}
+
+	// .well-known must still be served.
+	req := httptest.NewRequest("GET", "/.well-known/security.txt", nil)
+	req.Host = "default"
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+	if w.Result().StatusCode != http.StatusOK {
+		t.Errorf("GET /.well-known/security.txt: status = %d, want 200", w.Result().StatusCode)
+	}
+}
+
+// TestPathBlockOverrides verifies allow-paths exposes an otherwise-denied path
+// and block-paths denies an additional one.
+func TestPathBlockOverrides(t *testing.T) {
+	tmpDir := t.TempDir()
+	defaultDir := filepath.Join(tmpDir, "default")
+	os.MkdirAll(filepath.Join(defaultDir, "vendor", "pub"), 0755)
+	os.MkdirAll(filepath.Join(defaultDir, "private"), 0755)
+	os.WriteFile(filepath.Join(defaultDir, "vendor", "pub", "app.js"), []byte("ok"), 0644)
+	os.WriteFile(filepath.Join(defaultDir, "private", "data.txt"), []byte("ok"), 0644)
+
+	mux := newTestMux(t, tmpDir)
+	// Expose /vendor/pub (rooted prefix) but keep the rest of vendor blocked;
+	// additionally block any "private" directory.
+	mux.cfg.Site.AllowedPaths = []string{"/vendor/pub"}
+	mux.cfg.Site.BlockedPaths = []string{"private"}
+
+	cases := []struct {
+		path string
+		want int
+	}{
+		{"/vendor/pub/app.js", http.StatusOK},      // exempted by allow-paths
+		{"/private/data.txt", http.StatusNotFound}, // denied by block-paths
+	}
+	for _, c := range cases {
+		req := httptest.NewRequest("GET", c.path, nil)
+		req.Host = "default"
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, req)
+		if got := w.Result().StatusCode; got != c.want {
+			t.Errorf("GET %s: status = %d, want %d", c.path, got, c.want)
+		}
+	}
+}
+
+func TestPathMatchesPattern(t *testing.T) {
+	cases := []struct {
+		upath, pattern string
+		want           bool
+	}{
+		{"/vendor/x", "vendor", true},         // bare name, any depth
+		{"/a/vendor/b", "vendor", true},       // bare name, nested
+		{"/vendored/x", "vendor", false},      // segment-aware, no prefix bleed
+		{"/vendor/x", "/vendor", true},        // rooted prefix
+		{"/a/vendor/x", "/vendor", false},     // rooted, not at depth
+		{"/vendor/pub/x", "vendor/pub", true}, // multi-segment rooted prefix
+		{"/vendor/priv", "vendor/pub", false},
+		{"/.well-known/x", "/.well-known", true},
+		{"/", "vendor", false},
+		{"/anything", "", false},
+	}
+	for _, c := range cases {
+		if got := pathMatchesPattern(c.upath, c.pattern); got != c.want {
+			t.Errorf("pathMatchesPattern(%q, %q) = %v, want %v", c.upath, c.pattern, got, c.want)
+		}
 	}
 }
 
