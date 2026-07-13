@@ -532,6 +532,29 @@ func TestSelfSignedCacheBounded(t *testing.T) {
 	}
 }
 
+// TestGetPathProxySSRFGuard verifies the path-based proxy refuses a
+// loopback/private backend unless private targets are explicitly allowed.
+func TestGetPathProxySSRFGuard(t *testing.T) {
+	// Clear any cached proxies from other tests.
+	pathProxyCache.Range(func(k, _ any) bool { pathProxyCache.Delete(k); return true })
+	t.Cleanup(func() {
+		pathProxyCache.Range(func(k, _ any) bool { pathProxyCache.Delete(k); return true })
+	})
+
+	// Loopback backend, private not allowed -> refused (nil).
+	if rp := getPathProxy("127.0.0.1:7681", false); rp != nil {
+		t.Errorf("expected loopback backend to be refused without allow-private")
+	}
+	// AWS metadata endpoint (link-local), refused.
+	if rp := getPathProxy("169.254.169.254:80", false); rp != nil {
+		t.Errorf("expected link-local metadata backend to be refused")
+	}
+	// Same loopback backend, private allowed -> permitted (the web-terminal case).
+	if rp := getPathProxy("127.0.0.1:7681", true); rp == nil {
+		t.Errorf("expected loopback backend to be allowed with allow-private")
+	}
+}
+
 func TestIsKnownVhost(t *testing.T) {
 	tmpDir := t.TempDir()
 	// Create vhost directories

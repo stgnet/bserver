@@ -141,6 +141,46 @@ The following bserver features are still applied to proxied requests:
 - **TLS termination** — HTTPS is handled by bserver; the backend connection
   uses plain HTTP
 
+## Path-Based Proxy
+
+A normal (file-serving) vhost can also proxy a single path prefix to a
+backend, reusing the vhost's own certificate — handy for mounting a
+companion service such as a web terminal at `/terminal/` alongside static
+content. Configure it in the vhost's `_config.yaml`:
+
+```yaml
+# www/example.com/_config.yaml
+proxy-path: '/terminal/'
+proxy-path-backend: 'localhost:7681'
+proxy-path-key-file: '/etc/bserver/terminal.key'   # shared secret (preferred)
+```
+
+Only requests under `proxy-path` are forwarded; everything else is served
+normally. Access is gated by `proxy-path-key` (or `proxy-path-key-file`):
+a request must present that value as a `bs_proxy_auth` cookie or
+`Authorization: Bearer <key>`. Leaving the key empty makes the path proxy
+open to anyone.
+
+### SSRF Protection
+
+Like the vhost `http:` proxy, a path proxy refuses backends that resolve to
+loopback / link-local / private / unspecified / multicast addresses, so an
+attacker who can write a vhost `_config.yaml` cannot use it as an SSRF
+gateway. Because a path proxy most often fronts a **local** service (e.g. a
+terminal on `localhost`), opt in to a private backend with
+`proxy-path-allow-private: true`:
+
+```yaml
+# www/example.com/_config.yaml
+proxy-path: '/terminal/'
+proxy-path-backend: 'localhost:7681'
+proxy-path-key-file: '/etc/bserver/terminal.key'
+proxy-path-allow-private: true
+```
+
+Without this flag a private backend is refused and the request receives a
+`502` (the reason is logged).
+
 ## Switching Between Proxy and Normal Mode
 
 To switch a vhost from proxy mode to normal file serving, simply remove or

@@ -16,6 +16,8 @@
 | 6 | SSRF via proxy mode | Accepted (same trust model as #1) |
 | 7 | Script PATH/HOME inheritance | Accepted (intentional; needed for macOS launchd) |
 | 8 | Path traversal + cache amplification via TLS SNI | **FIXED** — SNI validated; self-signed cache bounded |
+| 9 | SSRF via path-based proxy backend | **FIXED** — same guard as vhost proxy, `proxy-path-allow-private` opt-out |
+| 10 | Unescaped HTML attribute names | **FIXED** — attribute names validated before emission |
 
 ---
 
@@ -52,6 +54,38 @@ class already hardened on the Let's Encrypt path.
   so a unique-SNI flood can no longer grow the cache without limit.
 - Regression tests: `TestValidCertHost`, `TestSelfSignedCertRejectsTraversal`,
   `TestSelfSignedCacheBounded`.
+
+### 9. SSRF via Path-Based Proxy Backend (server.go)
+
+**Severity: MEDIUM**
+**File:** `server.go` — `getPathProxy`
+
+The vhost `http:` proxy runs its backend through `unsafeProxyTarget` (refusing
+loopback/link-local/private/etc.), but the path-based proxy (`proxy-path-backend`
+in `_config.yaml`) had no equivalent guard — an attacker able to write a vhost
+`_config.yaml` could point it at internal services or cloud metadata.
+
+**Remediation (FIXED):**
+- `getPathProxy` now applies the same `unsafeProxyTarget` check. Because a path
+  proxy commonly fronts a local companion service (e.g. a web terminal on
+  `localhost`), operators opt in to private backends with the new
+  `proxy-path-allow-private: true` — mirroring the vhost proxy's `allow-private`.
+- Documented in `www/default/proxy.md`; regression test `TestGetPathProxySSRFGuard`.
+
+### 10. Unescaped HTML Attribute Names (format.go)
+
+**Severity: LOW**
+**File:** `format.go` — `formatMapAsAttrs`, `formatParamsWithVars`
+
+Attribute *values* were consistently HTML-escaped, but attribute *names* (map
+keys) were written verbatim. A key such as `x><script>` — reachable when an
+author routes untrusted input into a wildcard-params map (e.g. via data-source
+output) — could break out of the tag and inject markup.
+
+**Remediation (FIXED):**
+- Added `isValidAttrName` (conservative XML/HTML name charset). Both attribute
+  renderers now drop any entry whose name isn't a valid token.
+- Regression tests `TestIsValidAttrName`, `TestFormatMapAsAttrsDropsUnsafeNames`.
 
 ---
 

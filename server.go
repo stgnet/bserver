@@ -223,7 +223,14 @@ var pathProxyCache sync.Map // backend string -> *httputil.ReverseProxy
 // getPathProxy returns a cached reverse proxy for a host:port backend used
 // by a vhost's ProxyPath. Websocket upgrades are handled by the standard
 // library's ReverseProxy.
-func getPathProxy(backend string) *httputil.ReverseProxy {
+//
+// Like the vhost `http:` proxy, the backend is refused if it resolves to a
+// loopback/link-local/private/etc. address, so an attacker who can write a
+// vhost `_config.yaml` cannot turn a path proxy into an SSRF gateway. Path
+// proxies commonly front a local companion service (e.g. a web terminal on
+// localhost), so operators opt in to private backends with
+// `proxy-path-allow-private: true`.
+func getPathProxy(backend string, allowPrivate bool) *httputil.ReverseProxy {
 	if backend == "" {
 		return nil
 	}
@@ -238,6 +245,12 @@ func getPathProxy(backend string) *httputil.ReverseProxy {
 	if err != nil {
 		log.Printf("invalid proxy-path-backend %q: %v", backend, err)
 		return nil
+	}
+	if !allowPrivate {
+		if reason := unsafeProxyTarget(target); reason != "" {
+			log.Printf("refusing proxy-path-backend %q: %s (set proxy-path-allow-private: true to allow)", backend, reason)
+			return nil
+		}
 	}
 	rp := httputil.NewSingleHostReverseProxy(target)
 	defaultDirector := rp.Director
@@ -348,7 +361,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			r.Header.Del("Authorization")
 		}
-		if rp := getPathProxy(site.ProxyBackend); rp != nil {
+		if rp := getPathProxy(site.ProxyBackend, site.ProxyAllowPrivate); rp != nil {
 			rp.ServeHTTP(w, r)
 		} else {
 			m.serveErrorPage(w, r, root, http.StatusBadGateway, "proxy backend misconfigured", site, hostFallback)
