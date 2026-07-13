@@ -241,9 +241,22 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if entry := getProxyForVhost(root, m); entry != nil {
 		if entry.proxy != nil {
 			if entry.apiKey != "" {
-				auth := r.Header.Get("Authorization")
-				expected := "Bearer " + entry.apiKey
-				if subtle.ConstantTimeCompare([]byte(auth), []byte(expected)) != 1 {
+				// Accept the key either as a Bearer Authorization header
+				// (API clients) or as a bs_proxy_auth cookie. The cookie
+				// lets a same-site page that has already authenticated the
+				// user (e.g. a Google-gated PHP page) grant browser access
+				// to the proxied backend — including websockets, which
+				// cannot carry a custom Authorization header — without
+				// prompting the user for a separate login.
+				ok := subtle.ConstantTimeCompare(
+					[]byte(r.Header.Get("Authorization")),
+					[]byte("Bearer "+entry.apiKey)) == 1
+				if !ok {
+					if c, err := r.Cookie("bs_proxy_auth"); err == nil {
+						ok = subtle.ConstantTimeCompare([]byte(c.Value), []byte(entry.apiKey)) == 1
+					}
+				}
+				if !ok {
 					http.Error(w, "Unauthorized", http.StatusUnauthorized)
 					return
 				}
