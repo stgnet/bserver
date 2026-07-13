@@ -1439,7 +1439,7 @@ func main() {
 			// orders and thousands of TLS handshakes blocked on per-host
 			// mutexes (May 22 alert: 2613 goroutines, 846 active ACME
 			// calls, leFail cache at 715).
-			if isKnownVhost(host, cfg.Base) {
+			if certAllowed(host, cfg.Base) {
 				return nil
 			}
 			return fmt.Errorf("host %q not configured as a virtual host", host)
@@ -1462,7 +1462,7 @@ func main() {
 				// amplifier for scanner-driven ACME calls: a flood of
 				// SNIs for random base domains triggered hundreds of
 				// in-flight LE orders and a per-hostname mutex pileup.
-				if !isKnownVhost(hello.ServerName, cfg.Base) {
+				if !certAllowed(hello.ServerName, cfg.Base) {
 					return getOrCreateSelfSignedCert(hello.ServerName, cfg.CacheDir)
 				}
 				// Skip LE if we recently failed for this host
@@ -1717,6 +1717,30 @@ func isPublicDomain(host string) bool {
 // deeper than a known vhost. This allows, for example, www.example.com
 // and api.example.com to work when only www/example.com exists, while
 // rejecting deeply nested bogus domains like a.b.c.d.example.com.
+// certAllowed reports whether to obtain a Let's Encrypt certificate for
+// host. It is intentionally stricter than isKnownVhost: a cert is issued
+// only for a hostname that has its own vhost directory, or its "www."
+// alias of one. isKnownVhost also treats any single subdomain of a vhost
+// as known so it can serve that content from the parent dir — but issuing
+// a cert per such name let scanner traffic (e.g. random.example.com when
+// www/example.com exists) drive one Let's Encrypt order each and exhaust
+// the 50-certs-per-registered-domain weekly limit. Content still serves
+// for those names; they just fall back to a self-signed cert.
+func certAllowed(host, base string) bool {
+	host = strings.ToLower(host)
+	dir := filepath.Join(base, host)
+	if st, err := os.Stat(dir); err == nil && st.IsDir() {
+		return true
+	}
+	if rest, ok := strings.CutPrefix(host, "www."); ok && rest != "" {
+		dir = filepath.Join(base, rest)
+		if st, err := os.Stat(dir); err == nil && st.IsDir() {
+			return true
+		}
+	}
+	return false
+}
+
 func isKnownVhost(serverName, base string) bool {
 	host := strings.ToLower(serverName)
 

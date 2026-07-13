@@ -435,6 +435,35 @@ func TestIsPublicDomain(t *testing.T) {
 	}
 }
 
+func TestCertAllowed(t *testing.T) {
+	tmpDir := t.TempDir()
+	os.MkdirAll(filepath.Join(tmpDir, "example.com"), 0755)
+	os.MkdirAll(filepath.Join(tmpDir, "app.example.com"), 0755)
+
+	tests := []struct {
+		host string
+		want bool
+		desc string
+	}{
+		{"example.com", true, "exact base-domain dir"},
+		{"app.example.com", true, "exact subdomain dir"},
+		{"Example.COM", true, "case insensitive"},
+		{"www.example.com", true, "www. alias of a dir"},
+		{"www.app.example.com", true, "www. alias of a subdomain dir"},
+		// The exhaustion cases: subdomains of a served base domain that
+		// have no dir of their own must NOT trigger Let's Encrypt.
+		{"scan1.example.com", false, "scanner subdomain, no dir"},
+		{"smtp.example.com", false, "scanner subdomain, no dir"},
+		{"api.app.example.com", false, "subdomain of a subdomain, no dir"},
+		{"unknown.com", false, "no matching dir"},
+	}
+	for _, tt := range tests {
+		if got := certAllowed(tt.host, tmpDir); got != tt.want {
+			t.Errorf("certAllowed(%q) = %v, want %v (%s)", tt.host, got, tt.want, tt.desc)
+		}
+	}
+}
+
 func TestIsKnownVhost(t *testing.T) {
 	tmpDir := t.TempDir()
 	// Create vhost directories
