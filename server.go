@@ -205,6 +205,19 @@ func pathUnderPrefix(upath, prefix string) bool {
 	return upath == prefix || strings.HasPrefix(upath, prefix+"/")
 }
 
+// anyCookieMatches reports whether any cookie of the given name matches the
+// value. Checking all (not just the first via r.Cookie) matters when a
+// client holds a stale duplicate — e.g. a host-only cookie plus an older
+// domain-scoped one of the same name; r.Cookie would return only the first.
+func anyCookieMatches(r *http.Request, name, value string) bool {
+	for _, c := range r.Cookies() {
+		if c.Name == name && subtle.ConstantTimeCompare([]byte(c.Value), []byte(value)) == 1 {
+			return true
+		}
+	}
+	return false
+}
+
 var pathProxyCache sync.Map // backend string -> *httputil.ReverseProxy
 
 // getPathProxy returns a cached reverse proxy for a host:port backend used
@@ -294,9 +307,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					[]byte(r.Header.Get("Authorization")),
 					[]byte("Bearer "+entry.apiKey)) == 1
 				if !ok {
-					if c, err := r.Cookie("bs_proxy_auth"); err == nil {
-						ok = subtle.ConstantTimeCompare([]byte(c.Value), []byte(entry.apiKey)) == 1
-					}
+					ok = anyCookieMatches(r, "bs_proxy_auth", entry.apiKey)
 				}
 				if !ok {
 					http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -325,10 +336,7 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// cookie — can grant browser + websocket access without a second login.
 	if site.ProxyPath != "" && pathUnderPrefix(upath, site.ProxyPath) {
 		if site.ProxyKey != "" {
-			ok := false
-			if c, err := r.Cookie("bs_proxy_auth"); err == nil {
-				ok = subtle.ConstantTimeCompare([]byte(c.Value), []byte(site.ProxyKey)) == 1
-			}
+			ok := anyCookieMatches(r, "bs_proxy_auth", site.ProxyKey)
 			if !ok {
 				ok = subtle.ConstantTimeCompare(
 					[]byte(r.Header.Get("Authorization")),
