@@ -543,7 +543,7 @@ func TestMalformedYAMLDoesNotPanic(t *testing.T) {
 
 func TestYAMLParseErrorDisplayed(t *testing.T) {
 	dir := setupMinimalSite(t, map[string]string{
-		"index.yaml": "main:\n - broken\n",
+		"index.yaml":  "main:\n - broken\n",
 		"broken.yaml": "broken:\n\t- invalid yaml\n  mixed indent",
 	})
 
@@ -594,7 +594,7 @@ func TestYAMLParseErrorWithScript(t *testing.T) {
 
 func TestYAMLParseErrorInDebug(t *testing.T) {
 	dir := setupMinimalSite(t, map[string]string{
-		"index.yaml": "main:\n - broken\n",
+		"index.yaml":  "main:\n - broken\n",
 		"broken.yaml": "broken:\n\t- invalid yaml\n  mixed indent",
 	})
 
@@ -1164,7 +1164,7 @@ func TestNavlinksIconTextNoNewline(t *testing.T) {
 	// Reproduces the real-world bug: icon and text in navlinks list must
 	// render on the same line with no newline between </i> and text.
 	dir := setupMinimalSite(t, map[string]string{
-		"index.yaml": "main:\n - navlinks\n",
+		"index.yaml":    "main:\n - navlinks\n",
 		"navlinks.yaml": "navlinks:\n  /: Home\n  /calendar:\n    - cal-icon\n    - Calendar\n",
 	})
 	os.WriteFile(filepath.Join(dir, "html.yaml"),
@@ -1327,5 +1327,47 @@ myfield:
 	}
 	if !strings.Contains(output, "Email Address</label>") {
 		t.Errorf("Missing label text.\nOutput:\n%s", output)
+	}
+}
+
+func TestIsValidAttrName(t *testing.T) {
+	tests := []struct {
+		name string
+		want bool
+	}{
+		{"class", true},
+		{"data-id", true},
+		{"aria-label", true},
+		{"xml:lang", true},
+		{"x1", true},
+		{"", false},
+		{"1x", false},        // must not start with a digit
+		{"-x", false},        // must not start with a hyphen
+		{"a b", false},       // space
+		{`x"y`, false},       // quote
+		{"x>y", false},       // gt — the tag-breakout char
+		{"x=y", false},       // equals
+		{"x/y", false},       // slash
+		{"x><script", false}, // injection attempt
+	}
+	for _, tt := range tests {
+		if got := isValidAttrName(tt.name); got != tt.want {
+			t.Errorf("isValidAttrName(%q) = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+// TestFormatMapAsAttrsDropsUnsafeNames ensures a map key that isn't a valid
+// HTML attribute name cannot inject markup by breaking out of the tag.
+func TestFormatMapAsAttrsDropsUnsafeNames(t *testing.T) {
+	m := NewOrderedMap()
+	m.Set("class", "ok")
+	m.Set(`x><script>alert(1)</script`, "payload")
+	got := formatMapAsAttrs(m)
+	if !strings.Contains(got, `class="ok"`) {
+		t.Errorf("valid attribute dropped: %q", got)
+	}
+	if strings.Contains(got, "<script>") || strings.Contains(got, ">") {
+		t.Errorf("unsafe attribute name leaked into output: %q", got)
 	}
 }

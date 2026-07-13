@@ -8,16 +8,16 @@ import (
 
 // formatDef describes how a name should be rendered as HTML (from ^name keys).
 type formatDef struct {
-	Tag               string      // HTML tag to use
-	Params            *OrderedMap // HTML attributes (may contain $key, $value, $varname); values are strings
-	ParamsWildcard    bool        // if true, params: '$*' means use content entries as attributes
-	Contents          string      // how to render inner content ("$*" = as-is, "" = iterate)
-	ContentWrap       interface{} // structured content wrapper (e.g., {card-body: '$*'})
-	ContentWrapPlural bool        // true when "contents:" (plural) was used: wrap each iterable individually
-	Script            string      // script language: "python", "javascript", "php", "sh"
-	Code              string      // inline script code (per-record body)
-	File              string      // script file to load code from (relative to docRoot)
-	Markup            string      // markup language for content: "markdown"
+	Tag               string       // HTML tag to use
+	Params            *OrderedMap  // HTML attributes (may contain $key, $value, $varname); values are strings
+	ParamsWildcard    bool         // if true, params: '$*' means use content entries as attributes
+	Contents          string       // how to render inner content ("$*" = as-is, "" = iterate)
+	ContentWrap       interface{}  // structured content wrapper (e.g., {card-body: '$*'})
+	ContentWrapPlural bool         // true when "contents:" (plural) was used: wrap each iterable individually
+	Script            string       // script language: "python", "javascript", "php", "sh"
+	Code              string       // inline script code (per-record body)
+	File              string       // script file to load code from (relative to docRoot)
+	Markup            string       // markup language for content: "markdown"
 	Sequence          []*formatDef // array format: multiple tags rendered in sequence
 }
 
@@ -147,6 +147,31 @@ func usesKeyValueVars(fd *formatDef) bool {
 	return false
 }
 
+// isValidAttrName reports whether s is a safe HTML attribute name. Attribute
+// values are HTML-escaped everywhere they are emitted, but attribute *names*
+// are written verbatim — an unchecked name containing a space, quote, or ">"
+// would let content break out of the tag (e.g. a data-source that emits a map
+// key like `x><script>`). We allow the conservative XML/HTML name charset:
+// a letter/underscore/colon start, then letters, digits, hyphen, underscore,
+// colon, or period. Anything else is dropped by the callers.
+func isValidAttrName(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c == '_', c == ':':
+			// always allowed
+		case i > 0 && (c >= '0' && c <= '9' || c == '-' || c == '.'):
+			// allowed after the first character
+		default:
+			return false
+		}
+	}
+	return true
+}
+
 // formatParamsWithVars renders format def params as an HTML attribute string,
 // substituting $varname from the vars map. Unreplaced $vars are omitted.
 func formatParamsWithVars(params *OrderedMap, vars map[string]string) string {
@@ -155,6 +180,11 @@ func formatParamsWithVars(params *OrderedMap, vars map[string]string) string {
 	}
 	var sb strings.Builder
 	params.Range(func(k string, v interface{}) bool {
+		// Skip attributes whose name isn't a safe HTML token — the name is
+		// emitted unescaped, so a malformed one could break out of the tag.
+		if !isValidAttrName(k) {
+			return true
+		}
 		rendered := substituteVars(fmt.Sprintf("%v", v), vars)
 		// Skip attributes that still contain unreplaced $vars
 		if strings.Contains(rendered, "$") {
@@ -170,6 +200,12 @@ func formatParamsWithVars(params *OrderedMap, vars map[string]string) string {
 func formatMapAsAttrs(m *OrderedMap) string {
 	var sb strings.Builder
 	m.Range(func(k string, v interface{}) bool {
+		// Attribute names are emitted unescaped; skip any that aren't a safe
+		// HTML token so map keys (which may originate from data-source output)
+		// cannot inject markup.
+		if !isValidAttrName(k) {
+			return true
+		}
 		fmt.Fprintf(&sb, " %s=\"%s\"", k, html.EscapeString(fmt.Sprintf("%v", v)))
 		return true
 	})
