@@ -1810,6 +1810,14 @@ func (lrw *loggingResponseWriter) WriteHeader(code int) {
 	lrw.ResponseWriter.WriteHeader(code)
 }
 
+// Unwrap exposes the wrapped ResponseWriter so http.ResponseController can
+// reach the connection through this middleware. Without it, SetWriteDeadline
+// in handlePHP silently returns ErrNotSupported and the server's 120s
+// WriteTimeout kills long-streaming PHP responses mid-body.
+func (lrw *loggingResponseWriter) Unwrap() http.ResponseWriter {
+	return lrw.ResponseWriter
+}
+
 // Hijack forwards to the underlying ResponseWriter if it supports
 // http.Hijacker. Required for WebSocket upgrades and the rate limiter's
 // connection-close drop strategy to work through the logging middleware.
