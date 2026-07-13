@@ -1077,6 +1077,15 @@ type selfSignedEntry struct {
 
 const selfSignedTTL = 10 * time.Minute
 
+// maxSelfSignedCacheEntries bounds the in-memory self-signed cert cache. The
+// cache is keyed by SNI, which an unauthenticated client fully controls, so
+// without a cap a flood of unique hostnames would grow it without limit
+// (a memory-exhaustion amplification, cheap for the attacker). At capacity
+// we sweep TTL-expired entries; if none can be freed, the fresh cert is
+// still served but not cached (the next handshake regenerates it — bounded
+// CPU, no unbounded heap).
+const maxSelfSignedCacheEntries = 1024
+
 // self-signed certificate cache
 var selfSignedCache sync.Map
 
@@ -1084,6 +1093,25 @@ func selfSignedCacheSize() int {
 	n := 0
 	selfSignedCache.Range(func(_, _ any) bool { n++; return true })
 	return n
+}
+
+// storeSelfSigned caches a self-signed cert while keeping the cache bounded.
+func storeSelfSigned(host string, entry *selfSignedEntry) {
+	if selfSignedCacheSize() >= maxSelfSignedCacheEntries {
+		now := time.Now()
+		freed := false
+		selfSignedCache.Range(func(k, v any) bool {
+			if now.Sub(v.(*selfSignedEntry).created) >= selfSignedTTL {
+				selfSignedCache.Delete(k)
+				freed = true
+			}
+			return true
+		})
+		if !freed {
+			return // at capacity with all-fresh entries; serve without caching
+		}
+	}
+	selfSignedCache.Store(host, entry)
 }
 
 // leFailCache tracks domains where Let's Encrypt recently failed, so we don't
@@ -1097,8 +1125,45 @@ func leFailCacheSize() int {
 	return n
 }
 
+// validCertHost reports whether an SNI value is safe to use as the basename
+// of an on-disk certificate cache file. The TLS SNI (hello.ServerName) is
+// fully attacker-controlled and Go's crypto/tls only rejects a trailing dot
+// — not path separators or "..". Without this guard, an SNI like
+// "../../tmp/x" would make filepath.Join(cacheDir, host+".crt") escape the
+// cache directory, allowing reads/writes of arbitrary .crt/.key paths. This
+// mirrors the Host-header validation in ServeHTTP. It also bounds the length
+// so a pathological SNI can't create absurd filenames.
+func validCertHost(host string) bool {
+	if host == "" || len(host) > 253 {
+		return false
+	}
+	if strings.ContainsAny(host, "/\\") || strings.Contains(host, "..") {
+		return false
+	}
+	// Reject control characters and NUL, which have no place in a hostname
+	// and could confuse filesystem or logging layers.
+	for i := 0; i < len(host); i++ {
+		if host[i] < 0x20 || host[i] == 0x7f {
+			return false
+		}
+	}
+	return true
+}
+
 // self-signed certificate generator with disk cache
 func getOrCreateSelfSignedCert(host, cacheDir string) (*tls.Certificate, error) {
+	// No SNI (e.g. clients connecting to an IP address) — use a stable
+	// placeholder so these connections still receive a self-signed cert
+	// instead of a handshake failure, matching prior behavior.
+	if host == "" {
+		host = "default"
+	}
+	// The SNI is attacker-controlled; refuse anything that could escape the
+	// cert-cache directory or otherwise isn't a plausible hostname.
+	if !validCertHost(host) {
+		return nil, fmt.Errorf("invalid certificate host %q", host)
+	}
+
 	certFile := filepath.Join(cacheDir, host+".crt")
 	keyFile := filepath.Join(cacheDir, host+".key")
 
@@ -1116,7 +1181,7 @@ func getOrCreateSelfSignedCert(host, cacheDir string) (*tls.Certificate, error) 
 		if keyPEM, err2 := os.ReadFile(keyFile); err2 == nil {
 			cert, err := tls.X509KeyPair(certPEM, keyPEM)
 			if err == nil {
-				selfSignedCache.Store(host, &selfSignedEntry{cert: &cert, created: time.Now()})
+				storeSelfSigned(host, &selfSignedEntry{cert: &cert, created: time.Now()})
 				return &cert, nil
 			}
 		}
@@ -1168,7 +1233,7 @@ func getOrCreateSelfSignedCert(host, cacheDir string) (*tls.Certificate, error) 
 	if err != nil {
 		return nil, err
 	}
-	selfSignedCache.Store(host, &selfSignedEntry{cert: &cert, created: time.Now()})
+	storeSelfSigned(host, &selfSignedEntry{cert: &cert, created: time.Now()})
 	return &cert, nil
 }
 

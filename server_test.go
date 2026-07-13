@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -461,6 +462,73 @@ func TestCertAllowed(t *testing.T) {
 		if got := certAllowed(tt.host, tmpDir); got != tt.want {
 			t.Errorf("certAllowed(%q) = %v, want %v (%s)", tt.host, got, tt.want, tt.desc)
 		}
+	}
+}
+
+func TestValidCertHost(t *testing.T) {
+	tests := []struct {
+		host string
+		want bool
+		desc string
+	}{
+		{"example.com", true, "normal hostname"},
+		{"app.example.com", true, "subdomain"},
+		{"xn--80ak6aa92e.com", true, "punycode"},
+		{"", false, "empty (no SNI)"},
+		{"../../etc/passwd", false, "parent traversal"},
+		{"a/b", false, "forward slash"},
+		{"a\\b", false, "backslash"},
+		{"..", false, "bare dot-dot"},
+		{"foo..bar", false, "embedded dot-dot"},
+		{"foo\x00bar", false, "embedded NUL"},
+		{"foo\nbar", false, "embedded newline"},
+		{strings.Repeat("a", 254), false, "over length limit"},
+	}
+	for _, tt := range tests {
+		if got := validCertHost(tt.host); got != tt.want {
+			t.Errorf("validCertHost(%q) = %v, want %v (%s)", tt.host, got, tt.want, tt.desc)
+		}
+	}
+}
+
+// TestSelfSignedCertRejectsTraversal ensures an attacker-controlled SNI
+// containing path-traversal sequences cannot cause a cert/key file to be
+// written outside the cache directory.
+func TestSelfSignedCertRejectsTraversal(t *testing.T) {
+	cacheDir := t.TempDir()
+	outsideDir := t.TempDir() // a sibling the traversal would try to reach
+
+	// filepath.Join(cacheDir, host+".crt") for this host cleans to a path
+	// under outsideDir if the ".." segments are honored.
+	rel, err := filepath.Rel(cacheDir, filepath.Join(outsideDir, "pwn"))
+	if err != nil {
+		t.Fatalf("Rel: %v", err)
+	}
+	if _, err := getOrCreateSelfSignedCert(rel, cacheDir); err == nil {
+		t.Fatalf("expected error for traversal host %q, got nil", rel)
+	}
+	// No .crt/.key file should have been written outside the cache dir.
+	for _, suffix := range []string{".crt", ".key"} {
+		if _, err := os.Stat(filepath.Join(outsideDir, "pwn"+suffix)); err == nil {
+			t.Errorf("traversal wrote file outside cache dir: pwn%s", suffix)
+		}
+	}
+}
+
+// TestSelfSignedCacheBounded verifies the in-memory self-signed cache does
+// not grow without bound when flooded with unique fresh (non-expired) hosts.
+func TestSelfSignedCacheBounded(t *testing.T) {
+	selfSignedCache.Range(func(k, _ any) bool { selfSignedCache.Delete(k); return true })
+	t.Cleanup(func() {
+		selfSignedCache.Range(func(k, _ any) bool { selfSignedCache.Delete(k); return true })
+	})
+
+	now := time.Now()
+	for i := 0; i < maxSelfSignedCacheEntries+50; i++ {
+		storeSelfSigned(fmt.Sprintf("h%d.example.com", i), &selfSignedEntry{created: now})
+	}
+	if size := selfSignedCacheSize(); size > maxSelfSignedCacheEntries {
+		t.Errorf("self-signed cache grew to %d, want <= %d", size, maxSelfSignedCacheEntries)
 	}
 }
 

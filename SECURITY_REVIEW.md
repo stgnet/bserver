@@ -15,12 +15,43 @@
 | 5 | PHP-CGI header injection | **FIXED** — header names/values sanitized |
 | 6 | SSRF via proxy mode | Accepted (same trust model as #1) |
 | 7 | Script PATH/HOME inheritance | Accepted (intentional; needed for macOS launchd) |
+| 8 | Path traversal + cache amplification via TLS SNI | **FIXED** — SNI validated; self-signed cache bounded |
 
 ---
 
 ## Executive Summary
 
 bserver is a YAML/Markdown-driven web server with virtual hosting, auto-TLS, PHP-CGI support, and embedded script execution (Python, Node.js, PHP, shell). The architecture is generally well-considered — it drops privileges, applies security headers, rate-limits misbehaving IPs, and restricts file types. However, the design of executing user-authored scripts from YAML definitions introduces several high-severity risks. Below are findings organized by severity.
+
+---
+
+## Follow-up Review (2026-07-13)
+
+### 8. Path Traversal + Cache Amplification via TLS SNI (server.go)
+
+**Severity: HIGH**
+**Files:** `server.go` — `getOrCreateSelfSignedCert`, `GetCertificate` callback
+
+The TLS `GetCertificate` callback passed `hello.ServerName` (the client-supplied
+SNI) directly into `getOrCreateSelfSignedCert`, which used it to build the
+cache filenames `filepath.Join(cacheDir, host+".crt"/".key")`. Go's `crypto/tls`
+only rejects a trailing dot on the SNI — not `/`, `\`, or `..` — so an SNI such
+as `../../tmp/x` escaped the cache directory, enabling reads/writes of arbitrary
+`.crt`/`.key` paths (as the `nobody` user, post-privilege-drop). The same
+attacker-controlled key also fed an unbounded in-memory `selfSignedCache`
+(`sync.Map`, never evicted): a flood of unique SNIs drove per-connection ECDSA
+keygen, unbounded disk writes, and unbounded heap growth — the same amplification
+class already hardened on the Let's Encrypt path.
+
+**Remediation (FIXED):**
+- Added `validCertHost`, rejecting empty, over-length, control-char, and
+  `/`/`\`/`..`-containing SNIs before any filesystem use — mirroring the
+  existing Host-header check in `ServeHTTP`. No-SNI connections (IP clients)
+  map to a stable `default` placeholder so their handshakes still succeed.
+- Bounded `selfSignedCache` via `storeSelfSigned` (cap + TTL-expiry sweep),
+  so a unique-SNI flood can no longer grow the cache without limit.
+- Regression tests: `TestValidCertHost`, `TestSelfSignedCertRejectsTraversal`,
+  `TestSelfSignedCacheBounded`.
 
 ---
 
