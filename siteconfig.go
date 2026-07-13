@@ -25,6 +25,9 @@ type siteSettings struct {
 	AllowHTTP      bool          // serve this vhost over plain HTTP instead of redirecting to HTTPS
 	BlockedPaths   []string      // extra path patterns to deny, beyond the built-in dotfile/vendor defaults
 	AllowedPaths   []string      // path patterns to exempt from blocking, overriding the defaults and BlockedPaths
+	ProxyPath      string        // request path prefix reverse-proxied to ProxyBackend (e.g. "/terminal/")
+	ProxyBackend   string        // host:port backend that ProxyPath forwards to
+	ProxyKey       string        // required bs_proxy_auth cookie / Bearer value for ProxyPath (empty = open)
 }
 
 // loadConfigMap loads a _config.yaml file and returns its contents as a map.
@@ -178,6 +181,26 @@ func applySiteSettings(m map[string]interface{}, defaults siteSettings) siteSett
 	}
 	if v, ok := configIndex(m, "allow-paths"); ok {
 		s.AllowedPaths = normalizePathPatterns(v)
+	}
+	// Path-based reverse proxy: serve a backend under a path prefix of this
+	// vhost (reusing its cert), gated by a shared key. The key can be given
+	// literally or read from a file outside the webroot (preferred, so the
+	// secret never risks being web-served).
+	if v, ok := configString(m, "proxy-path", ""); ok {
+		s.ProxyPath = v
+	}
+	if v, ok := configString(m, "proxy-path-backend", ""); ok {
+		s.ProxyBackend = v
+	}
+	if v, ok := configString(m, "proxy-path-key", ""); ok {
+		s.ProxyKey = v
+	}
+	if v, ok := configString(m, "proxy-path-key-file", ""); ok && v != "" {
+		if b, err := os.ReadFile(v); err == nil {
+			s.ProxyKey = strings.TrimSpace(string(b))
+		} else {
+			log.Printf("Warning: proxy-path-key-file %q unreadable: %v", v, err)
+		}
 	}
 	return s
 }

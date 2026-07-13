@@ -198,6 +198,48 @@ func getProxyForVhost(docRoot string, vmux *virtualHostMux) *proxyEntry {
 	return entry
 }
 
+// pathUnderPrefix reports whether upath is the prefix itself or nested
+// under it, e.g. "/terminal" or "/terminal/ws" for prefix "/terminal/".
+func pathUnderPrefix(upath, prefix string) bool {
+	prefix = "/" + strings.Trim(prefix, "/")
+	return upath == prefix || strings.HasPrefix(upath, prefix+"/")
+}
+
+var pathProxyCache sync.Map // backend string -> *httputil.ReverseProxy
+
+// getPathProxy returns a cached reverse proxy for a host:port backend used
+// by a vhost's ProxyPath. Websocket upgrades are handled by the standard
+// library's ReverseProxy.
+func getPathProxy(backend string) *httputil.ReverseProxy {
+	if backend == "" {
+		return nil
+	}
+	if p, ok := pathProxyCache.Load(backend); ok {
+		return p.(*httputil.ReverseProxy)
+	}
+	b := backend
+	if !strings.Contains(b, "://") {
+		b = "http://" + b
+	}
+	target, err := url.Parse(b)
+	if err != nil {
+		log.Printf("invalid proxy-path-backend %q: %v", backend, err)
+		return nil
+	}
+	rp := httputil.NewSingleHostReverseProxy(target)
+	defaultDirector := rp.Director
+	rp.Director = func(r *http.Request) {
+		defaultDirector(r)
+		r.Host = target.Host
+	}
+	rp.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+		log.Printf("path-proxy error -> %s: %v", target, err)
+		http.Error(w, "Bad Gateway", http.StatusBadGateway)
+	}
+	pathProxyCache.Store(backend, rp)
+	return rp
+}
+
 func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	host := r.Host
 	if h, _, err := net.SplitHostPort(host); err == nil {
@@ -275,6 +317,36 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	upath := path.Clean("/" + r.URL.Path)
+
+	// Path-based reverse proxy (e.g. a web terminal at /terminal/): serve a
+	// backend under this vhost's own path and cert, no separate proxy vhost.
+	// Gated by a bs_proxy_auth cookie (or Bearer key) so a same-origin
+	// authenticated page — e.g. a Google-gated PHP page that sets the
+	// cookie — can grant browser + websocket access without a second login.
+	if site.ProxyPath != "" && pathUnderPrefix(upath, site.ProxyPath) {
+		if site.ProxyKey != "" {
+			ok := false
+			if c, err := r.Cookie("bs_proxy_auth"); err == nil {
+				ok = subtle.ConstantTimeCompare([]byte(c.Value), []byte(site.ProxyKey)) == 1
+			}
+			if !ok {
+				ok = subtle.ConstantTimeCompare(
+					[]byte(r.Header.Get("Authorization")),
+					[]byte("Bearer "+site.ProxyKey)) == 1
+			}
+			if !ok {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			r.Header.Del("Authorization")
+		}
+		if rp := getPathProxy(site.ProxyBackend); rp != nil {
+			rp.ServeHTTP(w, r)
+		} else {
+			m.serveErrorPage(w, r, root, http.StatusBadGateway, "proxy backend misconfigured", site, hostFallback)
+		}
+		return
+	}
 
 	// Block requests for hidden files/directories (/.git/*, /.env, ...) and
 	// vendor trees by default. Without this guard the allowed-types check is
