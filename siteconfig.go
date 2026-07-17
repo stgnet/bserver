@@ -28,6 +28,7 @@ type siteSettings struct {
 	ProxyPath      string        // request path prefix reverse-proxied to ProxyBackend (e.g. "/terminal/")
 	ProxyBackend   string        // host:port backend that ProxyPath forwards to
 	ProxyKey       string        // required bs_proxy_auth cookie / Bearer value for ProxyPath (empty = open)
+	RawYAML        []string      // site-relative .yaml files served raw (text/yaml) instead of rendered as pages
 }
 
 // loadConfigMap loads a _config.yaml file and returns its contents as a map.
@@ -182,6 +183,9 @@ func applySiteSettings(m map[string]interface{}, defaults siteSettings) siteSett
 	if v, ok := configIndex(m, "allow-paths"); ok {
 		s.AllowedPaths = normalizePathPatterns(v)
 	}
+	if v, ok := configIndex(m, "raw-yaml"); ok {
+		s.RawYAML = normalizePathPatterns(v)
+	}
 	// Path-based reverse proxy: serve a backend under a path prefix of this
 	// vhost (reusing its cert), gated by a shared key. The key can be given
 	// literally or read from a file outside the webroot (preferred, so the
@@ -240,6 +244,20 @@ func (s siteSettings) pathBlocked(upath string) bool {
 	}
 	for _, p := range s.BlockedPaths {
 		if pathMatchesPattern(upath, p) {
+			return true
+		}
+	}
+	return false
+}
+
+// rawYAMLAllowed reports whether the cleaned URL path is on the site's
+// raw-yaml allowlist: those files are served as text/yaml bytes rather than
+// rendered as pages. Matching is by exact site-relative path
+// (case-sensitive), so an entry exposes one file, never a pattern.
+func (s siteSettings) rawYAMLAllowed(upath string) bool {
+	rel := strings.TrimPrefix(upath, "/")
+	for _, p := range s.RawYAML {
+		if rel == strings.TrimPrefix(p, "/") {
 			return true
 		}
 	}

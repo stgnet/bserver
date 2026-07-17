@@ -429,6 +429,16 @@ func (m *virtualHostMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// YAML rendering: if the resolved path is a .yaml file, render it as HTML
 	if strings.HasSuffix(strings.ToLower(fsPath), ".yaml") {
 		if st, err := os.Stat(fsPath); err == nil && !st.IsDir() {
+			// raw-yaml allowlist: serve the file bytes untouched (data
+			// lists like packageslist.yaml fetched by other systems).
+			// no-cache keeps daily-regenerated feeds fresh; ServeFile
+			// still answers If-Modified-Since with 304.
+			if site.rawYAMLAllowed(upath) {
+				w.Header().Set("Content-Type", "text/yaml; charset=utf-8")
+				w.Header().Set("Cache-Control", "no-cache")
+				http.ServeFile(w, r, fsPath)
+				return
+			}
 			m.handleYAML(w, r, root, fsPath, site)
 			return
 		}
@@ -836,6 +846,19 @@ func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docR
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(cached))
 			return
+		}
+	}
+
+	// A yaml file whose root is a list is data, not a page: it defines no
+	// main, and rendering it used to assemble a ghost page from whichever
+	// nav target's definitions happened to load first. Data files are only
+	// served via the raw-yaml allowlist; anything else is a 404.
+	if data, err := os.ReadFile(yamlPath); err == nil {
+		if parsed, perr := parseYAMLOrdered(data); perr == nil {
+			if _, isList := parsed.([]interface{}); isList {
+				m.serveErrorPage(w, r, docRoot, http.StatusNotFound, "", site, false)
+				return
+			}
 		}
 	}
 
