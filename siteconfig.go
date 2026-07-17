@@ -265,10 +265,12 @@ func (s siteSettings) rawYAMLAllowed(upath string) bool {
 }
 
 // hasHiddenSegment reports whether any segment of the cleaned URL path begins
-// with a dot (a hidden file or directory), e.g. "/.git/index" or "/.env".
+// with a dot (a hidden file or directory, e.g. "/.git/index" or "/.env") or
+// an underscore (the convention for non-page files: _config.yaml, CLI helper
+// scripts, migration tools). Both are denied by default; allow-paths exempts.
 func hasHiddenSegment(upath string) bool {
 	for _, seg := range splitPath(upath) {
-		if seg[0] == '.' && seg != "." && seg != ".." {
+		if (seg[0] == '.' && seg != "." && seg != "..") || seg[0] == '_' {
 			return true
 		}
 	}

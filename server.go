@@ -849,13 +849,15 @@ func (m *virtualHostMux) handleYAML(w http.ResponseWriter, r *http.Request, docR
 		}
 	}
 
-	// A yaml file whose root is a list is data, not a page: it defines no
-	// main, and rendering it used to assemble a ghost page from whichever
-	// nav target's definitions happened to load first. Data files are only
-	// served via the raw-yaml allowlist; anything else is a 404.
+	// Only a yaml file that itself defines main is a page (the same test
+	// nav auto-discovery uses). Anything else - data lists, partial
+	// definition files like title.yaml or navbar.yaml, config - used to
+	// render a ghost page assembled from whichever nav target's
+	// definitions loaded first. Now: raw-yaml allowlist or 404.
 	if data, err := os.ReadFile(yamlPath); err == nil {
 		if parsed, perr := parseYAMLOrdered(data); perr == nil {
-			if _, isList := parsed.([]interface{}); isList {
+			doc, isMap := parsed.(*OrderedMap)
+			if !isMap || !doc.Has("main") {
 				m.serveErrorPage(w, r, docRoot, http.StatusNotFound, "", site, false)
 				return
 			}
