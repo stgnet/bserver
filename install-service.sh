@@ -317,6 +317,20 @@ MemoryMax=${mem_max_kb}K"
     chown nobody:nogroup "$diag_dir"
     chmod 0750 "$diag_dir"
 
+    # TLS certificate cache. bserver writes Let's Encrypt certs here as nobody
+    # (after dropping privileges), so it must exist and be owned by nobody
+    # BEFORE the unit starts: it is a ReadWritePaths= entry, and systemd aborts
+    # namespace setup (status=226/NAMESPACE) if any such path is missing, which
+    # would happen on every fresh install since bserver only creates it lazily
+    # at runtime.
+    local cert_dir="$SCRIPT_DIR/cert-cache"
+    if [ ! -d "$cert_dir" ]; then
+        info "Creating TLS certificate cache directory $cert_dir"
+        mkdir -p "$cert_dir"
+    fi
+    chown nobody:nogroup "$cert_dir"
+    chmod 0700 "$cert_dir"
+
     info "Installing systemd unit → $UNIT_FILE"
 
     cat > "$UNIT_FILE" <<EOF
@@ -349,7 +363,7 @@ SyslogIdentifier=$SERVICE_NAME
 # Hardening
 NoNewPrivileges=yes
 ProtectSystem=strict
-ReadWritePaths=$SCRIPT_DIR/cert-cache $SCRIPT_DIR/www /var/log/$SERVICE_NAME.log /tmp $session_dir $diag_dir /var/spool/postfix/maildrop /var/spool/postfix/public
+ReadWritePaths=$SCRIPT_DIR/cert-cache $SCRIPT_DIR/www /var/log/$SERVICE_NAME.log /tmp $session_dir $diag_dir -/var/spool/postfix/maildrop -/var/spool/postfix/public
 ProtectHome=read-only
 PrivateTmp=yes
 
