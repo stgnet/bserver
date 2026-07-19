@@ -655,6 +655,76 @@ EOF
     fi
 }
 
+# ── Optional component checks (post-install, warning-only) ───────────────
+#
+# bserver's core (YAML/Markdown pages, embedded JS) has no external runtime
+# dependencies. But some features shell out to interpreters that may or may not
+# be installed — and a given instance may legitimately not need them. So after
+# a successful install we only *warn* about what's missing and print a
+# recommended install command; we never fail or install anything.
+#
+# Not checked on purpose: JavaScript uses an embedded engine (no node needed),
+# and sh/bash are effectively always present.
+
+have_php() {
+    command -v php-cgi >/dev/null 2>&1 && return 0
+    local p
+    for p in /usr/local/bin/php-cgi /opt/homebrew/bin/php-cgi /usr/bin/php-cgi; do
+        [ -x "$p" ] && return 0
+    done
+    return 1
+}
+
+have_python() {
+    command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1
+}
+
+# Best-effort "install python3" command for the detected package manager.
+python_install_cmd() {
+    if   command -v apt-get >/dev/null 2>&1; then echo "sudo apt-get install -y python3"
+    elif command -v dnf     >/dev/null 2>&1; then echo "sudo dnf install -y python3"
+    elif command -v yum     >/dev/null 2>&1; then echo "sudo yum install -y python3"
+    elif command -v zypper  >/dev/null 2>&1; then echo "sudo zypper install -y python3"
+    elif command -v pacman  >/dev/null 2>&1; then echo "sudo pacman -S --noconfirm python"
+    elif command -v apk     >/dev/null 2>&1; then echo "sudo apk add python3"
+    elif command -v brew    >/dev/null 2>&1; then echo "brew install python3"
+    else echo "install python3 via your package manager"
+    fi
+}
+
+check_optional_components() {
+    local missing=0
+
+    echo
+    info "Optional components:"
+
+    if have_php; then
+        echo "    php     — present"
+    else
+        missing=1
+        echo "    php     — NOT installed; .php pages and 'script: php' will not run"
+        if [ -x "$SCRIPT_DIR/install-php.sh" ]; then
+            echo "              install: sudo $SCRIPT_DIR/install-php.sh"
+        else
+            echo "              install php-cli and php-cgi via your package manager"
+        fi
+    fi
+
+    if have_python; then
+        echo "    python  — present"
+    else
+        missing=1
+        echo "    python  — NOT installed; 'script: python' data sources will not run"
+        echo "              install: $(python_install_cmd)"
+    fi
+
+    if [ "$missing" -ne 0 ]; then
+        echo
+        info "The above are optional — install only the features this instance needs."
+    fi
+    return 0
+}
+
 # ── Main ────────────────────────────────────────────────────────────────
 
 ACTION="${1:-install}"
@@ -694,3 +764,8 @@ case "$PLATFORM" in
         esac
         ;;
 esac
+
+# After a successful install, warn (only) about optional features not present.
+if [ "$ACTION" = "install" ]; then
+    check_optional_components
+fi
