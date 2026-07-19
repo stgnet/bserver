@@ -218,6 +218,54 @@ detect_platform() {
 
 UNIT_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
+# Confirm the unit actually reached a stable running state. A service with
+# Restart=on-failure that dies on startup (bad config, missing sandbox path,
+# crash) does not make `systemctl start` fail — systemd just re-queues it and
+# it flaps between "activating (auto-restart)" and "failed". We therefore
+# sample the state across a window longer than one RestartSec cycle: if we ever
+# see it failed or auto-restarting, it is not up; success requires it to be
+# genuinely "active (running)" at the end. Returns 0 if up, 1 otherwise.
+verify_started() {
+    info "Verifying $SERVICE_NAME started cleanly…"
+    local i state sub
+    for i in 1 2 3 4 5 6 7 8; do
+        state="$(systemctl is-active "$SERVICE_NAME" 2>/dev/null || true)"
+        sub="$(systemctl show -p SubState --value "$SERVICE_NAME" 2>/dev/null || true)"
+        if [ "$state" = "failed" ] || [ "$sub" = "auto-restart" ] || [ "$sub" = "failed" ]; then
+            return 1
+        fi
+        sleep 1
+    done
+    state="$(systemctl is-active "$SERVICE_NAME" 2>/dev/null || true)"
+    sub="$(systemctl show -p SubState --value "$SERVICE_NAME" 2>/dev/null || true)"
+    [ "$state" = "active" ] && [ "$sub" = "running" ]
+}
+
+# Explain why the service is not running, pulling the reason out of the logs.
+# systemd's own startup failures (e.g. mount-namespace/sandbox errors) land in
+# the journal rather than the app log file, so we surface both.
+report_start_failure() {
+    local logfile="/var/log/${SERVICE_NAME}.log"
+    echo >&2
+    echo "Error: $SERVICE_NAME was installed and enabled but is NOT running." >&2
+    echo "       It failed to start; the reason follows." >&2
+    echo >&2
+    echo "── systemctl status ──────────────────────────────────────────" >&2
+    systemctl --no-pager --full status "$SERVICE_NAME" 2>&1 | sed 's/^/    /' >&2 || true
+    echo >&2
+    echo "── recent journal (journalctl -u $SERVICE_NAME) ──────────────" >&2
+    journalctl -u "$SERVICE_NAME" --no-pager -n 20 2>&1 | sed 's/^/    /' >&2 || true
+    if [ -s "$logfile" ]; then
+        echo >&2
+        echo "── recent app log ($logfile) ──" >&2
+        tail -n 20 "$logfile" 2>&1 | sed 's/^/    /' >&2 || true
+    fi
+    echo >&2
+    echo "Fix the cause shown above, then re-run:" >&2
+    echo "    sudo ./install-service.sh restart" >&2
+    echo >&2
+}
+
 install_systemd() {
     need_root
 
@@ -313,13 +361,27 @@ EOF
 
     systemctl daemon-reload
     systemctl enable "$SERVICE_NAME"
+
+    # Clear any prior failed/flapping state so status output and the restart
+    # counter reflect only this install attempt.
+    systemctl reset-failed "$SERVICE_NAME" 2>/dev/null || true
+
+    local verb="started"
     if systemctl is-active --quiet "$SERVICE_NAME"; then
-        systemctl restart "$SERVICE_NAME"
-        info "Service reinstalled and restarted."
+        verb="restarted"
+        # `|| true`: a crash-looping unit can make start/restart return non-zero;
+        # we diagnose the real state via verify_started below, not the exit code.
+        systemctl restart "$SERVICE_NAME" || true
     else
-        systemctl start "$SERVICE_NAME"
-        info "Service installed and started."
+        systemctl start "$SERVICE_NAME" || true
     fi
+
+    if ! verify_started; then
+        report_start_failure
+        exit 1
+    fi
+
+    info "Service installed and $verb successfully."
     info "Useful commands:"
     echo "    sudo systemctl status  $SERVICE_NAME"
     echo "    sudo systemctl restart $SERVICE_NAME"
