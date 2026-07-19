@@ -532,6 +532,129 @@ log_launchd() {
     exec tail -f "$logfile"
 }
 
+# ── Preflight checks (install only) ─────────────────────────────────────
+#
+# bserver binds :80/:443 as root, then drops privileges to "nobody". So every
+# file it serves at runtime — the vhost dirs under www/ and the TLS cert cache
+# — must be reachable by "nobody". The classic footgun is installing under
+# root's home (/root, mode 0700), which "nobody" cannot traverse: the service
+# starts, but every request fails (421/404) and cert writes fail. These checks
+# catch that BEFORE installing, and recommend (never apply) the fix.
+
+# Run a command as the unprivileged "nobody" user (ground-truth access test).
+# Returns 2 if we have no way to switch users (check is then skipped upstream).
+run_as_nobody() {
+    if command -v runuser >/dev/null 2>&1; then
+        runuser -u nobody -- "$@" 2>/dev/null
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo -n -u nobody -- "$@" 2>/dev/null
+    else
+        return 2
+    fi
+}
+
+# Absolute path of root's home directory (portable across Linux/macOS).
+root_home_dir() {
+    local h=""
+    if command -v getent >/dev/null 2>&1; then
+        h="$(getent passwd root 2>/dev/null | cut -d: -f6)"
+    fi
+    [ -n "$h" ] || h="$(eval echo ~root 2>/dev/null || true)"
+    case "$h" in /*) echo "$h" ;; *) echo "/root" ;; esac
+}
+
+# True if CHILD ($1) is at or below PARENT ($2) in the directory tree.
+path_is_under() {
+    local child="${1%/}/" parent="${2%/}/"
+    case "$child" in "$parent"*) return 0 ;; *) return 1 ;; esac
+}
+
+# Echo the shallowest ancestor of $1 that "nobody" cannot traverse (and return
+# 0); return 1 if the whole chain is traversable. Array-free for bash 3.2.
+first_untraversable() {
+    local target="$1" p="$1" acc="" dir
+    while [ -n "$p" ] && [ "$p" != "/" ]; do
+        acc="$p
+$acc"
+        p="$(dirname "$p")"
+    done
+    while IFS= read -r dir; do
+        [ -n "$dir" ] || continue
+        if ! run_as_nobody test -x "$dir"; then
+            printf '%s\n' "$dir"
+            return 0
+        fi
+    done <<EOF
+$acc
+EOF
+    return 1
+}
+
+preflight_install() {
+    need_root
+
+    # bserver only drops privileges when the "nobody" user exists; otherwise it
+    # keeps running as root and these access constraints do not apply.
+    if ! id nobody >/dev/null 2>&1; then
+        return 0
+    fi
+
+    # ── Check 1: installed under root's home directory ──────────────────
+    local root_home
+    root_home="$(root_home_dir)"
+    if path_is_under "$SCRIPT_DIR" "$root_home"; then
+        cat >&2 <<EOF
+
+Error: bserver is installed under root's home directory:
+    $SCRIPT_DIR   (inside $root_home)
+
+bserver drops privileges to "nobody" at runtime, and "nobody" cannot enter
+$root_home (mode 0700). The service would start, but every request would fail
+(421 Misdirected / 404) and TLS certificate writes would fail.
+
+Relocate the install somewhere world-traversable, then re-run — for example:
+    sudo systemctl stop bserver 2>/dev/null || true
+    sudo mv "$SCRIPT_DIR" /bserver
+    cd /bserver && sudo ./install-service.sh
+
+Aborting: no changes made.
+EOF
+        exit 1
+    fi
+
+    # ── Check 2: "nobody" can actually reach the served files ───────────
+    # Sanity-check that we can run as nobody at all; if not, skip rather than
+    # block on a false negative.
+    if ! run_as_nobody test -x /; then
+        info "Note: could not verify filesystem access as 'nobody'; skipping permission preflight."
+        return 0
+    fi
+    local served="$SCRIPT_DIR/www"
+    [ -d "$served" ] || served="$SCRIPT_DIR"
+    local blocked
+    if blocked="$(first_untraversable "$served")"; then
+        cat >&2 <<EOF
+
+Error: the "nobody" user cannot reach bserver's files.
+
+bserver drops privileges to "nobody" at runtime, but this directory is not
+traversable by it:
+    $blocked
+
+bserver could not read its content or TLS certificates, so requests would
+fail (421 Misdirected / 404).
+
+Recommended fix (grants traverse-only access — not read or listing):
+    sudo chmod o+x "$blocked"
+then re-run:
+    sudo ./install-service.sh
+
+Aborting: no changes made.
+EOF
+        exit 1
+    fi
+}
+
 # ── Main ────────────────────────────────────────────────────────────────
 
 ACTION="${1:-install}"
@@ -544,8 +667,10 @@ fi
 
 PLATFORM="$(detect_platform)"
 
-# For install, ensure the binary exists (build from source if necessary).
+# For install: verify the location is usable (before spending time building),
+# then ensure the binary exists (build from source if necessary).
 if [ "$ACTION" = "install" ]; then
+    preflight_install
     ensure_binary
 fi
 
