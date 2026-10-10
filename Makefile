@@ -2,8 +2,11 @@
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
+# Sources live in src/, but the binary is still written to the repo root so
+# install-service.sh, systemd/launchd and `make install` find it where they
+# always have.
 build:
-	go build -ldflags "-X main.Version=$(VERSION)" -o bserver
+	go build -ldflags "-X main.Version=$(VERSION)" -o bserver ./src
 
 test:
 	go test ./...

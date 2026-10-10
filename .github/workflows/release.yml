@@ -43,7 +43,7 @@ jobs:
             GOARCH="${target#*/}"
             output="dist/bserver-${VERSION}-${GOOS}-${GOARCH}"
             echo "Building ${output}..."
-            GOOS="$GOOS" GOARCH="$GOARCH" go build -ldflags "$LDFLAGS" -o "$output" .
+            GOOS="$GOOS" GOARCH="$GOARCH" go build -ldflags "$LDFLAGS" -o "$output" ./src
           done
 
       - name: Create release

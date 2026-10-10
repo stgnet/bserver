@@ -12,6 +12,8 @@
 #   sudo ./install-service.sh remove   # uninstall the service
 #   ./install-service.sh log           # follow the service log (no sudo needed)
 #   sudo ./install-service.sh update   # git pull, rebuild & restart if changed
+#                                      # (or if the binary is stale)
+#   sudo ./install-service.sh rebuild  # rebuild & restart without pulling
 #
 
 set -euo pipefail
@@ -129,7 +131,8 @@ ensure_binary() {
     info "Compiling bserver…"
     local version
     version="$(git -C "$SCRIPT_DIR" describe --tags --always --dirty 2>/dev/null || echo dev)"
-    (cd "$SCRIPT_DIR" && go build -ldflags "-X main.Version=${version}" -o bserver)
+    # Sources live in src/; the binary is still written to $SCRIPT_DIR/bserver.
+    (cd "$SCRIPT_DIR" && go build -ldflags "-X main.Version=${version}" -o bserver ./src)
 
     if [ ! -x "$BINARY" ]; then
         die "Build completed but $BINARY not found."
@@ -154,11 +157,36 @@ do_update() {
     after="$(git -C "$SCRIPT_DIR" rev-parse HEAD)"
 
     if [ "$before" = "$after" ]; then
-        info "Already up to date."
-        return 0
+        # No new commits, but the binary may still be stale: a previous
+        # update can have pulled successfully and then failed to build
+        # (e.g. the move of the Go sources into src/, which a pre-move copy
+        # of this script could not build). Since the pull already happened,
+        # "no new commits" alone would leave that stale binary in place
+        # forever. The binary embeds `git describe` at build time, so a
+        # mismatch with the checkout means it needs rebuilding.
+        local want have
+        want="bserver $(git -C "$SCRIPT_DIR" describe --tags --always --dirty 2>/dev/null || echo dev)"
+        have="$("$BINARY" -version 2>/dev/null || true)"
+        if [ "$want" = "$have" ]; then
+            info "Already up to date."
+            return 0
+        fi
+        info "Checkout is current but binary is stale (${have:-missing}, want $want)."
+    else
+        info "Updated $before → $after"
     fi
 
-    info "Updated $before → $after"
+    # Hand off to the freshly pulled copy of this script for the rebuild.
+    # bash keeps executing the copy it already loaded, so without the exec
+    # any change to how bserver is built (e.g. a new source path) would be
+    # run with the old, stale build steps and fail.
+    exec "$SCRIPT_DIR/install-service.sh" rebuild
+}
+
+# Rebuild the binary from the current checkout and restart the service.
+# Called by do_update (via exec) after a successful pull.
+do_rebuild() {
+    need_root
 
     # Make sure Go is available.
     if ! command -v go >/dev/null 2>&1; then
@@ -176,7 +204,8 @@ do_update() {
     info "Rebuilding bserver…"
     local version
     version="$(git -C "$SCRIPT_DIR" describe --tags --always --dirty 2>/dev/null || echo dev)"
-    (cd "$SCRIPT_DIR" && go build -ldflags "-X main.Version=${version}" -o bserver)
+    # Sources live in src/; the binary is still written to $SCRIPT_DIR/bserver.
+    (cd "$SCRIPT_DIR" && go build -ldflags "-X main.Version=${version}" -o bserver ./src)
 
     if [ ! -x "$BINARY" ]; then
         die "Build failed — $BINARY not found."
@@ -734,6 +763,10 @@ if [ "$ACTION" = "update" ]; then
     do_update
     exit 0
 fi
+if [ "$ACTION" = "rebuild" ]; then
+    do_rebuild
+    exit 0
+fi
 
 PLATFORM="$(detect_platform)"
 
@@ -751,7 +784,7 @@ case "$PLATFORM" in
             restart) restart_systemd ;;
             remove)  remove_systemd  ;;
             log)     log_systemd     ;;
-            *)       die "Unknown action: $ACTION (use install, restart, remove, update, or log)" ;;
+            *)       die "Unknown action: $ACTION (use install, restart, remove, update, rebuild, or log)" ;;
         esac
         ;;
     launchd)
@@ -760,7 +793,7 @@ case "$PLATFORM" in
             restart) restart_launchd ;;
             remove)  remove_launchd  ;;
             log)     log_launchd     ;;
-            *)       die "Unknown action: $ACTION (use install, restart, remove, update, or log)" ;;
+            *)       die "Unknown action: $ACTION (use install, restart, remove, update, rebuild, or log)" ;;
         esac
         ;;
 esac

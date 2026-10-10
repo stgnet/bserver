@@ -20,7 +20,7 @@ You need [Go](https://go.dev/dl/) 1.24 or later.
 ```sh
 git clone https://github.com/stgnet/bserver.git
 cd bserver
-go build
+make build        # or: go build -o bserver ./src
 ./bserver
 ```
 

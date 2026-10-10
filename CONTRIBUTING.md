@@ -6,19 +6,19 @@ bserver is a YAML-driven web server written in Go. The codebase is small and foc
 
 | File | Purpose |
 |------|---------|
-| `server.go` | HTTP server, virtual hosting, TLS, PHP CGI |
-| `render.go` | Core rendering engine (YAML/Markdown to HTML) |
-| `format.go` | Format definition parsing and variable substitution |
-| `script.go` | Server-side script execution (Python, JS, PHP) |
-| `style.go` | CSS rendering from YAML style definitions |
-| `orderedmap.go` | Insertion-order-preserving map for YAML parsing |
+| `src/server.go` | HTTP server, virtual hosting, TLS, PHP CGI |
+| `src/render.go` | Core rendering engine (YAML/Markdown to HTML) |
+| `src/format.go` | Format definition parsing and variable substitution |
+| `src/script.go` | Server-side script execution (Python, JS, PHP) |
+| `src/style.go` | CSS rendering from YAML style definitions |
+| `src/orderedmap.go` | Insertion-order-preserving map for YAML parsing |
 
-YAML component templates (`html.yaml`, `navbar.yaml`, etc.) live in the `www/` directory. The `www/default/` directory is the built-in documentation site that also serves as a working example. This separation keeps Go source in the project root and web content in `www/`, mirroring the `/var/www` convention.
+YAML component templates (`html.yaml`, `navbar.yaml`, etc.) live in the `www/` directory. The `www/default/` directory is the built-in documentation site that also serves as a working example. Go source lives in `src/` and web content in `www/` (mirroring the `/var/www` convention), keeping the project root for docs and scripts. The binary is still built at the project root as `./bserver`.
 
 ## Building
 
 ```sh
-go build -o bserver
+go build -o bserver ./src
 ```
 
 Or using the Makefile:
