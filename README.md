@@ -20,7 +20,7 @@ You need [Go 1.24+](https://go.dev/dl/).
 ```sh
 git clone https://github.com/stgnet/bserver.git
 cd bserver
-go build
+make build        # or: go build -o bserver ./src
 ./bserver
 ```
 
@@ -51,7 +51,7 @@ file into your vhost directory.
 
 ```sh
 sudo ./install-service.sh             # install + start (systemd or launchd)
-sudo ./install-service.sh restart     # after `git pull && go build`
+sudo ./install-service.sh restart     # after `git pull && make build`
 sudo ./install-service.sh remove      # uninstall
 ```
 

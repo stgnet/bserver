@@ -62,7 +62,7 @@ make build
 To set a specific version manually:
 
 ```sh
-go build -ldflags "-X main.Version=v1.0.0" -o bserver
+go build -ldflags "-X main.Version=v1.0.0" -o bserver ./src
 ```
 
 ## Pre-release / Release Candidates

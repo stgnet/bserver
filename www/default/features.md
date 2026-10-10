@@ -630,5 +630,5 @@ bserver dev
 Override the version at build time with:
 
 ```
-go build -ldflags "-X main.Version=1.0.0"
+go build -ldflags "-X main.Version=1.0.0" -o bserver ./src
 ```
