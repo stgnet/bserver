@@ -12,6 +12,7 @@
 #   sudo ./install-service.sh remove   # uninstall the service
 #   ./install-service.sh log           # follow the service log (no sudo needed)
 #   sudo ./install-service.sh update   # git pull, rebuild & restart if changed
+#                                      # (or if the binary is stale)
 #   sudo ./install-service.sh rebuild  # rebuild & restart without pulling
 #
 
@@ -156,11 +157,24 @@ do_update() {
     after="$(git -C "$SCRIPT_DIR" rev-parse HEAD)"
 
     if [ "$before" = "$after" ]; then
-        info "Already up to date."
-        return 0
+        # No new commits, but the binary may still be stale: a previous
+        # update can have pulled successfully and then failed to build
+        # (e.g. the move of the Go sources into src/, which a pre-move copy
+        # of this script could not build). Since the pull already happened,
+        # "no new commits" alone would leave that stale binary in place
+        # forever. The binary embeds `git describe` at build time, so a
+        # mismatch with the checkout means it needs rebuilding.
+        local want have
+        want="bserver $(git -C "$SCRIPT_DIR" describe --tags --always --dirty 2>/dev/null || echo dev)"
+        have="$("$BINARY" -version 2>/dev/null || true)"
+        if [ "$want" = "$have" ]; then
+            info "Already up to date."
+            return 0
+        fi
+        info "Checkout is current but binary is stale (${have:-missing}, want $want)."
+    else
+        info "Updated $before → $after"
     fi
-
-    info "Updated $before → $after"
 
     # Hand off to the freshly pulled copy of this script for the rebuild.
     # bash keeps executing the copy it already loaded, so without the exec

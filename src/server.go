@@ -40,7 +40,7 @@ import (
 
 // Version is the build version of bserver. Override at build time with:
 //
-//	go build -ldflags "-X main.Version=1.2.3"
+//	go build -ldflags "-X main.Version=1.2.3" -o bserver ./src
 var Version = "dev"
 
 // config holds runtime configuration.
