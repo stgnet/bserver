@@ -426,7 +426,7 @@ Security headers include `X-Content-Type-Options`, `X-Frame-Options`, and `Refer
 ### 16. install-service.sh Downloads Go Over HTTP Without Checksum Verification
 
 **Severity: LOW**
-**File:** `install-service.sh:56-72`
+**File:** `scripts/install-service.sh:56-72`
 
 The script downloads a Go tarball from `go.dev` and extracts it to `/usr/local/go` without verifying a SHA256 checksum. If the download were intercepted (e.g., on a compromised network), a malicious Go toolchain could be installed.
 

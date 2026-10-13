@@ -7,8 +7,8 @@
 #   - php (CLI): runs inline PHP in YAML script blocks (script: php)
 #
 # Usage:
-#   sudo ./install-php.sh          # install php-cli and php-cgi
-#   ./install-php.sh check         # check if PHP is already available
+#   sudo ./scripts/install-php.sh          # install php-cli and php-cgi
+#   ./scripts/install-php.sh check         # check if PHP is already available
 #
 
 set -euo pipefail
@@ -48,7 +48,7 @@ check_php() {
         return 0
     else
         echo ""
-        echo "Run 'sudo ./install-php.sh' to install missing components."
+        echo "Run 'sudo ./scripts/install-php.sh' to install missing components."
         return 1
     fi
 }
@@ -126,10 +126,10 @@ case "$ACTION" in
         elif command -v launchctl >/dev/null 2>&1 && launchctl list 2>/dev/null | grep -q "com.local.bserver"; then
             info "IMPORTANT: bserver is already running and resolved php-cgi at startup."
             info "           Restart it now so PHP takes effect:"
-            echo   "               sudo ./install-service.sh restart"
+            echo   "               sudo ./scripts/install-service.sh restart"
         else
             info "PHP is ready. Start bserver and it will detect php-cgi:"
-            echo   "               sudo ./install-service.sh"
+            echo   "               sudo ./scripts/install-service.sh"
         fi
         ;;
     *)

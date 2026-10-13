@@ -47,14 +47,17 @@ send_mail() {
 
 case "${1:-}" in
     --install-cron)
-        cat > /etc/cron.d/bserver-memcheck <<'EOF'
+        # Point cron at wherever this script actually is, rather than a
+        # hard-coded path, so it keeps working whatever the install location.
+        self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+        cat > /etc/cron.d/bserver-memcheck <<EOF
 # Check bserver memory-monitor alerts every 5 minutes. Any MEMMON_WARN or
 # MEMMON_DUMP lines since the last run are emailed to the configured
 # recipient via local sendmail. Silent when nothing to report.
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 MAILTO=""
-*/5 * * * * root /root/bserver/bserver-memcheck.sh
+*/5 * * * * root $self
 EOF
         chmod 0644 /etc/cron.d/bserver-memcheck
         echo "Installed /etc/cron.d/bserver-memcheck (runs every 5 minutes)"
