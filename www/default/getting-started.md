@@ -192,3 +192,7 @@ For operations:
 - **[Error Handling](/errors)** — custom 404/500 templates
 - **[Advanced Features](/advanced)** — virtual hosting, style rendering,
   name resolution internals
+
+Migrating an existing PHP/HTML site? `scripts/php2yaml.py` (in the bserver
+repo) converts `.php` and `.html` pages into YAML, keeping PHP code as
+`script: php` blocks. Run `python3 scripts/php2yaml.py --help` for options.
