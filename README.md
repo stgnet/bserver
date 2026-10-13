@@ -50,9 +50,9 @@ file into your vhost directory.
 ### Install as a System Service
 
 ```sh
-sudo ./install-service.sh             # install + start (systemd or launchd)
-sudo ./install-service.sh restart     # after `git pull && make build`
-sudo ./install-service.sh remove      # uninstall
+sudo ./scripts/install-service.sh           # install + start (systemd or launchd)
+sudo ./scripts/install-service.sh restart   # after `git pull && make build`
+sudo ./scripts/install-service.sh remove    # uninstall
 ```
 
 ## How It Works (One Page)

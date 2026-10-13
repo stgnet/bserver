@@ -32,7 +32,7 @@ logs at startup to see the documentation site.
 To install as a system service (systemd or launchd):
 
 ```sh
-sudo ./install-service.sh
+sudo ./scripts/install-service.sh
 ```
 
 ## Your First Page
