@@ -36,7 +36,7 @@
 
 # Render cache maximum size in megabytes. Set to 0 to disable caching
 # entirely. The effective size may be reduced automatically if the system
-# has limited RAM (see server-features.md for details).
+# has limited RAM (see "RAM Detection" in default/features.md).
 #cache-size: 1024
 
 # Maximum allowed request body size in megabytes. POST requests larger than
