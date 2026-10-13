@@ -125,6 +125,9 @@ proxy mode — composes from these four pieces.
   `/script?name=value`, surviving email scanners that strip query strings
 - **Auto-generated favicons** with optional `_favicon.yaml` customization
 - **Debug mode** — `?debug` emits HTML-comment traces of name resolution
+- **PHP/HTML migration helper** — `scripts/php2yaml.py` converts existing
+  `.php` / `.html` pages into bserver YAML, keeping PHP blocks as
+  `script: php` and pulling shared header/footer into their own files
 
 ## Documentation
 

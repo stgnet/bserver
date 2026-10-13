@@ -12,10 +12,10 @@ header/footer content and shared formatting patterns, splitting them into
 separate YAML files (header.yaml, footer.yaml, formats, etc.).
 
 Usage:
-    python3 php2yaml.py page.php                    # single file
-    python3 php2yaml.py *.php                       # batch conversion
-    python3 php2yaml.py --outdir yaml_out *.php     # write to a directory
-    python3 php2yaml.py --check page.php            # dry-run, print to stdout
+    python3 scripts/php2yaml.py page.php                    # single file
+    python3 scripts/php2yaml.py *.php                       # batch conversion
+    python3 scripts/php2yaml.py --outdir yaml_out *.php     # write to a directory
+    python3 scripts/php2yaml.py --check page.php            # dry-run, print to stdout
 """
 
 from __future__ import annotations
@@ -1454,9 +1454,9 @@ def main():
     ap = argparse.ArgumentParser(
         description="Convert PHP/HTML files to bserver YAML pages.",
         epilog="Examples:\n"
-               "  python3 php2yaml.py index.php\n"
-               "  python3 php2yaml.py --outdir yaml/ *.php\n"
-               "  python3 php2yaml.py --check page.html\n",
+               "  python3 scripts/php2yaml.py index.php\n"
+               "  python3 scripts/php2yaml.py --outdir yaml/ *.php\n"
+               "  python3 scripts/php2yaml.py --check page.html\n",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     ap.add_argument("files", nargs="+", help="PHP or HTML files to convert")
